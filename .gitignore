@@ -1,0 +1,19 @@
+# Dependencies & build
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# Env (keep committed templates only if needed)
+.env.*.local
+
+# Agent / local tooling
+.agents/
+skills-lock.json
+.cursor/
+
+# Logs & OS
+logs/
+*.log
+.DS_Store

@@ -1,0 +1,1175 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "temp-maven Api Doc",
+    "description": "springfox swagger 3.0整合Demo",
+    "contact": {
+      "name": "lighter",
+      "email": "123456@gmail.com"
+    },
+    "version": "Application Version: 1.0, Spring Boot Version: 4.0.6"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:13004"
+    }
+  ],
+  "security": [
+    {
+      "X-token": []
+    }
+  ],
+  "paths": {
+    "/temp/sys-user/update": {
+      "put": {
+        "tags": ["首页用户"],
+        "summary": "修改首页用户",
+        "operationId": "update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SysUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/update": {
+      "put": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "修改模型可信评测任务表",
+        "operationId": "update_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTrustEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/update": {
+      "put": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "修改模型数据安全评测任务表",
+        "operationId": "update_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelDataSafetyEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/register": {
+      "post": {
+        "tags": ["首页用户"],
+        "summary": "用户注册",
+        "operationId": "register",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserLoginVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/page": {
+      "post": {
+        "tags": ["首页用户"],
+        "summary": "分页查询首页用户",
+        "operationId": "findPage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageSysUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/login": {
+      "post": {
+        "tags": ["首页用户"],
+        "summary": "用户登录",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserLoginVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/add": {
+      "post": {
+        "tags": ["首页用户"],
+        "summary": "新增首页用户",
+        "operationId": "add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SysUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultSysUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/page": {
+      "post": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "分页查询模型可信评测任务表",
+        "operationId": "findPage_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageModelTrustEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/add": {
+      "post": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "新增模型可信评测任务表",
+        "operationId": "add_1",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTrustEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultModelTrustEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/page": {
+      "post": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "分页查询模型数据安全评测任务表",
+        "operationId": "findPage_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageModelDataSafetyEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/add": {
+      "post": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "新增模型数据安全评测任务表",
+        "operationId": "add_2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelDataSafetyEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultModelDataSafetyEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/getDetailById": {
+      "get": {
+        "tags": ["首页用户"],
+        "summary": "获取首页用户",
+        "operationId": "getDetailById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultSysUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/getCurrentUser": {
+      "get": {
+        "tags": ["首页用户"],
+        "summary": "获取当前登录用户信息",
+        "operationId": "getCurrentUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultSysUser"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/getDetailById": {
+      "get": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "获取模型可信评测任务表",
+        "operationId": "getDetailById_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultModelTrustEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/getDetailById": {
+      "get": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "获取模型数据安全评测任务表",
+        "operationId": "getDetailById_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultModelDataSafetyEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/hello/": {
+      "get": {
+        "tags": ["测试页面"],
+        "summary": "你好",
+        "operationId": "hello",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultString"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/deleteOne": {
+      "delete": {
+        "tags": ["首页用户"],
+        "summary": "删除首页用户",
+        "operationId": "deleteOne",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/batchDel": {
+      "delete": {
+        "tags": ["首页用户"],
+        "summary": "批量删除首页用户",
+        "operationId": "batchDel",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/deleteOne": {
+      "delete": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "删除模型可信评测任务表",
+        "operationId": "deleteOne_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-trust-evaluation-task/batchDel": {
+      "delete": {
+        "tags": ["模型可信评测任务表"],
+        "summary": "批量删除模型可信评测任务表",
+        "operationId": "batchDel_1",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/deleteOne": {
+      "delete": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "删除模型数据安全评测任务表",
+        "operationId": "deleteOne_2",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/model-data-safety-evaluation-task/batchDel": {
+      "delete": {
+        "tags": ["模型数据安全评测任务表"],
+        "summary": "批量删除模型数据安全评测任务表",
+        "operationId": "batchDel_2",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SysUser": {
+        "type": "object",
+        "description": "首页用户",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "id"
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "description": "用户角色",
+            "enum": ["ADMIN", "USER"]
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultBoolean": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ModelTrustEvaluationTask": {
+        "type": "object",
+        "description": "模型可信评测任务表",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "自增主键ID"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户ID"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件ID"
+          },
+          "evaluationRequirement": {
+            "type": "string",
+            "description": "评测诉求"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态"
+          },
+          "emailStatus": {
+            "type": "string",
+            "description": "邮件发送状态"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "软删除标记"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "ModelDataSafetyEvaluationTask": {
+        "type": "object",
+        "description": "模型数据安全评测任务表",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户ID"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "文件ID"
+          },
+          "evaluationRequirement": {
+            "type": "string",
+            "description": "评测诉求"
+          },
+          "status": {
+            "type": "string",
+            "description": "状态"
+          },
+          "emailStatus": {
+            "type": "string",
+            "description": "邮件发送状态"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "软删除标记"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32",
+            "description": "id"
+          }
+        }
+      },
+      "UserLoginSo": {
+        "type": "object",
+        "description": "用户登录请求参数",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "description": "密码",
+            "minLength": 1
+          }
+        },
+        "required": ["password", "username"]
+      },
+      "ResultUserLoginVo": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserLoginVo"
+          }
+        }
+      },
+      "UserLoginVo": {
+        "type": "object",
+        "description": "用户登录返回VO",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/SysUser",
+            "description": "用户信息"
+          },
+          "token": {
+            "type": "string",
+            "description": "JWT token"
+          }
+        }
+      },
+      "分页查询实体类": {
+        "type": "object",
+        "properties": {
+          "pageSize": {
+            "type": "integer",
+            "format": "int64",
+            "description": "分页大小",
+            "example": 10
+          },
+          "pageCurrent": {
+            "type": "integer",
+            "format": "int64",
+            "description": "当前页",
+            "example": 1
+          },
+          "orderColumn": {
+            "type": "string",
+            "description": "排序字段",
+            "example": "id"
+          },
+          "orderType": {
+            "type": "string",
+            "description": "排序方式",
+            "example": "desc"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/SysUser",
+            "description": "实体参数"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "asc": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageSysUser": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SysUser"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageSysUser",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageSysUser",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageSysUser": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageSysUser"
+          }
+        }
+      },
+      "ResultSysUser": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SysUser"
+          }
+        }
+      },
+      "PageModelTrustEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelTrustEvaluationTask"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageModelTrustEvaluationTask",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageModelTrustEvaluationTask",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageModelTrustEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageModelTrustEvaluationTask"
+          }
+        }
+      },
+      "ResultModelTrustEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelTrustEvaluationTask"
+          }
+        }
+      },
+      "PageModelDataSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelDataSafetyEvaluationTask"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageModelDataSafetyEvaluationTask",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageModelDataSafetyEvaluationTask",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageModelDataSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageModelDataSafetyEvaluationTask"
+          }
+        }
+      },
+      "ResultModelDataSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/ModelDataSafetyEvaluationTask"
+          }
+        }
+      },
+      "ResultString": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "X-token": {
+        "type": "apiKey",
+        "description": "在请求头中添加 X-token",
+        "name": "X-token",
+        "in": "header"
+      }
+    }
+  }
+}

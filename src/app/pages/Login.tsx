@@ -1,0 +1,162 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, MessageSquareText, Phone, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { useUser } from '../context/UserContext';
+import { AuthBrandPanel } from '../components/AuthBrandPanel';
+
+type LoginMode = 'password' | 'code';
+
+export function Login() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useUser();
+  const [mode, setMode] = useState<LoginMode>('password');
+  const [account, setAccount] = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotAccount, setForgotAccount] = useState('');
+
+  const returnTo = (location.state as { from?: string } | null)?.from || '/';
+  const inputClass = 'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100';
+
+  useEffect(() => {
+    document.title = '登录｜玄鉴 AI安全与评测平台';
+  }, []);
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFormError(null);
+    if (mode === 'code') {
+      toast.warning('手机验证码登录即将开放，请使用账号密码登录');
+      return;
+    }
+    if (!account || !password) {
+      const msg = '请输入账号和密码';
+      setFormError(msg);
+      toast.error(msg);
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(account.trim(), password, rememberMe);
+      toast.success('登录成功');
+      navigate(returnTo);
+    } catch (err) {
+      const msg = err instanceof Error && err.message
+        ? err.message
+        : '登录失败，请重试';
+      setFormError(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_18%_10%,rgba(37,99,235,.10),transparent_28rem),linear-gradient(180deg,#f8fbff,#eef3f8)]">
+      <header className="h-[72px] border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-full max-w-[1180px] items-center justify-between px-6">
+          <button onClick={() => navigate('/')} className="flex items-center gap-4">
+            <img src="/rongsu-logo.png" alt="榕数科技" className="h-10 w-auto" />
+            <span className="border-l border-slate-200 pl-4 text-base font-bold text-slate-800">账号登录</span>
+          </button>
+          <div className="hidden items-center gap-7 text-sm text-slate-500 sm:flex">
+            <button onClick={() => navigate('/')}>返回榕数首页</button>
+            <button onClick={() => navigate('/help-docs')}>帮助文档</button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto grid max-w-[1180px] overflow-hidden border border-white/80 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)] lg:my-14 lg:grid-cols-[1.08fr_.72fr] lg:rounded-3xl">
+        <AuthBrandPanel mode="login" />
+        <div className="flex min-h-[620px] items-center px-7 py-12 sm:px-12 lg:px-14">
+          <div className="w-full">
+            <div className="mb-9">
+              <div className="text-xs font-black tracking-[0.18em] text-blue-600">XUANJIAN ACCOUNT</div>
+              <h1 className="mt-3 text-3xl font-black text-slate-950">登录玄鉴平台</h1>
+              <p className="mt-2 text-sm text-slate-500">进入在线体验、任务中心与评测报告空间</p>
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-semibold text-slate-400">
+                <span>安全登录</span><span>体验数据不留存</span><span>任务与报告统一管理</span>
+              </div>
+            </div>
+
+            <div className="mb-7 flex border-b border-slate-200">
+              {([['password', '账号密码登录'], ['code', '手机验证码登录']] as const).map(([key, label]) => (
+                <button key={key} type="button" onClick={() => setMode(key)} className={`relative flex-1 pb-3 text-sm font-bold ${mode === key ? 'text-blue-700' : 'text-slate-400'}`}>
+                  {label}{mode === key && <span className="absolute bottom-0 left-5 right-5 h-0.5 rounded-full bg-blue-600" />}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
+              <div className="relative">
+                {mode === 'password' ? <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /> : <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />}
+                <input value={account} onChange={event => setAccount(event.target.value)} placeholder={mode === 'password' ? '请输入用户名或企业邮箱' : '请输入手机号码'} className={`${inputClass} pl-11`} />
+              </div>
+
+              {mode === 'password' ? (
+                <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="请输入登录密码" className={`${inputClass} px-11`} />
+                  <button type="button" onClick={() => setShowPwd(current => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
+                  手机验证码登录即将开放，请使用账号密码登录。
+                  <div className="mt-3 flex gap-3 opacity-50 pointer-events-none">
+                    <div className="relative flex-1"><MessageSquareText className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={code} readOnly placeholder="请输入验证码" className={`${inputClass} pl-11`} /></div>
+                    <button type="button" className="w-32 rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">获取验证码</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between py-1 text-xs">
+                <label className="flex items-center gap-2 text-slate-500">
+                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded border-slate-300" />
+                  15 天内免登录
+                </label>
+                {mode === 'password' && <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>}
+              </div>
+
+              {formError ? (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs leading-5 text-red-600">
+                  {formError}
+                </div>
+              ) : null}
+
+              <button type="submit" disabled={loading || mode === 'code'} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
+                {loading ? '登录中…' : '登 录'}
+              </button>
+            </form>
+
+            <div className="mt-6 flex items-center justify-between text-sm">
+              <span className="text-slate-500">还没有账号？ <Link to="/register" state={location.state} className="font-bold text-blue-600">免费注册</Link></span>
+              <button onClick={() => navigate('/')} className="text-xs text-slate-400 hover:text-blue-600">游客浏览 →</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer className="pb-8 text-center text-xs text-slate-400">杭州榕数科技有限公司 · 玄鉴 AI 安全与评测平台</footer>
+
+      {forgotOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
+        <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
+          <button onClick={() => setForgotOpen(false)} className="absolute right-5 top-5 text-slate-400"><X className="h-4 w-4" /></button>
+          <div className="py-2">
+            <CheckCircle2 className="mx-auto h-12 w-12 text-blue-500" />
+            <h3 className="mt-4 text-center text-xl font-black text-slate-900">找回密码即将开放</h3>
+            <p className="mt-2 text-center text-sm leading-6 text-slate-500">当前暂无密码重置接口，请联系管理员处理账号问题。</p>
+            <input value={forgotAccount} onChange={event => setForgotAccount(event.target.value)} className={`${inputClass} mt-6`} placeholder="手机号或邮箱（预留）" disabled />
+            <button type="button" disabled className="mt-4 h-11 w-full rounded-xl bg-slate-300 text-sm font-bold text-white">即将开放</button>
+          </div>
+        </div>
+      </div>}
+    </div>
+  );
+}

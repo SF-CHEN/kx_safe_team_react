@@ -1,0 +1,1051 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { GlobalFooter } from './GlobalFooter';
+import { GuestGuard } from './GuestGuard';
+import { ScrollToTop } from './ScrollToTop';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useUser } from '../context/UserContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Avatar, AvatarFallback } from './ui/avatar';
+import { Button } from './ui/button';
+import {
+  ChevronDown, LogOut, Settings, BookOpen, LayoutDashboard,
+  Database, BarChart2, Shield, FileText, ChevronRight,
+  Sparkles, ExternalLink, Phone, MessageCircle, QrCode,
+  ArrowRight, Menu
+} from 'lucide-react';
+
+// ── Type definitions for nested menu ────────────────────────────
+interface MenuLeaf {
+  label: string;
+  desc: string;
+  path: string;
+  isGroup?: false;
+}
+interface MenuChild {
+  label: string;
+  path: string;
+}
+interface MenuGroup {
+  label: string;
+  desc: string;
+  path?: string;   // if present → group header is clickable
+  isGroup: true;
+  children: MenuChild[];
+}
+type MenuItem = MenuLeaf | MenuGroup;
+
+interface ProductSeries {
+  id: string;
+  name: string;
+  subtitle: string;
+  desc: string;
+  icon: React.ElementType;
+  grad: string;
+  accentColor: string;
+  badge?: string | null;
+  items: MenuItem[];
+}
+
+// ── Product matrix data (mega menu) ─────────────────────────────
+const PRODUCT_SERIES: ProductSeries[] = [
+  {
+    id: 'tianyuan',
+    name: '数据侧',
+    subtitle: '数据侧',
+    desc: '数据合规审查、评测与内容治理',
+    icon: Database,
+    grad: 'from-violet-500 to-purple-600',
+    accentColor: '#8b5cf6',
+    badge: null,
+    items: [
+      { label: '个人敏感信息审查', desc: '个人数据隐私合规检测与处理', path: '/privacy-data-audit' },
+      { label: '模型数据安全评测', desc: '训练数据安全风险深度分析', path: '/model-safety-eval' },
+      {
+        label: 'AIGC内容审核与鉴伪',
+        desc: 'AI生成内容审核与真伪鉴别',
+        isGroup: true,
+        children: [
+          { label: '文本内容审核与鉴伪', path: '/aigc-content?tab=text' },
+          { label: '图像内容审核与鉴伪', path: '/aigc-content?tab=image' },
+          { label: '音频内容审核与鉴伪', path: '/aigc-content?tab=audio' },
+          { label: '视频内容审核与鉴伪', path: '/aigc-content?tab=video' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'tianheng',
+    name: '模型侧',
+    subtitle: '模型侧',
+    desc: '模型性能、可信与安全综合评测',
+    icon: BarChart2,
+    grad: 'from-blue-500 to-indigo-600',
+    accentColor: '#3b82f6',
+    badge: null,
+    items: [
+      { label: '深度模型可信测评', desc: '大模型全面可信度综合评估', path: '/deep-model-eval' },
+      { label: '具身智能可信评测', desc: '物理交互场景可信安全评测', path: '/embodied-intelligence' },
+      { label: '智能体安全评测', desc: 'AI智能体行为安全综合评测', path: '/agent-safety' },
+      {
+        label: '大语言模型可信评测',
+        desc: '多维能力与安全评测套件',
+        isGroup: true,
+        children: [
+          { label: '大模型性能评测', path: '/llm-evaluation' },
+          { label: '大模型安全评测', path: '/safety-evaluation' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'tianxun',
+    name: '系统侧',
+    subtitle: '系统侧',
+    desc: 'AI系统层风险检测与防控',
+    icon: Shield,
+    grad: 'from-cyan-500 to-blue-600',
+    accentColor: '#06b6d4',
+    badge: null,
+    items: [
+      { label: '代码漏洞审查', desc: 'AI代码安全扫描与深度审计', path: '/code-vulnerability-audit' },
+      { label: '网络渗透测试', desc: 'AI系统网络安全渗透评估', path: '/penetration-test' },
+    ],
+  },
+  {
+    id: 'tianche',
+    name: '合规治理侧',
+    subtitle: '合规治理侧',
+    desc: 'AI合规政策解读与备案服务',
+    icon: FileText,
+    grad: 'from-emerald-500 to-teal-600',
+    accentColor: '#10b981',
+    badge: null,
+    items: [
+      { label: '人工智能安全教学平台', desc: 'AI安全教育培训解决方案', path: '/ai-safety-edu' },
+      { label: '大模型备案服务', desc: '备案全流程咨询与辅助', path: '/model-filing-service' },
+      { label: '可信安全标准制定服务', desc: '国际国家标准参与制定', path: '/tianche-standard-service' },
+    ],
+  },
+];
+
+const SECONDARY_NAV: { label: string; path: string; protected?: boolean }[] = [
+  { label: '在线体验', path: '/online-experience' },
+  { label: '帮助文档', path: '/help-docs' },
+  { label: '资源中心', path: '/resource-center' },
+  { label: '关于我们', path: '/about' },
+  { label: '开发者中心', path: '/developer' },
+];
+
+const FORMAL_PRODUCT_PATHS = new Set([
+  '/products-overview',
+  '/privacy-data-audit',
+  '/model-safety-eval',
+  '/aigc-content',
+  '/deep-model-eval',
+  '/embodied-intelligence',
+  '/agent-safety',
+  '/llm-evaluation',
+  '/safety-evaluation',
+  '/code-vulnerability-audit',
+  '/penetration-test',
+  '/ai-safety-edu',
+  '/model-filing-service',
+  '/tianche-standard-service',
+]);
+
+// ── Floating Chat Panel ───────────────────────────────────────────
+function FloatingChatPanel({ onClose }: { onClose: () => void }) {
+  const [messages, setMessages] = React.useState([
+    { from: 'agent' as const, text: '您好！我是玄鉴智能助手，很高兴为您服务 😊', ts: '刚刚' },
+    { from: 'agent' as const, text: '请问您想了解哪方面的内容？', ts: '刚刚' },
+  ]);
+  const [input, setInput] = React.useState('');
+  const send = () => {
+    if (!input.trim()) return;
+    setMessages(p => [...p, { from: 'user', text: input.trim(), ts: '刚刚' }]);
+    setInput('');
+    setTimeout(() => setMessages(p => [...p, { from: 'agent', text: '感谢留言！专属顾问将在工作时间内尽快回复您，或拨打 0571-87837371。', ts: '刚刚' }]), 800);
+  };
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 92, width: 380, maxWidth: 'calc(100vw - 112px)', background: '#fff', borderRadius: 20, boxShadow: '0 24px 70px rgba(15,23,42,0.22)', overflow: 'hidden', zIndex: 9998, display: 'flex', flexDirection: 'column', border: '1px solid #e5eaf1' }}>
+      <div style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <MessageCircle className="w-4 h-4 text-white" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>玄鉴智能助手</div>
+          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>● 在线服务中</div>
+        </div>
+        <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 6, width: 26, height: 26, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          ✕
+        </button>
+      </div>
+      <div style={{ flex: 1, maxHeight: 280, overflowY: 'auto', padding: 14, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 8, flexDirection: m.from === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
+            {m.from === 'agent' && <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><MessageCircle className="w-3 h-3 text-white" /></div>}
+            <div style={{ maxWidth: '80%', padding: '8px 12px', borderRadius: m.from === 'user' ? '14px 3px 14px 14px' : '3px 14px 14px 14px', background: m.from === 'user' ? '#4f46e5' : '#fff', color: m.from === 'user' ? '#fff' : '#1e293b', fontSize: 12.5, lineHeight: 1.6, boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>{m.text}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, background: '#fff' }}>
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
+          placeholder="输入问题…" style={{ flex: 1, padding: '7px 11px', border: '1.5px solid #e2e8f0', borderRadius: 9, fontSize: 12.5, outline: 'none' }} />
+        <button onClick={send} disabled={!input.trim()}
+          style={{ width: 32, height: 32, borderRadius: 9, background: input.trim() ? '#4f46e5' : '#e2e8f0', border: 'none', cursor: input.trim() ? 'pointer' : 'default', color: input.trim() ? '#fff' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>→</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Floating Contact Widget ──────────────────────────────────────
+function FloatingContact() {
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const contacts = [
+    {
+      id: 'phone',
+      icon: Phone,
+      label: '电话咨询',
+      color: '#2563eb',
+      hoverColor: '#1d4ed8',
+      tooltip: (
+        <div className="p-4 w-44">
+          <div className="font-bold text-gray-800 text-sm mb-1.5">电话咨询</div>
+          <div className="text-blue-600 font-mono font-bold text-base">0571-87837371</div>
+          <div className="text-gray-400 text-xs mt-1.5">工作日 9:00 – 18:00</div>
+          <div className="text-gray-400 text-xs">节假日 10:00 – 17:00</div>
+        </div>
+      ),
+    },
+    {
+      id: 'chat',
+      icon: MessageCircle,
+      label: '在线咨询',
+      color: '#4f46e5',
+      hoverColor: '#4338ca',
+      tooltip: (
+        <div className="p-4 w-44">
+          <div className="font-bold text-gray-800 text-sm mb-1.5">在线咨询</div>
+          <div className="text-gray-600 text-xs leading-relaxed mb-3">
+            专属客服为您提供 1 对 1 实时在线咨询服务
+          </div>
+          <div
+            className="text-center py-1.5 rounded-lg text-xs text-white cursor-pointer"
+            style={{ background: '#4f46e5' }}
+          >
+            开始咨询
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'wechat',
+      icon: QrCode,
+      label: '微信咨询',
+      color: '#16a34a',
+      hoverColor: '#15803d',
+      tooltip: (
+        <div className="p-4 w-44">
+          <div className="font-bold text-gray-800 text-sm mb-2">微信扫码咨询</div>
+          <div
+            className="w-32 h-32 rounded-xl flex items-center justify-center mx-auto mb-2"
+            style={{ background: '#f1f5f9' }}
+          >
+            <QrCode className="w-16 h-16 text-gray-400" />
+          </div>
+          <div className="text-gray-400 text-[11px] text-center">扫一扫添加专属顾问微信</div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <>
+    <div
+      className="fixed z-40 hidden md:flex flex-col"
+      style={{ right: 0, top: '50%', transform: 'translateY(-50%)' }}
+    >
+      {contacts.map((c, i) => {
+        const Icon = c.icon;
+        const isHovered = hovered === c.id;
+        return (
+          <div
+            key={c.id}
+            className="relative"
+            onMouseEnter={() => setHovered(c.id)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {/* Button */}
+            <button
+              className="flex flex-col items-center justify-center gap-1.5 transition-all duration-200 rs-focus-ring"
+              style={{
+                width: 68,
+                height: 64,
+                background: isHovered ? c.hoverColor : c.color,
+                borderTopLeftRadius: i === 0 ? 10 : 0,
+                borderBottomLeftRadius: i === contacts.length - 1 ? 10 : 0,
+                borderBottom: i < contacts.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none',
+              }}
+              onClick={() => { if (c.id === 'chat') setChatOpen(true); }}
+            >
+              <Icon className="w-5 h-5 text-white" />
+              <span className="text-white leading-tight whitespace-nowrap" style={{ fontSize: 11 }}>
+                {c.label}
+              </span>
+            </button>
+
+            {/* Tooltip card */}
+            <div
+              className="absolute top-0 rounded-xl overflow-hidden pointer-events-none transition-all duration-200"
+              style={{
+                right: 76,
+                background: 'rgba(255,255,255,0.98)',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08)',
+                border: '1px solid rgba(226,232,240,0.8)',
+                opacity: isHovered ? 1 : 0,
+                transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+              }}
+            >
+              {c.tooltip}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+    {chatOpen && <FloatingChatPanel onClose={() => setChatOpen(false)} />}
+    </>
+  );
+}
+
+// ── Sub-navigation (product-level breadcrumb + sibling pages) ────
+const TIANHENG_PATHS = ['/llm-evaluation', '/safety-evaluation'];
+const TIANHENG_ITEMS = [
+  { label: '大模型性能评测', path: '/llm-evaluation' },
+  { label: '大模型安全评测', path: '/safety-evaluation' },
+];
+const AIGC_MODALITIES = [
+  { label: '文本', tab: 'text' },
+  { label: '图像', tab: 'image' },
+  { label: '音频', tab: 'audio' },
+  { label: '视频', tab: 'video' },
+];
+
+// ── Breadcrumb config ─────────────────────────────────────────────
+interface BreadcrumbCrumb { label: string; path?: string }
+
+const BREADCRUMB_MAP: Record<string, BreadcrumbCrumb[]> = {
+  // 产品矩阵
+  '/products-overview':       [{ label: '首页', path: '/' }, { label: '产品矩阵' }],
+  // 数据侧
+  '/products/tianyuan':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }],
+  '/model-safety-eval':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: '模型数据安全评测' }],
+  '/aigc-content':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: 'AIGC内容审核与鉴伪' }],
+  '/privacy-data-audit':      [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: '个人敏感信息审查' }],
+  // 模型侧
+  '/products/tianheng':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧' }],
+  '/deep-model-eval':         [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '深度模型可信测评' }],
+  '/embodied-intelligence':   [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '具身智能可信评测' }],
+  '/llm-evaluation':          [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '大语言模型可信评测' }],
+  '/safety-evaluation':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '大模型安全评测' }],
+  '/agent-safety':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '智能体安全评测' }],
+  '/training-eval':           [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '训练集评测' }],
+  '/testset-generation':      [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '测试集生成' }],
+  '/leaderboard':             [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '排行榜' }],
+  '/evaluation-intro':        [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '评测介绍' }],
+  // 系统侧
+  '/products/tianjian':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧' }],
+  '/code-vulnerability-audit':[{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧', path: '/products/tianjian' }, { label: '代码漏洞审查' }],
+  '/penetration-test':        [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧', path: '/products/tianjian' }, { label: '网络渗透测试' }],
+  // 合规治理侧
+  '/products/tianche':        [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧' }],
+  '/ai-safety-edu':           [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧', path: '/products/tianche' }, { label: '人工智能安全教学平台' }],
+  '/model-filing-service':    [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧', path: '/products/tianche' }, { label: '大模型备案服务' }],
+  '/tianche-standard-service':[{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧', path: '/products/tianche' }, { label: '可信安全标准制定服务' }],
+  // 其他顶级页
+  '/help-docs':               [{ label: '首页', path: '/' }, { label: '帮助文档' }],
+  '/about':                   [{ label: '首页', path: '/' }, { label: '关于我们' }],
+  '/resource-center':         [{ label: '首页', path: '/' }, { label: '资源中心' }],
+};
+
+function PageBreadcrumb() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const path = location.pathname;
+
+  // Dynamic route: /products/:seriesId
+  let crumbs: BreadcrumbCrumb[] | undefined = BREADCRUMB_MAP[path];
+  if (!crumbs && path.startsWith('/products/')) {
+    const seriesId = path.split('/')[2];
+    const sideMap: Record<string, string> = {
+      tianyuan: '数据侧', tianheng: '模型侧', tianjian: '系统侧', tianche: '合规治理侧',
+    };
+    const side = sideMap[seriesId];
+    if (side) crumbs = [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: side }];
+  }
+  // Dynamic route: /task-detail/:id
+  if (!crumbs && path.startsWith('/task-detail/')) {
+    crumbs = [{ label: '首页', path: '/' }, { label: '资源中心', path: '/resource-center' }, { label: '任务详情' }];
+  }
+
+  if (!crumbs || crumbs.length < 2) return null;
+
+  return (
+    <div
+      data-breadcrumb
+      className="sticky z-[42]"
+      style={{
+        top: 76,
+        background: '#ffffff',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(226,232,240,0.7)',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+      }}
+    >
+      <div
+        className="max-w-[1400px] mx-auto px-6 flex items-center"
+        style={{ height: 44, gap: 10 }}
+      >
+        {crumbs.map((crumb, i) => {
+          const isFirst = i === 0;          // 首页 — only clickable item
+          const isLast  = i === crumbs!.length - 1;
+          return (
+            <React.Fragment key={i}>
+              {i > 0 && (
+                <span style={{ color: '#aaa', fontSize: 14, lineHeight: 1, userSelect: 'none', flexShrink: 0 }}>›</span>
+              )}
+
+              {/* 仅首页可点击 */}
+              {isFirst ? (
+                <button
+                  onClick={() => navigate('/')}
+                  style={{
+                    background: 'none', border: 'none', padding: 0,
+                    fontSize: 14, fontWeight: 500,
+                    color: '#2563eb',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: 3,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  {crumb.label}
+                </button>
+              ) : (
+                /* 其余层级：纯文本，不可点击 */
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: isLast ? 600 : 400,
+                    color: isLast ? '#1e293b' : '#6b7280',
+                    cursor: 'default',
+                    userSelect: 'none',
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  {crumb.label}
+                </span>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SubNav() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const path = location.pathname;
+
+  const isTianheng = TIANHENG_PATHS.includes(path);
+  const isAigc = path === '/aigc-content';
+
+  if (!isTianheng && !isAigc) return null;
+
+  const searchParams = new URLSearchParams(location.search);
+  const activeTab = searchParams.get('tab') || 'text';
+
+  const baseStyle: React.CSSProperties = {
+    top: 120, // 76px header + 44px breadcrumb
+    background: '#ffffff',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    borderBottom: '1px solid rgba(226,232,240,0.8)',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+    zIndex: 40,
+  };
+
+  return (
+    <div data-layout-subnav className="sticky" style={baseStyle}>
+      <div className="max-w-[1400px] mx-auto px-6 h-11 flex items-center gap-4">
+
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="w-5 h-5 rounded flex items-center justify-center shrink-0"
+            style={{
+              background: isTianheng
+                ? 'linear-gradient(135deg,#3b82f6,#6366f1)'
+                : 'linear-gradient(135deg,#8b5cf6,#c084fc)',
+            }}
+          >
+            {isTianheng
+              ? <BarChart2 className="w-3 h-3 text-white" />
+              : <Database className="w-3 h-3 text-white" />
+            }
+          </div>
+          <span className="text-xs text-gray-400 font-medium">玄鉴</span>
+          <span className="text-gray-200 text-xs">/</span>
+          <span
+            className="text-xs font-semibold"
+            style={{ color: isTianheng ? '#3b82f6' : '#8b5cf6' }}
+          >
+            {isTianheng ? '模型评测' : '数据智能'}
+          </span>
+        </div>
+
+        <div className="w-px h-4 bg-gray-200 shrink-0" />
+
+        {/* Navigation items */}
+        {isTianheng ? (
+          <div className="flex items-center gap-0.5 overflow-x-auto">
+            {TIANHENG_ITEMS.map((item) => {
+              const isActive = path === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className="px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                  style={{
+                    background: isActive ? '#3b82f6' : 'transparent',
+                    color: isActive ? '#fff' : '#64748b',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.08)';
+                      (e.currentTarget as HTMLElement).style.color = '#3b82f6';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      (e.currentTarget as HTMLElement).style.color = '#64748b';
+                    }
+                  }}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            {/* Modality tabs for AIGC */}
+            <div className="flex items-center gap-0.5">
+              {AIGC_MODALITIES.map((m) => {
+                const isActive = activeTab === m.tab;
+                return (
+                  <button
+                    key={m.tab}
+                    onClick={() => navigate(`/aigc-content?tab=${m.tab}`)}
+                    className="px-3 py-1 rounded-full text-xs font-medium transition-all"
+                    style={{
+                      background: isActive ? '#8b5cf6' : 'transparent',
+                      color: isActive ? '#fff' : '#64748b',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.08)';
+                        (e.currentTarget as HTMLElement).style.color = '#8b5cf6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = '#64748b';
+                      }
+                    }}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-px h-4 bg-gray-200 shrink-0" />
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />内容审核
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />鉴伪检测
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Mega Menu Item Renderers ─────────────────────────────────────
+function LeafItemRow({
+  item, onNavigate, accentColor,
+}: {
+  item: MenuLeaf;
+  onNavigate: (path: string) => void;
+  accentColor: string;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 select-none"
+      style={{
+        background: hov ? `${accentColor}0d` : 'transparent',
+        transform: hov ? 'translateX(3px)' : 'translateX(0)',
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={() => onNavigate(item.path)}
+    >
+      <div
+        className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
+        style={{
+          color: accentColor,
+          background: `${accentColor}12`,
+          border: `1px solid ${accentColor}20`,
+        }}
+      >
+        <span className="w-2 h-2 rounded-sm" style={{ background: accentColor, boxShadow: `5px 5px 0 ${accentColor}55` }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[14px] font-semibold leading-5" style={{ color: hov ? accentColor : '#1e293b' }}>{item.label}</div>
+        <div className="text-[12px] mt-1 leading-5 truncate" style={{ color: '#8492a6' }}>{item.desc}</div>
+      </div>
+      <ChevronRight className="w-4 h-4 shrink-0" style={{ color: hov ? accentColor : '#cbd5e1' }} />
+    </div>
+  );
+}
+
+function GroupItemBlock({
+  item, onNavigate, accentColor,
+}: {
+  item: MenuGroup;
+  onNavigate: (path: string) => void;
+  accentColor: string;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div>
+      {/* Group header */}
+      <div
+        className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 select-none"
+        style={{
+          background: hov && item.path ? `${accentColor}0d` : 'transparent',
+          cursor: item.path ? 'pointer' : 'default',
+        }}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        onClick={() => item.path && onNavigate(item.path)}
+      >
+        <div>
+          <div
+            className="text-[14px] font-bold flex items-center gap-2"
+            style={{ color: hov && item.path ? accentColor : '#0f172a' }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ background: accentColor }}
+            />
+            {item.label}
+            {item.path && (
+              <ArrowRight
+                className="w-3 h-3 transition-transform"
+                style={{ transform: hov ? 'translateX(2px)' : 'translateX(0)' }}
+              />
+            )}
+          </div>
+          <div className="text-[12px] mt-1 pl-3.5 leading-5" style={{ color: '#8492a6' }}>{item.desc}</div>
+        </div>
+      </div>
+
+      {/* Sub-items: 2-column grid for 5+ children, 1-col otherwise */}
+      <div
+        className={`ml-3 mt-1 mb-1 pl-3 ${item.children.length >= 5 ? 'grid grid-cols-2 gap-x-2 gap-y-0.5' : 'flex flex-col gap-0.5'}`}
+        style={{ borderLeft: `2px solid ${accentColor}30` }}
+      >
+        {item.children.map((child) => (
+          <ChildRow key={child.label} child={child} accentColor={accentColor} onNavigate={onNavigate} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChildRow({
+  child, accentColor, onNavigate,
+}: {
+  child: MenuChild;
+  accentColor: string;
+  onNavigate: (path: string) => void;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150 select-none"
+      style={{ background: hov ? `${accentColor}0d` : 'transparent' }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={() => onNavigate(child.path)}
+    >
+      <span
+        className="w-1 h-1 rounded-full shrink-0"
+        style={{ background: hov ? accentColor : '#cbd5e1' }}
+      />
+      <span className="text-[13px] leading-5" style={{ color: hov ? accentColor : '#475569' }}>{child.label}</span>
+    </div>
+  );
+}
+
+// ── Layout ───────────────────────────────────────────────────────
+export function Layout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isGuest, logout } = useUser();
+
+  const [megaOpen, setMegaOpen] = useState(false);
+  const [showExperienceGuard, setShowExperienceGuard] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const titleMap: Record<string, string> = {
+      '/': '玄鉴 AI安全与评测平台｜榕数科技',
+      '/help-docs': '帮助文档｜玄鉴 AI安全与评测平台',
+      '/resource-center': '资源中心｜玄鉴 AI安全与评测平台',
+      '/about': '关于榕数｜玄鉴 AI安全与评测平台',
+      '/online-experience': '在线体验｜玄鉴 AI安全与评测平台',
+      '/products-overview': '产品矩阵｜玄鉴 AI安全与评测平台',
+      '/privacy-data-audit': '个人敏感信息审查｜玄鉴',
+      '/model-safety-eval': '模型数据安全评测｜玄鉴',
+      '/aigc-content': 'AIGC内容审核与鉴伪｜玄鉴',
+      '/deep-model-eval': '深度模型可信测评｜玄鉴',
+      '/embodied-intelligence': '具身智能可信评测｜玄鉴',
+      '/agent-safety': '智能体安全评测｜玄鉴',
+      '/llm-evaluation': '大模型性能评测｜玄鉴',
+      '/safety-evaluation': '大模型安全评测｜玄鉴',
+      '/code-vulnerability-audit': '代码漏洞审查｜玄鉴',
+      '/penetration-test': '网络渗透测试｜玄鉴',
+      '/ai-safety-edu': '人工智能安全教学平台｜玄鉴',
+      '/model-filing-service': '大模型备案服务｜玄鉴',
+      '/tianche-standard-service': '可信安全标准制定服务｜玄鉴',
+    };
+    document.title = location.pathname.startsWith('/help-docs/')
+      ? '帮助文档｜玄鉴 AI安全与评测平台'
+      : titleMap[location.pathname] || '玄鉴 AI安全与评测平台｜榕数科技';
+  }, [location.pathname]);
+
+  const openMega = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setMegaOpen(true);
+  };
+  const scheduleMegaClose = () => {
+    closeTimer.current = setTimeout(() => setMegaOpen(false), 180);
+  };
+  const handleNavigate = (path: string) => {
+    setMegaOpen(false);
+    navigate(path);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: '#ffffff' }}>
+      <ScrollToTop />
+
+      {/* ─── Global Nav ─────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-50 relative"
+        style={{
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div className="mx-auto h-[76px] w-full max-w-[1600px] px-6 flex items-center justify-between gap-5">
+
+          {/* ── Logo ─────────────────────────────────────────────── */}
+          <Link
+            to="/"
+            className="flex items-center shrink-0"
+            onClick={() => setMegaOpen(false)}
+          >
+            <img
+              src="/rongsu-logo.png"
+              alt="榕数科技"
+              style={{ width: 174, height: 50, objectFit: 'contain', objectPosition: 'left center', display: 'block' }}
+            />
+          </Link>
+
+          {/* ── Center Nav ─────────────────────────────────────── */}
+          <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            {/* 产品 trigger */}
+            <div
+              className="relative"
+              onMouseEnter={openMega}
+              onMouseLeave={scheduleMegaClose}
+            >
+              <button
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-[15px] font-semibold transition-all duration-200"
+                style={{
+                  color: megaOpen ? '#1e40af' : '#374151',
+                  background: megaOpen ? 'rgba(37,99,235,0.07)' : 'transparent',
+                }}
+                aria-haspopup="true"
+                aria-expanded={megaOpen}
+                onFocus={openMega}
+                onClick={() => setMegaOpen(open => !open)}
+              >
+                产品
+                <ChevronDown
+                  className="w-4 h-4 transition-transform duration-300"
+                  style={{ transform: megaOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
+              </button>
+            </div>
+
+            {/* Other nav items */}
+            {SECONDARY_NAV.map((item) => {
+              const isActive = location.pathname === item.path ||
+                (item.path !== '/' && location.pathname.startsWith(item.path));
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  target={item.protected ? '_blank' : undefined}
+                  rel={item.protected ? 'noopener noreferrer' : undefined}
+                  className="px-4 py-2.5 rounded-lg text-[15px] font-medium transition-all duration-200"
+                  style={{
+                    color: isActive ? '#1e40af' : '#374151',
+                    background: isActive ? 'rgba(37,99,235,0.07)' : 'transparent',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.color = '#1e40af';
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(37,99,235,0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.color = '#374151';
+                      (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (item.protected && isGuest) {
+                      e.preventDefault();
+                      setMegaOpen(false);
+                      setShowExperienceGuard(true);
+                    }
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="lg:hidden ml-auto inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700">
+                <Menu className="h-4 w-4" />菜单
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => navigate('/products-overview')}>产品矩阵</DropdownMenuItem>
+              {SECONDARY_NAV.map(item => (
+                <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* ── Right: User Area ────────────────────────────────── */}
+          <div className="hidden sm:flex items-center gap-2.5 shrink-0" style={{ position: 'relative', zIndex: 20 }}>
+            {isGuest ? (
+              <>
+                <span
+                  className="hidden xl:inline-flex text-[13px] px-3.5 py-1.5 rounded-full border select-none font-medium"
+                  style={{ color: '#3b82f6', borderColor: 'rgba(59,130,246,0.35)', background: 'rgba(59,130,246,0.06)' }}
+                >
+                  游客模式
+                </span>
+                <Button
+                  variant="outline"
+                  className="text-[15px] h-10 px-5 font-medium"
+                  style={{ borderColor: 'rgba(0,0,0,0.2)', color: '#374151', background: 'transparent' }}
+                  onClick={() => navigate('/login')}
+                >
+                  登录
+                </Button>
+                <Button
+                  className="text-[15px] h-10 px-6 font-semibold bg-blue-600 hover:bg-blue-500 text-white"
+                  onClick={() => navigate('/register')}
+                >
+                  注册
+                </Button>
+              </>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                    <Avatar className="w-7 h-7">
+                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                        {user.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-gray-700">{user.name}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => navigate('/resource-center')}>
+                    <LayoutDashboard className="w-4 h-4 mr-2" />资源中心
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/resource-center?tab=models')}>
+                    <BookOpen className="w-4 h-4 mr-2" />我的模型
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="w-4 h-4 mr-2" />账户设置
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                    <LogOut className="w-4 h-4 mr-2" />退出登录
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Mega Menu (修改点2：light bg + 修改点3：nested structure) ── */}
+        <div
+          className="absolute left-0 right-0 top-full z-50 overflow-hidden"
+          style={{
+            maxHeight: megaOpen ? '720px' : '0px',
+            opacity: megaOpen ? 1 : 0,
+            pointerEvents: megaOpen ? 'auto' : 'none',
+            transform: megaOpen ? 'translateY(0)' : 'translateY(-12px)',
+            transition: 'max-height 420ms cubic-bezier(0.16,1,0.3,1), opacity 240ms ease, transform 360ms cubic-bezier(0.16,1,0.3,1)',
+          }}
+          onMouseEnter={openMega}
+          onMouseLeave={scheduleMegaClose}
+        >
+          {/* ── Light glass panel (修改点2) ── */}
+          <div
+            style={{
+              background: 'rgba(255,255,255,0.985)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderTop: '1px solid rgba(226,232,240,0.8)',
+              borderBottom: '1px solid rgba(226,232,240,0.6)',
+              boxShadow: '0 28px 70px rgba(15,23,42,0.14), 0 6px 18px rgba(15,23,42,0.06)',
+            }}
+          >
+            <div className="max-w-[1480px] mx-auto px-8 py-7">
+              {/* 4-column grid */}
+              <div className="grid grid-cols-4 gap-5">
+                {PRODUCT_SERIES.map((series, seriesIndex) => {
+                  const Icon = series.icon;
+                  return (
+                    <div
+                      key={series.id}
+                      className="flex flex-col min-w-0 rounded-2xl border border-slate-100 bg-slate-50/55 px-4 py-4"
+                      style={{
+                        opacity: megaOpen ? 1 : 0,
+                        transform: megaOpen ? 'translateY(0)' : 'translateY(-8px)',
+                        transition: `opacity 280ms ease ${80 + seriesIndex * 55}ms, transform 360ms cubic-bezier(0.16,1,0.3,1) ${80 + seriesIndex * 55}ms`,
+                      }}
+                    >
+                      {/* Series header */}
+                      <div
+                        className="flex items-center gap-3 mb-3 pb-4"
+                        style={{ borderBottom: `1px solid rgba(226,232,240,0.7)` }}
+                      >
+                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${series.grad} flex items-center justify-center shrink-0 shadow-sm`}>
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-[17px] text-slate-900">{series.subtitle}</span>
+                          </div>
+                          <p className="text-[12px] text-slate-400 mt-1 truncate">{series.desc}</p>
+                        </div>
+                      </div>
+
+                      {/* Items */}
+                      <div className="flex flex-col gap-0.5 flex-1">
+                        {series.items.map((item, idx) =>
+                          item.isGroup ? (
+                            <GroupItemBlock
+                              key={idx}
+                              item={item}
+                              accentColor={series.accentColor}
+                              onNavigate={handleNavigate}
+                            />
+                          ) : (
+                            <LeafItemRow
+                              key={idx}
+                              item={item}
+                              accentColor={series.accentColor}
+                              onNavigate={handleNavigate}
+                            />
+                          )
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <PageBreadcrumb />
+      <SubNav />
+      <GuestGuard
+        open={showExperienceGuard}
+        onClose={() => setShowExperienceGuard(false)}
+        action="使用在线体验"
+      />
+
+      {/* ─── Main Content ────────────────────────────────────────── */}
+      <main className={`flex-1 bg-transparent ${FORMAL_PRODUCT_PATHS.has(location.pathname) ? 'product-page-v3' : ''} ${location.pathname === '/products-overview' ? 'product-overview-v3' : ''}`}>
+        {children}
+      </main>
+
+      {/* ─── Global Footer ───────────────────────────────────────── */}
+      <GlobalFooter />
+
+      {/* ─── Floating Contact Widget (修改点5) ──────────────────── */}
+      <FloatingContact />
+    </div>
+  );
+}
