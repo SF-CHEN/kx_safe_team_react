@@ -116,7 +116,7 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-[680px] overflow-hidden p-0">
+      <DialogContent className="max-w-[680px] overflow-hidden p-0" showCloseButton={false}>
         <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-blue-600 px-7 py-5 text-white">
           <div className="flex items-start justify-between gap-4">
             <div>
