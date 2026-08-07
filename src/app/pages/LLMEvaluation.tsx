@@ -636,7 +636,7 @@ export function LLMEvaluation() {
       </section>
 
       <GuestGuard open={showGuestGuard} onClose={() => setShowGuestGuard(false)} action={guardAction} />
-      <TaskCreationModal open={showModal} onClose={() => setShowModal(false)} defaultEvalType="大模型评测" />
+      <TaskCreationModal open={showModal} onClose={() => setShowModal(false)} pageType="llm" />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,19 @@ import { Badge } from './ui/badge';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Checkbox } from './ui/checkbox';
 import {
-  ChevronRight, ChevronLeft, X, CheckCircle2,
-  Shield, Zap, Lock, Clock, FileText, Eye, Star, Globe,
-  Bot, Image as ImageIcon, AlertTriangle, Info, Crown, Sparkles
+  ChevronRight, ChevronLeft, CheckCircle2,
+  Shield, Zap, Lock, FileText, Eye, Star, Globe,
+  Bot, Image as ImageIcon,
 } from 'lucide-react';
+import { addEvaluationTask } from '@/api/evaluation';
+import { addDepthModel, fetchDepthModelDropdown } from '@/api/model';
+import { fetchPresetScenes } from '@/api/presetScene';
+import type {
+  BaseDropDepthModel,
+  EvaluationTask,
+  EvaluationTaskKind,
+  PresetSceneVo,
+} from '@/api/types';
 import { useUser, EvalTask, MyModel } from '../context/UserContext';
 import { toast } from 'sonner';
 
@@ -24,81 +33,8 @@ type PageType = 'safety' | 'llm';
 type ModelSource = 'custom_new' | 'my_models';
 type PricingPlan = 'free' | 'paid';
 
-const PRESET_SCENES_SAFETY = [
-  {
-    id: 'general',
-    name: '通用安全合规评测',
-    desc: '覆盖有害内容、虚构引用、性别偏见等通用安全维度',
-    tags: ['有害内容', '虚构引用', '隐私安全', '偏见歧视'],
-    datasets: ['通用安全数据集 (2000条)', '偏见评测集 (800条)'],
-    icon: Shield,
-    color: 'blue',
-  },
-  {
-    id: 'gov',
-    name: '政务舆情安全评测',
-    desc: '专为政府、党政机构场景设计，检测政治敏感、舆论引导等风险',
-    tags: ['政治敏感', '舆论引导', '违规信息', '涉密风险'],
-    datasets: ['政务安全数据集 (1500条)', '舆情风险集 (600条)'],
-    icon: Globe,
-    color: 'green',
-  },
-  {
-    id: 'finance',
-    name: '金融风控专项评测',
-    desc: '面向银行、保险、证券等金融场景，重点评测合规与风险',
-    tags: ['金融欺诈', '误导销售', '违规建议', '数据合规'],
-    datasets: ['金融风控数据集 (1800条)', '合规检测集 (900条)'],
-    icon: Zap,
-    color: 'orange',
-  },
-];
-
-const PRESET_SCENES_LLM = [
-  {
-    id: 'general_perf',
-    name: '通用能力测评',
-    desc: '评测模型生成、理解、推理等核心通用能力',
-    tags: ['文本生成', '信息抽取', '逻辑推理', '知识问答'],
-    datasets: ['综合能力数据集 (3000条)', '推理测试集 (1200条)'],
-    icon: Star,
-    color: 'blue',
-  },
-  {
-    id: 'code',
-    name: '代码能力专项',
-    desc: '评测模型在代码生成、补全、调试等方面的专业能力',
-    tags: ['代码生成', '代码补全', '代码调试', '算法能力'],
-    datasets: ['代码能力数据集 (2000条)', '算法题库 (800条)'],
-    icon: Zap,
-    color: 'purple',
-  },
-  {
-    id: 'domain',
-    name: '垂直领域知识',
-    desc: '针对医疗、法律、教育等垂直领域的专业知识评测',
-    tags: ['医疗知识', '法律理解', '教育辅导', '专业问答'],
-    datasets: ['垂直领域数据集 (2500条)', '专业知识集 (1000条)'],
-    icon: Globe,
-    color: 'green',
-  },
-];
-
-const SAFETY_DIMENSIONS = [
-  { id: 'harmful', name: '有害内容', desc: '检测有害、违法违规内容生成' },
-  { id: 'fiction', name: '虚构引用', desc: '评估幻觉与虚假信息生成' },
-  { id: 'privacy', name: '隐私安全', desc: '检测隐私泄露与数据安全' },
-  { id: 'bias', name: '偏见歧视', desc: '评估性别、种族等偏见' },
-  { id: 'adversarial', name: '对抗攻击', desc: '测试对抗样本鲁棒性' },
-  { id: 'logic', name: '逻辑谬误', desc: '检测逻辑错误与推理缺陷' },
-];
-
-const LLM_DIMENSIONS = [
-  { id: 'generation', name: '生成能力', subs: ['半结构化数据测试', '摘要总结测试', '文本翻译测试', '文本续写测试', '文本扩写测试', '文本改写测试'] },
-  { id: 'understanding', name: '理解能力', subs: ['语义理解', '情感分析', '文本分类', '信息抽取'] },
-  { id: 'reasoning', name: '推理能力', subs: ['数学推理', '逻辑推理', '常识推理'] },
-  { id: 'coding', name: '代码能力', subs: ['代码生成测试', '代码理解测试'] },
-];
+const SCENE_COLORS = ['blue', 'green', 'orange', 'purple'] as const;
+const SCENE_ICONS = [Shield, Star, Zap, Globe];
 
 const colorMap: Record<string, string> = {
   blue: 'bg-blue-50 border-blue-200 text-blue-700',
@@ -114,6 +50,15 @@ const iconBgMap: Record<string, string> = {
   purple: 'bg-purple-100 text-purple-600',
 };
 
+function resolveDropModel(item: BaseDropDepthModel) {
+  const data = item.data;
+  const id = data?.id ?? item.id;
+  const name = data?.name || item.name || (id != null ? `模型 #${id}` : '');
+  const type = data?.type || 'USER';
+  const baseUrl = data?.baseUrl || '';
+  return { id, name, type, baseUrl };
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -121,7 +66,7 @@ interface Props {
 }
 
 export function TaskCreationModal({ open, onClose, pageType }: Props) {
-  const { user, isLoggedIn, addTask, addModel } = useUser();
+  const { user, addTask, addModel } = useUser();
   const [step, setStep] = useState<'type' | 'config' | 'preview'>(
     pageType === 'safety' ? 'type' : 'config'
   );
@@ -132,13 +77,16 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
   const [customModelName, setCustomModelName] = useState('');
   const [customApiBase, setCustomApiBase] = useState('');
   const [customApiKey, setCustomApiKey] = useState('');
-  const [selectedScene, setSelectedScene] = useState('');
+  const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
   const [customScenario, setCustomScenario] = useState('');
   const [pricingPlan, setPricingPlan] = useState<PricingPlan>('paid');
   const [notifyEmail, setNotifyEmail] = useState(user.email || '');
   const [enableEmail, setEnableEmail] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [presetScenes, setPresetScenes] = useState<PresetSceneVo[]>([]);
+  const [dropModels, setDropModels] = useState<BaseDropDepthModel[]>([]);
 
-  const presetScenes = pageType === 'safety' ? PRESET_SCENES_SAFETY : PRESET_SCENES_LLM;
   const resetForm = () => {
     setStep(pageType === 'safety' ? 'type' : 'config');
     setTaskType('llm');
@@ -148,78 +96,219 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
     setCustomModelName('');
     setCustomApiBase('');
     setCustomApiKey('');
-    setSelectedScene('');
+    setSelectedSceneId(null);
     setCustomScenario('');
     setPricingPlan('paid');
+    setSubmitting(false);
   };
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setMetaLoading(true);
+    void (async () => {
+      try {
+        const evaluationTaskType =
+          pageType === 'llm' ? ('PERFORMANCE' as const) : ('SAFETY' as const);
+        const [scenes, models] = await Promise.all([
+          fetchPresetScenes(evaluationTaskType),
+          fetchDepthModelDropdown(),
+        ]);
+        if (cancelled) return;
+        setPresetScenes(scenes);
+        setDropModels(models);
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof Error ? err.message : '加载评测配置失败');
+        }
+      } finally {
+        if (!cancelled) setMetaLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, pageType]);
+
+  const resolvedModels = useMemo(
+    () =>
+      dropModels
+        .map(resolveDropModel)
+        .filter((m): m is { id: number; name: string; type: 'BUILT_IN' | 'USER'; baseUrl: string } =>
+          m.id != null && !!m.name,
+        ),
+    [dropModels],
+  );
+
   const handleClose = () => {
+    if (submitting) return;
     resetForm();
     onClose();
   };
 
-  const handleSubmit = () => {
+  /** OpenAPI：PERFORMANCE | SAFETY；多模态安全暂归 SAFETY，见对接纪要 */
+  const resolveApiType = (): EvaluationTaskKind =>
+    pageType === 'llm' ? 'PERFORMANCE' : 'SAFETY';
+
+  const resolveEvalType = (): EvalTask['evalType'] => {
+    if (pageType === 'llm') return '大模型评测';
+    return taskType === 'multimodal' ? '多模态大模型安全评测' : '大模型安全评测';
+  };
+
+  const buildCustomModelConfig = (opts: {
+    name: string;
+    baseUrl?: string;
+    apiKey?: string;
+  }) =>
+    JSON.stringify({
+      name: opts.name,
+      baseUrl: opts.baseUrl || '',
+      apiKey: opts.apiKey || '',
+    });
+
+  const handleSubmit = async () => {
+    if (submitting) return;
     if (!taskName.trim()) {
       toast.error('请填写任务名称');
       return;
     }
-    const modelName = modelSource === 'my_models'
-        ? user.myModels.find(m => m.id === selectedMyModel)?.name || selectedMyModel
-        : customModelName;
+
+    const selectedDrop =
+      modelSource === 'my_models'
+        ? resolvedModels.find((m) => String(m.id) === selectedMyModel)
+        : undefined;
+    const modelName =
+      modelSource === 'my_models' ? selectedDrop?.name || '' : customModelName;
 
     if (!modelName) {
       toast.error('请选择或填写测试大模型');
       return;
     }
-
-    // If adding a new custom model, save it to my models
-    if (modelSource === 'custom_new' && customModelName && customApiBase) {
-      const newModel: MyModel = {
-        id: `m_${Date.now()}`,
-        name: customModelName,
-        type: '自定义',
-        apiBase: customApiBase,
-        modelId: customModelName,
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      addModel(newModel);
+    if (modelSource === 'custom_new' && !customApiBase.trim()) {
+      toast.error('请填写 API Base URL');
+      return;
+    }
+    if (modelSource === 'my_models' && selectedDrop?.id == null) {
+      toast.error('请选择测试大模型');
+      return;
     }
 
-    const evalTypeName: EvalTask['evalType'] = pageType === 'llm'
-      ? '大模型评测'
-      : taskType === 'multimodal' ? '多模态大模型安全评测' : '大模型安全评测';
-
-    const presetSceneName = presetScenes.find(s => s.id === selectedScene)?.name || '';
+    const selectedScene = presetScenes.find((s) => s.sceneId === selectedSceneId);
     const scenarioDescription = customScenario.trim();
-    if (!presetSceneName && !scenarioDescription) {
+    if (!selectedScene && !scenarioDescription) {
       toast.error('请选择预设场景或填写测试场景描述');
       return;
     }
-    const sceneName = [
-      presetSceneName,
-      scenarioDescription ? `用户补充需求：${scenarioDescription}` : '',
-    ].filter(Boolean).join('；');
+    if (enableEmail && !notifyEmail.trim()) {
+      toast.error('请填写接收通知的邮箱');
+      return;
+    }
 
-    const newTask: EvalTask = {
-      id: `t_${Date.now()}`,
-      name: taskName,
-      model: modelName,
-      modelType: '自定义',
-      evalSet: sceneName,
-      evalType: evalTypeName,
-      status: '待受理',
-      score: null,
-      createdAt: new Date().toLocaleString('zh-CN'),
-      plan: pricingPlan,
-      requirement: scenarioDescription || presetSceneName,
-      configSummary: `测试类型：${taskType === 'multimodal' ? '多模态模型' : '文本模型'}；场景：${sceneName}`,
+    const sceneName = [
+      selectedScene?.sceneName || '',
+      scenarioDescription ? `用户补充需求：${scenarioDescription}` : '',
+    ]
+      .filter(Boolean)
+      .join('；');
+
+    const userId = Number(user.id);
+    const payload: EvaluationTask = {
+      type: resolveApiType(),
+      name: taskName.trim(),
+      needSendEmail: enableEmail,
+      ...(enableEmail ? { email: notifyEmail.trim() } : {}),
+      ...(Number.isFinite(userId) ? { userId } : {}),
+      ...(scenarioDescription ? { demandSupplement: scenarioDescription } : {}),
     };
 
-    addTask(newTask);
-    toast.success('任务已提交，等待平台受理', {
-      description: '技术团队将根据您填写的场景和模型配置开展正式评测，完成后推送报告至资源中心。',
-    });
-    handleClose();
+    if (modelSource === 'my_models' && selectedDrop) {
+      payload.useModelType =
+        selectedDrop.type === 'BUILT_IN' ? 'BUILT_IN' : 'USER_MODEL';
+      payload.modelId = selectedDrop.id;
+    } else {
+      payload.useModelType = 'CUSTOM';
+      payload.customModelConfig = buildCustomModelConfig({
+        name: customModelName,
+        baseUrl: customApiBase.trim(),
+        apiKey: customApiKey,
+      });
+    }
+
+    // 原型仅有预设场景 + 补充需求；自定义维度 UI 已去掉。有场景则写 PRESET_SCENE
+    if (selectedScene?.sceneId != null) {
+      payload.evaluationDimensionType = 'PRESET_SCENE';
+      payload.presumedSceneDimensionId = selectedScene.sceneId;
+    }
+
+    setSubmitting(true);
+    try {
+      if (modelSource === 'custom_new' && customModelName && customApiBase) {
+        try {
+          const saved = await addDepthModel({
+            name: customModelName.trim(),
+            baseUrl: customApiBase.trim(),
+            apiKey: customApiKey || undefined,
+            type: 'USER',
+            ...(Number.isFinite(userId) ? { userId } : {}),
+          });
+          if (saved.id != null) {
+            payload.useModelType = 'USER_MODEL';
+            payload.modelId = saved.id;
+            delete payload.customModelConfig;
+          }
+          const refreshed = await fetchDepthModelDropdown();
+          setDropModels(refreshed);
+        } catch {
+          // 保存到 depth-model 失败时仍用 CUSTOM 提交任务
+        }
+
+        const newModel: MyModel = {
+          id: `m_${Date.now()}`,
+          name: customModelName,
+          type: '自定义',
+          apiBase: customApiBase,
+          modelId: customModelName,
+          createdAt: new Date().toISOString().split('T')[0],
+        };
+        addModel(newModel);
+      }
+
+      const created = await addEvaluationTask(payload);
+
+      const newTask: EvalTask = {
+        id: created.id != null ? `evaluation:${created.id}` : `t_${Date.now()}`,
+        name: taskName.trim(),
+        model: modelName,
+        modelType:
+          payload.useModelType === 'BUILT_IN'
+            ? '内置'
+            : payload.useModelType === 'USER_MODEL'
+              ? '用户模型'
+              : '自定义',
+        evalSet: sceneName,
+        evalType: resolveEvalType(),
+        status: '待受理',
+        score: null,
+        createdAt:
+          created.createdAt ||
+          new Date().toLocaleString('zh-CN', { hour12: false }),
+        plan: pricingPlan,
+        requirement: scenarioDescription || selectedScene?.sceneName || sceneName,
+        configSummary: `测试类型：${taskType === 'multimodal' ? '多模态模型' : '文本模型'}；场景：${sceneName}`,
+      };
+
+      addTask(newTask);
+      toast.success('任务已提交，等待平台受理', {
+        description:
+          '技术团队将根据您填写的场景和模型配置开展正式评测，完成后推送报告至资源中心。',
+      });
+      resetForm();
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '任务提交失败');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -328,26 +417,29 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                       <Label className="text-xs text-gray-600 mb-1 block">API Key</Label>
                       <Input type="password" placeholder="请输入API Key" value={customApiKey} onChange={e => setCustomApiKey(e.target.value)} />
                     </div>
-                    <p className="text-xs text-gray-400">创建后将自动保存至"我的模型"</p>
+                    <p className="text-xs text-gray-400">创建后将尝试保存至模型库，供「我的模型」复用</p>
                   </div>
                 )}
 
                 {modelSource === 'my_models' && (
                   <div className="border rounded-lg bg-gray-50">
-                    {user.myModels.length === 0 ? (
+                    {metaLoading ? (
+                      <div className="py-8 text-center text-gray-400 text-sm">加载模型列表…</div>
+                    ) : resolvedModels.length === 0 ? (
                       <div className="py-8 text-center text-gray-400 text-sm">
                         <Bot className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                         <p>暂无模型</p>
-                        <p className="text-xs mt-1">请先通过"自定义 (新建API)"创建模型</p>
+                        <p className="text-xs mt-1">请先通过「自定义模型（API）」创建，或联系管理员配置内置模型</p>
                       </div>
                     ) : (
                       <div className="p-2 space-y-1.5">
-                        {user.myModels.map(m => (
+                        {resolvedModels.map(m => (
                           <button
                             key={m.id}
-                            onClick={() => setSelectedMyModel(m.id)}
+                            type="button"
+                            onClick={() => setSelectedMyModel(String(m.id))}
                             className={`w-full text-left p-3 rounded-lg border transition-all ${
-                              selectedMyModel === m.id
+                              selectedMyModel === String(m.id)
                                 ? 'border-blue-400 bg-blue-50'
                                 : 'border-transparent bg-white hover:border-gray-200'
                             }`}
@@ -355,9 +447,11 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                             <div className="flex items-center justify-between">
                               <div>
                                 <div className="text-sm font-medium">{m.name}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">{m.apiBase}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">{m.baseUrl || '—'}</div>
                               </div>
-                              <Badge variant="outline" className="text-xs">{m.type}</Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {m.type === 'BUILT_IN' ? '内置' : '用户'}
+                              </Badge>
                             </div>
                           </button>
                         ))}
@@ -372,44 +466,63 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                 <Label className="text-sm font-medium">
                   <span className="text-red-500">*</span> 评测场景
                 </Label>
-                <div className="grid gap-3">
-                  {presetScenes.map(scene => {
-                    const Icon = scene.icon;
-                    const isSelected = selectedScene === scene.id;
-                    return (
-                      <button
-                        key={scene.id}
-                        type="button"
-                        onClick={() => setSelectedScene(isSelected ? '' : scene.id)}
-                        className={`text-left border-2 rounded-xl p-4 transition-all ${
-                          isSelected
-                            ? `border-blue-400 ${colorMap[scene.color]}`
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgMap[scene.color]}`}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{scene.name}</span>
-                              {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                {metaLoading ? (
+                  <div className="rounded-xl border border-dashed py-10 text-center text-sm text-gray-400">
+                    加载预置场景…
+                  </div>
+                ) : presetScenes.length === 0 ? (
+                  <div className="rounded-xl border border-dashed py-10 text-center text-sm text-gray-400">
+                    暂无预置场景，请改用下方自定义维度
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {presetScenes.map((scene, index) => {
+                      if (scene.sceneId == null) return null;
+                      const color = SCENE_COLORS[index % SCENE_COLORS.length];
+                      const Icon = SCENE_ICONS[index % SCENE_ICONS.length];
+                      const isSelected = selectedSceneId === scene.sceneId;
+                      const tags = scene.dimensionNames || [];
+                      return (
+                        <button
+                          key={scene.sceneId}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSceneId(isSelected ? null : scene.sceneId!);
+                          }}
+                          className={`text-left border-2 rounded-xl p-4 transition-all ${
+                            isSelected
+                              ? `border-blue-400 ${colorMap[color]}`
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgMap[color]}`}>
+                              <Icon className="w-5 h-5" />
                             </div>
-                            <p className="text-xs text-gray-500 mt-0.5">{scene.desc}</p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {scene.tags.map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
-                                  {tag}
-                                </span>
-                              ))}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{scene.sceneName || `场景 #${scene.sceneId}`}</span>
+                                {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {tags.length ? `含 ${tags.length} 个评测维度` : '预置评测场景'}
+                              </p>
+                              {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {tags.map((tag) => (
+                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
                   <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">
@@ -468,9 +581,13 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                   </Button>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={handleClose}>取消</Button>
-                  <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSubmit}>
-                    创建评测任务
+                  <Button variant="outline" onClick={handleClose} disabled={submitting}>取消</Button>
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => void handleSubmit()}
+                    disabled={submitting}
+                  >
+                    {submitting ? '提交中…' : '创建评测任务'}
                   </Button>
                 </div>
               </div>
@@ -483,12 +600,16 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
               <p className="text-sm text-gray-500 mb-4 text-center">以下是评测完成后将生成的报告样式（示例）</p>
               <ReportPreview planType={pricingPlan} />
               <div className="flex justify-between mt-5 pt-4 border-t">
-                <Button variant="outline" onClick={() => setStep('config')}>
+                <Button variant="outline" onClick={() => setStep('config')} disabled={submitting}>
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   返回配置
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSubmit}>
-                  确认并提交
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => void handleSubmit()}
+                  disabled={submitting}
+                >
+                  {submitting ? '提交中…' : '确认并提交'}
                 </Button>
               </div>
             </div>

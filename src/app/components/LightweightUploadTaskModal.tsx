@@ -5,6 +5,7 @@ import {
   addModelDataSafetyEvaluationTask,
   addModelTrustEvaluationTask,
 } from '@/api/evaluation';
+import { uploadSysFile } from '@/api/file';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
@@ -25,7 +26,7 @@ const COPY = {
     subtitle: '上传数据工程文件，并说明本次评测希望重点关注的问题',
     uploadTitle: '上传数据或工程文件',
     uploadHint: '支持 ZIP、RAR、7Z、TAR、CSV、JSON、JSONL 等格式',
-    accept: '.zip,.rar,.7z,.tar,.gz,.csv,.json,.jsonl',
+    accept: '.zip,.rar,.7z,.tar,.gz,.csv,.json,.jsonl,.docx',
     placeholder: '例如：希望重点检查训练数据的异常样本、标注质量和数据分布是否均衡。',
     evalType: '模型数据安全评测' as const,
     model: '用户上传的数据工程',
@@ -73,14 +74,20 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
 
     const requirement = request.trim();
     const userId = Number(user.id);
-    const payload = {
-      ...(Number.isFinite(userId) ? { userId } : {}),
-      evaluationRequirement: requirement,
-      // fileId：后端暂无上传接口，不传；见 docs/api-integration/20260807-eval-tasks.md Q1
-    };
 
     setSubmitting(true);
     try {
+      const uploaded = await uploadSysFile(file);
+      if (uploaded.id == null) {
+        throw new Error('文件上传成功但未返回文件 ID');
+      }
+
+      const payload = {
+        ...(Number.isFinite(userId) ? { userId } : {}),
+        evaluationRequirement: requirement,
+        fileId: uploaded.id,
+      };
+
       const created =
         variant === 'deep-model'
           ? await addModelTrustEvaluationTask(payload)

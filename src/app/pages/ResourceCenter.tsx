@@ -1,20 +1,23 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
-  AlertTriangle, Bell, Bot, CheckCircle2, ChevronRight, Clock, Download,
-  FileArchive, FileText, LoaderCircle, Mail, MessageSquare, PackageCheck,
+  AlertTriangle, Bell, Bot, CheckCircle2, ChevronRight, Clock,
+  Download, FileArchive, FileText, LoaderCircle, MessageSquare, PackageCheck,
   Search, Settings2, ShieldCheck, Upload, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  fetchMyResourceTasks,
+  type MyResourceTask,
+} from '@/api/evaluation';
+import { fetchDepthModelDropdown } from '@/api/model';
+import type { BaseDropDepthModel } from '@/api/types';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import {
-  downloadAttachment, fileToStoredAttachment, getWorkflowTasks, updateWorkflowTask,
-  type WorkflowStatus,
-} from '../data/workflowStore';
+import { downloadAttachment } from '../data/workflowStore';
 
 const FORMAL_TYPES = new Set<EvalTask['evalType']>([
   '模型数据安全评测', '深度模型可信测评', '智能体安全评测',
@@ -50,6 +53,24 @@ function submissionLabel(task: EvalTask) {
   return task.modelType || '任务表单';
 }
 
+function toEvalTask(row: MyResourceTask): EvalTask {
+  return {
+    id: row.id,
+    name: row.name,
+    model: row.model,
+    modelType: row.modelType,
+    evalSet: row.evalSet,
+    evalType: row.evalType,
+    status: row.status as EvalTask['status'],
+    score: null,
+    createdAt: row.createdAt,
+    plan: 'paid',
+    requirement: row.requirement,
+    configSummary: row.configSummary,
+    // 附件 / 报告：后端暂无文件接口，见对接纪要
+  };
+}
+
 export function ResourceCenter() {
   const { user, isGuest, notifications, unreadCount, markNoticeRead, markAllNoticesRead } = useUser();
   const navigate = useNavigate();
@@ -60,7 +81,54 @@ export function ResourceCenter() {
   const [selectedTask, setSelectedTask] = useState<EvalTask | null>(null);
   const [modelsOpen, setModelsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
+  const [formalTasks, setFormalTasks] = useState<EvalTask[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [apiModels, setApiModels] = useState<BaseDropDepthModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
   const supplementRef = useRef<HTMLInputElement>(null);
+
+  const loadTasks = useCallback(async () => {
+    const userId = Number(user.id);
+    if (!Number.isFinite(userId) || user.role === 'guest') {
+      setFormalTasks([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const rows = await fetchMyResourceTasks(userId);
+      setFormalTasks(
+        rows.map(toEvalTask).filter((task) => FORMAL_TYPES.has(task.evalType)),
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '加载任务列表失败');
+      setFormalTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, user.role]);
+
+  const loadModels = useCallback(async () => {
+    setModelsLoading(true);
+    try {
+      const rows = await fetchDepthModelDropdown();
+      setApiModels(rows);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '加载模型配置失败');
+      setApiModels([]);
+    } finally {
+      setModelsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isGuest) return;
+    void loadTasks();
+  }, [isGuest, loadTasks]);
+
+  useEffect(() => {
+    if (!modelsOpen || isGuest) return;
+    void loadModels();
+  }, [modelsOpen, isGuest, loadModels]);
 
   useEffect(() => {
     const tab = params.get('tab');
@@ -68,7 +136,12 @@ export function ResourceCenter() {
     if (tab === 'messages') setMessagesOpen(true);
   }, [params]);
 
-  const formalTasks = useMemo(() => user.myTasks.filter(task => FORMAL_TYPES.has(task.evalType)), [user.myTasks]);
+  useEffect(() => {
+    if (!selectedTask) return;
+    const next = formalTasks.find((task) => task.id === selectedTask.id) || null;
+    setSelectedTask(next);
+  }, [formalTasks, selectedTask?.id]);
+
   const filteredTasks = useMemo(() => formalTasks.filter(task => {
     const queryMatch = !search.trim() || `${task.name}${task.id}${task.model}`.toLowerCase().includes(search.trim().toLowerCase());
     const productMatch = product === '全部产品' || productLabel(task.evalType) === product;
@@ -91,12 +164,9 @@ export function ResourceCenter() {
   const closeMessages = () => { setMessagesOpen(false); params.delete('tab'); setParams(params, { replace: true }); };
 
   const supplementMaterial = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedTask || !event.target.files?.length) return;
-    const additions = await Promise.all(Array.from(event.target.files).map(file => fileToStoredAttachment(file, 'input')));
-    const workflow = getWorkflowTasks().find(item => item.id === selectedTask.id);
-    updateWorkflowTask(selectedTask.id, { inputs: [...(workflow?.inputs || []), ...additions], status: '材料已接收' });
-    toast.success('补充材料已提交，等待管理员确认');
     event.target.value = '';
+    // 文件上传接口尚未开放；见 docs/api-integration/20260807-resource-center.md
+    toast.error('文件上传接口尚未开放，暂无法补充材料');
   };
 
   return <div className="min-h-[calc(100vh-120px)] bg-slate-50/80 py-8">
@@ -109,14 +179,14 @@ export function ResourceCenter() {
       </section>
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-5"><div><h2 className="font-black text-slate-900">正式评测任务</h2><p className="mt-1 text-xs text-slate-400">仅展示当前支持任务创建的5类正式产品</p></div><div className="flex flex-wrap gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索任务名称或编号" className="h-9 w-56 pl-9 text-sm" /></div><select value={product} onChange={event => setProduct(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{PRODUCT_OPTIONS.map(item => <option key={item}>{item}</option>)}</select><select value={status} onChange={event => setStatus(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{STATUS_OPTIONS.map(item => <option key={item}>{item}</option>)}</select></div></div>
-        {filteredTasks.length === 0 ? <div className="px-6 py-24 text-center"><FileArchive className="mx-auto h-11 w-11 text-slate-200" /><h3 className="mt-4 font-bold text-slate-600">{formalTasks.length ? '没有符合条件的任务' : '还没有正式评测任务'}</h3><p className="mt-2 text-sm text-slate-400">任务提交后将自动进入管理员受理流程，并在这里持续更新。</p><Button className="mt-5 bg-blue-600" onClick={() => { navigate('/'); window.setTimeout(() => document.getElementById('product-matrix')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120); }}>查看产品矩阵</Button></div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left"><thead className="bg-slate-50 text-xs font-semibold text-slate-400"><tr><th className="px-6 py-3">任务名称</th><th className="px-5 py-3">产品</th><th className="px-5 py-3">被测对象</th><th className="px-5 py-3">提交方式</th><th className="px-5 py-3">当前状态</th><th className="px-5 py-3">提交时间</th><th className="px-5 py-3 text-right">操作</th></tr></thead><tbody>{filteredTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['待受理']; const Icon = config.icon; return <tr key={task.id} className="border-t transition hover:bg-blue-50/30"><td className="px-6 py-4"><button onClick={() => setSelectedTask(task)} className="max-w-[240px] truncate text-sm font-bold text-slate-800 hover:text-blue-600">{task.name}</button><div className="mt-1 font-mono text-[10px] text-slate-400">{task.id}</div></td><td className="px-5 py-4 text-sm text-slate-600">{productLabel(task.evalType)}</td><td className="max-w-[180px] px-5 py-4 text-sm text-slate-600"><span className="block truncate">{task.model}</span></td><td className="px-5 py-4 text-sm text-slate-500">{submissionLabel(task)}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${config.style}`}><Icon className={`h-3.5 w-3.5 ${task.status === '处理中' ? 'animate-spin' : ''}`} />{config.label}</span></td><td className="px-5 py-4 text-xs text-slate-400">{task.createdAt}</td><td className="px-5 py-4 text-right"><Button variant="ghost" size="sm" className="text-blue-600" onClick={() => setSelectedTask(task)}>查看进度<ChevronRight className="ml-1 h-4 w-4" /></Button></td></tr>; })}</tbody></table></div>}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-5"><div><h2 className="font-black text-slate-900">正式评测任务</h2><p className="mt-1 text-xs text-slate-400">展示已对接后端的评测任务（可信 / 数据安全 / 大模型性能与安全）</p></div><div className="flex flex-wrap gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索任务名称或编号" className="h-9 w-56 pl-9 text-sm" /></div><select value={product} onChange={event => setProduct(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{PRODUCT_OPTIONS.map(item => <option key={item}>{item}</option>)}</select><select value={status} onChange={event => setStatus(event.target.value)} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{STATUS_OPTIONS.map(item => <option key={item}>{item}</option>)}</select></div></div>
+        {loading ? <div className="px-6 py-24 text-center text-sm text-slate-400">加载任务列表…</div> : filteredTasks.length === 0 ? <div className="px-6 py-24 text-center"><FileArchive className="mx-auto h-11 w-11 text-slate-200" /><h3 className="mt-4 font-bold text-slate-600">{formalTasks.length ? '没有符合条件的任务' : '还没有正式评测任务'}</h3><p className="mt-2 text-sm text-slate-400">任务提交后将自动进入管理员受理流程，并在这里持续更新。</p><Button className="mt-5 bg-blue-600" onClick={() => { navigate('/'); window.setTimeout(() => document.getElementById('product-matrix')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120); }}>查看产品矩阵</Button></div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left"><thead className="bg-slate-50 text-xs font-semibold text-slate-400"><tr><th className="px-6 py-3">任务名称</th><th className="px-5 py-3">产品</th><th className="px-5 py-3">被测对象</th><th className="px-5 py-3">提交方式</th><th className="px-5 py-3">当前状态</th><th className="px-5 py-3">提交时间</th><th className="px-5 py-3 text-right">操作</th></tr></thead><tbody>{filteredTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['待受理']; const Icon = config.icon; return <tr key={task.id} className="border-t transition hover:bg-blue-50/30"><td className="px-6 py-4"><button onClick={() => setSelectedTask(task)} className="max-w-[240px] truncate text-sm font-bold text-slate-800 hover:text-blue-600">{task.name}</button><div className="mt-1 font-mono text-[10px] text-slate-400">{task.id}</div></td><td className="px-5 py-4 text-sm text-slate-600">{productLabel(task.evalType)}</td><td className="max-w-[180px] px-5 py-4 text-sm text-slate-600"><span className="block truncate">{task.model}</span></td><td className="px-5 py-4 text-sm text-slate-500">{submissionLabel(task)}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${config.style}`}><Icon className={`h-3.5 w-3.5 ${task.status === '处理中' ? 'animate-spin' : ''}`} />{config.label}</span></td><td className="px-5 py-4 text-xs text-slate-400">{task.createdAt}</td><td className="px-5 py-4 text-right"><Button variant="ghost" size="sm" className="text-blue-600" onClick={() => setSelectedTask(task)}>查看进度<ChevronRight className="ml-1 h-4 w-4" /></Button></td></tr>; })}</tbody></table></div>}
       </section>
     </div>
 
     <Dialog open={!!selectedTask} onOpenChange={open => !open && setSelectedTask(null)}><DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto"><DialogHeader><DialogTitle>任务详情与交付</DialogTitle></DialogHeader>{selectedTask && <TaskDetail task={selectedTask} onSupplement={() => supplementRef.current?.click()} />}<input ref={supplementRef} type="file" multiple className="hidden" onChange={supplementMaterial} /></DialogContent></Dialog>
 
-    <Dialog open={modelsOpen} onOpenChange={open => !open && closeModels()}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>模型 API 配置</DialogTitle></DialogHeader><p className="text-sm text-slate-500">供智能体安全评测、大模型性能评测和大模型安全评测创建任务时复用。平台不在此展示 API Key 明文。</p>{user.myModels.length === 0 ? <div className="rounded-xl border border-dashed py-14 text-center"><Bot className="mx-auto h-9 w-9 text-slate-300" /><p className="mt-3 text-sm text-slate-500">暂无已保存的模型 API 配置</p><p className="mt-1 text-xs text-slate-400">在上述产品创建任务时选择“自定义模型”即可保存。</p></div> : <div className="space-y-3">{user.myModels.map(model => <div key={model.id} className="flex items-center gap-4 rounded-xl border p-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50"><Bot className="h-5 w-5 text-blue-600" /></div><div className="min-w-0 flex-1"><div className="font-bold text-slate-800">{model.name}</div><div className="mt-1 truncate text-xs text-slate-400">{model.apiBase} · {model.modelId}</div></div><Badge variant="outline">API配置</Badge></div>)}</div>}</DialogContent></Dialog>
+    <Dialog open={modelsOpen} onOpenChange={open => !open && closeModels()}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>模型 API 配置</DialogTitle></DialogHeader><p className="text-sm text-slate-500">来自模型库下拉（内置 / 用户）。平台不在此展示 API Key 明文。</p>{modelsLoading ? <div className="py-14 text-center text-sm text-slate-400">加载模型配置…</div> : apiModels.length === 0 ? <div className="rounded-xl border border-dashed py-14 text-center"><Bot className="mx-auto h-9 w-9 text-slate-300" /><p className="mt-3 text-sm text-slate-500">暂无已保存的模型 API 配置</p><p className="mt-1 text-xs text-slate-400">在大模型性能/安全评测创建任务时选择“自定义模型”即可保存到模型库。</p></div> : <div className="space-y-3">{apiModels.map((item, index) => { const model = item.data; const id = model?.id ?? item.id ?? index; const name = model?.name || item.name || `模型 #${id}`; const baseUrl = model?.baseUrl || '—'; const typeLabel = model?.type === 'BUILT_IN' ? '内置' : '用户'; return <div key={id} className="flex items-center gap-4 rounded-xl border p-4"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50"><Bot className="h-5 w-5 text-blue-600" /></div><div className="min-w-0 flex-1"><div className="font-bold text-slate-800">{name}</div><div className="mt-1 truncate text-xs text-slate-400">{baseUrl}</div></div><Badge variant="outline">{typeLabel}</Badge></div>; })}</div>}</DialogContent></Dialog>
 
     <Dialog open={messagesOpen} onOpenChange={open => !open && closeMessages()}><DialogContent className="max-h-[82vh] max-w-2xl overflow-y-auto"><DialogHeader><div className="flex items-center justify-between pr-8"><DialogTitle>消息通知</DialogTitle>{unreadCount > 0 && <Button variant="ghost" size="sm" onClick={markAllNoticesRead}>全部标为已读</Button>}</div></DialogHeader>{notifications.length === 0 ? <div className="py-16 text-center text-sm text-slate-400"><Bell className="mx-auto mb-3 h-9 w-9 text-slate-200" />暂无消息</div> : <div className="space-y-2">{notifications.map(notice => <button key={notice.id} onClick={() => markNoticeRead(notice.id)} className={`flex w-full gap-3 rounded-xl border p-4 text-left ${notice.read ? 'bg-white' : 'border-blue-200 bg-blue-50'}`}><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${notice.read ? 'bg-slate-200' : 'bg-red-500'}`} /><span className="flex-1"><span className="block text-sm font-bold text-slate-800">{notice.title}</span><span className="mt-1 block text-sm leading-6 text-slate-500">{notice.content}</span><span className="mt-2 block text-xs text-slate-400">{notice.createdAt}</span></span></button>)}</div>}</DialogContent></Dialog>
   </div>;
@@ -125,7 +195,7 @@ export function ResourceCenter() {
 function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () => void }) {
   const config = STATUS_UI[task.status] || STATUS_UI['待受理'];
   const Icon = config.icon;
-  return <div className="space-y-5 pt-2"><div className="rounded-xl bg-slate-50 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="font-mono text-xs text-blue-600">{task.id}</div><h3 className="mt-2 text-lg font-black text-slate-900">{task.name}</h3><p className="mt-1 text-sm text-slate-500">{productLabel(task.evalType)}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${config.style}`}><Icon className="h-3.5 w-3.5" />{config.label}</span></div></div><div className="grid gap-4 sm:grid-cols-2"><Info label="被测对象" value={task.model} /><Info label="提交方式" value={submissionLabel(task)} /><Info label="提交时间" value={task.createdAt} /><Info label="当前阶段" value={config.label} /></div><div><div className="mb-2 text-sm font-bold text-slate-800">评测诉求／测试场景</div><div className="rounded-xl border bg-white p-4 text-sm leading-6 text-slate-600">{task.requirement || task.evalSet || '按提交配置开展评测'}</div></div><div><div className="mb-2 text-sm font-bold text-slate-800">已提交材料</div>{task.attachments?.length ? <div className="space-y-2">{task.attachments.map(file => <div key={file.id} className="flex items-center gap-3 rounded-lg border px-4 py-3"><FileArchive className="h-4 w-4 text-blue-500" /><span className="min-w-0 flex-1 truncate text-sm text-slate-600">{file.name}</span><span className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span></div>)}</div> : <div className="rounded-xl border border-dashed p-4 text-sm text-slate-400">该任务使用模型 API 配置，无本地上传材料。</div>}</div>{task.status === '待补充材料' && <Button className="bg-orange-600 hover:bg-orange-700" onClick={onSupplement}><Upload className="mr-2 h-4 w-4" />补充上传材料</Button>}<div><div className="mb-2 text-sm font-bold text-slate-800">报告与结果文件</div>{task.status === '已推送' && task.reports?.length ? <div className="space-y-2">{task.reports.map(report => <button key={report.id} onClick={() => downloadAttachment(report)} className="flex w-full items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"><ShieldCheck className="h-5 w-5 text-emerald-600" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-emerald-900">{report.name}</span><span className="text-xs text-emerald-700">管理员正式交付文件</span></span><Download className="h-4 w-4 text-emerald-600" /></button>)}</div> : <div className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-400">管理员推送后，报告和结果文件将在此显示。</div>}</div>{task.status === '处理异常' && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700"><MessageSquare className="mr-2 inline h-4 w-4" />任务处理出现异常，请通过玄鉴智能助手联系技术顾问。</div>}</div>;
+  return <div className="space-y-5 pt-2"><div className="rounded-xl bg-slate-50 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="font-mono text-xs text-blue-600">{task.id}</div><h3 className="mt-2 text-lg font-black text-slate-900">{task.name}</h3><p className="mt-1 text-sm text-slate-500">{productLabel(task.evalType)}</p></div><span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${config.style}`}><Icon className="h-3.5 w-3.5" />{config.label}</span></div></div><div className="grid gap-4 sm:grid-cols-2"><Info label="被测对象" value={task.model} /><Info label="提交方式" value={submissionLabel(task)} /><Info label="提交时间" value={task.createdAt} /><Info label="当前阶段" value={config.label} /></div><div><div className="mb-2 text-sm font-bold text-slate-800">评测诉求／测试场景</div><div className="rounded-xl border bg-white p-4 text-sm leading-6 text-slate-600">{task.requirement || task.evalSet || '按提交配置开展评测'}</div></div><div><div className="mb-2 text-sm font-bold text-slate-800">已提交材料</div>{task.attachments?.length ? <div className="space-y-2">{task.attachments.map(file => <div key={file.id} className="flex items-center gap-3 rounded-lg border px-4 py-3"><FileArchive className="h-4 w-4 text-blue-500" /><span className="min-w-0 flex-1 truncate text-sm text-slate-600">{file.name}</span><span className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span></div>)}</div> : <div className="rounded-xl border border-dashed p-4 text-sm text-slate-400">该任务暂无本地上传材料记录（文件存储尚未接入）。</div>}</div>{task.status === '待补充材料' && <Button className="bg-orange-600 hover:bg-orange-700" onClick={onSupplement}><Upload className="mr-2 h-4 w-4" />补充上传材料</Button>}<div><div className="mb-2 text-sm font-bold text-slate-800">报告与结果文件</div>{task.status === '已推送' && task.reports?.length ? <div className="space-y-2">{task.reports.map(report => <button key={report.id} onClick={() => downloadAttachment(report)} className="flex w-full items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left"><ShieldCheck className="h-5 w-5 text-emerald-600" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-bold text-emerald-900">{report.name}</span><span className="text-xs text-emerald-700">管理员正式交付文件</span></span><Download className="h-4 w-4 text-emerald-600" /></button>)}</div> : <div className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-400">管理员推送后，报告和结果文件将在此显示（文件下载接口尚未接入）。</div>}</div>{task.status === '处理异常' && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700"><MessageSquare className="mr-2 inline h-4 w-4" />任务处理出现异常，请通过玄鉴智能助手联系技术顾问。</div>}</div>;
 }
 
 function Info({ label, value }: { label: string; value: string }) {

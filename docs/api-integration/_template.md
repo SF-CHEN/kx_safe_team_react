@@ -17,6 +17,16 @@
 | --- | --- | --- | --- |
 | 例：用户分页 | `POST /temp/sys-user/page` | `fetchAuthUsers` | `entity.role=USER` |
 
+## 关联接口清单（有表单选项 / 外键时必填）
+
+| 依赖能力 | 接口 | 状态 | 说明 |
+| --- | --- | --- | --- |
+| 例：预置场景 | `GET /temp/sys-dict/presetScene` | 已接 / 无接口 / 待确认 | 对应 DTO 字段 `presumedSceneDimensionId` |
+| 例：维度下拉 | `GET /temp/sys-dict/dimensionDropdown` | | |
+| 例：模型下拉 | `GET /temp/depth-model/dropdown` | | |
+
+> 主实体 CRUD 之外，凡 OpenAPI 已有、用于填表单选项的接口，同轮应闭环；详见 api-integration Skill「关联接口闭环」。
+
 ## 字段映射
 
 | UI 列 / 能力 | 接口字段 | 状态 | 说明 |

@@ -1,25 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
-  Activity, Bell, ChevronRight, ClipboardList, History, LogOut,
+  Activity, Bell, ChevronRight, ClipboardList, History, Layers, LogOut,
   Shield, User, Users, X,
 } from 'lucide-react';
 import {
   AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,
 } from '../components/AdminWorkflowWorkbench';
+import { AdminFieldDictPanel } from '../components/AdminFieldDictPanel';
 import { useUser } from '../context/UserContext';
-import {
-  ADMIN_EVAL_TASKS_EVENT,
-  fetchAdminEvaluationTasks,
-  type AdminEvalTaskRow,
-} from '@/api/evaluation';
+import type { AdminEvalTaskRow } from '@/api/evaluation';
 import {
   WORKFLOW_EVENT, getAdminOperationLogs,
 } from '../data/workflowStore';
 
-type AdminSection = 'users' | 'tasks' | 'logs';
+type AdminSection = 'users' | 'fields' | 'tasks' | 'logs';
 
-const ADMIN_SECTIONS: AdminSection[] = ['users', 'tasks', 'logs'];
+const ADMIN_SECTIONS: AdminSection[] = ['users', 'fields', 'tasks', 'logs'];
 
 function parseAdminSection(value?: string): AdminSection {
   if (value && ADMIN_SECTIONS.includes(value as AdminSection)) {
@@ -28,21 +25,9 @@ function parseAdminSection(value?: string): AdminSection {
   return 'users';
 }
 
-function useAdminMetrics() {
-  const [tasks, setTasks] = useState<AdminEvalTaskRow[]>([]);
+/** 仅同步本地操作日志数；待办徽标/铃铛不再拉评测任务接口 */
+function useAdminLogCount() {
   const [logs, setLogs] = useState(() => getAdminOperationLogs().length);
-
-  const reloadTasks = useCallback(() => {
-    void fetchAdminEvaluationTasks()
-      .then(setTasks)
-      .catch(() => setTasks([]));
-  }, []);
-
-  useEffect(() => {
-    reloadTasks();
-    window.addEventListener(ADMIN_EVAL_TASKS_EVENT, reloadTasks);
-    return () => window.removeEventListener(ADMIN_EVAL_TASKS_EVENT, reloadTasks);
-  }, [reloadTasks]);
 
   useEffect(() => {
     const refresh = () => setLogs(getAdminOperationLogs().length);
@@ -54,7 +39,7 @@ function useAdminMetrics() {
     };
   }, []);
 
-  return { tasks, logs };
+  return logs;
 }
 
 function AdminLogin() {
@@ -156,6 +141,7 @@ function Sidebar({
 }) {
   const items = [
     { key: 'users' as const, label: '用户管理', icon: Users, badge: users },
+    { key: 'fields' as const, label: '字段管理', icon: Layers, badge: 0 },
     { key: 'tasks' as const, label: '任务运维', icon: Activity, badge: pendingTasks },
     { key: 'logs' as const, label: '操作日志', icon: History, badge: logs },
   ];
@@ -273,11 +259,9 @@ export function AdminDashboard() {
   const section = parseAdminSection(sectionParam);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [userCount, setUserCount] = useState(0);
-  const metrics = useAdminMetrics();
-  const pendingTasks = useMemo(
-    () => metrics.tasks.filter((task) => task.status !== '已推送').length,
-    [metrics.tasks],
-  );
+  const logCount = useAdminLogCount();
+  const pendingTasks = 0;
+  const noticeTasks: AdminEvalTaskRow[] = [];
 
   const setSection = (next: AdminSection) => {
     navigate(`/admin/${next}`, { replace: false });
@@ -306,6 +290,7 @@ export function AdminDashboard() {
 
   const titles = {
     users: ['用户管理', '查看注册用户、联系方式、登录时间、任务数量与账号状态'],
+    fields: ['字段管理', '维护评测维度与预设场景，供前台创建任务时选用'],
     tasks: ['任务运维', '受理用户任务、下载材料、上传结果并推送至资源中心'],
     logs: ['操作日志', '追踪管理员对任务和账号执行的关键操作'],
   } as const;
@@ -318,7 +303,7 @@ export function AdminDashboard() {
         onChange={setSection}
         users={userCount}
         pendingTasks={pendingTasks}
-        logs={metrics.logs}
+        logs={logCount}
       />
       <main className="ml-[240px] min-h-screen">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8">
@@ -343,7 +328,7 @@ export function AdminDashboard() {
               </button>
               {noticeOpen && (
                 <AdminNoticePanel
-                  tasks={metrics.tasks}
+                  tasks={noticeTasks}
                   onClose={() => setNoticeOpen(false)}
                   onOpenTasks={() => {
                     setNoticeOpen(false);
@@ -370,6 +355,7 @@ export function AdminDashboard() {
             <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
           </div>
           {section === 'users' && <RegisteredUserPanel onTotalChange={setUserCount} />}
+          {section === 'fields' && <AdminFieldDictPanel />}
           {section === 'tasks' && <AdminWorkflowWorkbench />}
           {section === 'logs' && <AdminOperationLogPanel />}
         </div>

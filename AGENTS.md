@@ -19,7 +19,7 @@
 
 | 用户意图 | 必读 Skill | 要点 |
 | --- | --- | --- |
-| 对接接口 / 联调 / 换 mock | `.agents/skills/api-integration/SKILL.md` | **只改数据层，不改样式布局**；疑问写入 `docs/api-integration/` |
+| 对接接口 / 联调 / 换 mock | `.agents/skills/api-integration/SKILL.md` | **只改数据层，不改样式**；**主接口 + 关联下拉/字典同轮闭环**；疑问写入 `docs/api-integration/` |
 | 同步原型 / 对齐 newUI / 设计落地 | `.agents/skills/newui-prototype-sync/SKILL.md` | 先 diff 再改；保留 Hash、API、ScrollToTop、cursor、dialog 关闭钮 |
 | 写/改 React 性能相关代码 | `.agents/skills/vercel-react-best-practices/SKILL.md` | 按规则选适用条目，勿整包照搬 Next 专属项 |
 

@@ -61,3 +61,140 @@ export interface ModelDataSafetyEvaluationTask {
   createdAt?: string;
   updatedAt?: string;
 }
+
+/** 大模型性能 / 安全等通用评测任务（evaluation-task） */
+export type EvaluationUseModelType = 'BUILT_IN' | 'CUSTOM' | 'USER_MODEL';
+export type EvaluationDimensionType = 'PRESET_SCENE' | 'CUSTOM';
+export type EvaluationTaskStatus =
+  | 'PENDING'
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'SUCCESS'
+  | 'FAILED';
+
+/** 评测任务类型；亦用于预制场景 / 维度筛选 */
+export type EvaluationTaskKind = 'PERFORMANCE' | 'SAFETY';
+
+export interface EvaluationTask {
+  id?: number;
+  /** 评测任务类型：性能 / 安全 */
+  type?: EvaluationTaskKind;
+  name?: string;
+  useModelType?: EvaluationUseModelType;
+  modelId?: number;
+  /** JSON 字符串：模型名称、baseUrl、apiKey */
+  customModelConfig?: string;
+  sampleSize?: number;
+  evaluationDimensionType?: EvaluationDimensionType;
+  /** 预制场景 id（PresetScene.id / PresetSceneVo.sceneId） */
+  presumedSceneDimensionId?: number;
+  /** 自定义维度 id 集合，逗号分隔，如 `1,2,3` */
+  customDimensionIds?: string;
+  needSendEmail?: boolean;
+  email?: string;
+  status?: EvaluationTaskStatus | string;
+  hasSendEmail?: boolean;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  userId?: number;
+  /** 需求补充（创建页「补充测试需求」） */
+  demandSupplement?: string;
+}
+
+/** @deprecated 维度/场景已迁至 PresetScene / EvaluationDimension */
+export type SysDictType = 'DIMENSION' | 'PRESET_SCENE';
+
+/** @deprecated 请改用 PresetScene / EvaluationDimension */
+export interface SysDict {
+  id?: number;
+  name?: string;
+  value?: string;
+  type?: SysDictType;
+  pid?: number;
+  remark?: string;
+  icon?: string;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 预制场景表（原 sys_dict PRESET_SCENE） */
+export interface PresetScene {
+  id?: number;
+  name?: string;
+  /** 维度 id 集合，逗号分隔，如 `1,2,3` */
+  dimensionIds?: string;
+  sortOrder?: number;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  evaluationTaskType?: EvaluationTaskKind;
+}
+
+/** 评测维度表（原 sys_dict DIMENSION，树形） */
+export interface EvaluationDimension {
+  id?: number;
+  name?: string;
+  /** 父维度 id，0 表示顶级 */
+  parentId?: number;
+  sortOrder?: number;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  evaluationTaskType?: EvaluationTaskKind;
+}
+
+export interface PresetSceneVo {
+  sceneId?: number;
+  sceneName?: string;
+  dimensionNames?: string[];
+}
+
+/** @deprecated 请改用 TreeDropEvaluationDimension */
+export interface TreeDropSysDict {
+  id?: number;
+  name?: string;
+  data?: SysDict;
+  childs?: TreeDropSysDict[];
+}
+
+export interface TreeDropEvaluationDimension {
+  id?: number;
+  name?: string;
+  data?: EvaluationDimension;
+  childs?: TreeDropEvaluationDimension[];
+}
+
+export type DepthModelType = 'BUILT_IN' | 'USER';
+
+export interface DepthModel {
+  id?: number;
+  name?: string;
+  baseUrl?: string;
+  apiKey?: string;
+  type?: DepthModelType;
+  userId?: number;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BaseDropDepthModel {
+  id?: number;
+  name?: string;
+  data?: DepthModel;
+}
+
+/** 公网用户上传文件（sys-file） */
+export interface SysFile {
+  id?: number;
+  storagePath?: string;
+  originalName?: string;
+  size?: number;
+  contentType?: string;
+  userId?: number;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}

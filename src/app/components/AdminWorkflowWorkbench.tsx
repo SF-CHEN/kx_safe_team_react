@@ -8,9 +8,9 @@ import { fetchAuthUsers, updateAuthUserStatus, type AuthUser } from '@/api/auth'
 import {
   fetchAdminEvaluationTasks,
   updateAdminEvaluationTaskStatus,
-  notifyAdminEvaluationTasksChanged,
   type AdminEvalTaskRow,
 } from '@/api/evaluation';
+import { downloadSysFile } from '@/api/file';
 import { DataPagination } from './DataPagination';
 import {
   WORKFLOW_EVENT, addAdminOperationLog,
@@ -233,7 +233,6 @@ export function AdminWorkflowWorkbench() {
     try {
       const rows = await fetchAdminEvaluationTasks();
       setTasks(rows);
-      notifyAdminEvaluationTasksChanged();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '加载评测任务失败');
       setTasks([]);
@@ -267,7 +266,8 @@ export function AdminWorkflowWorkbench() {
   };
 
   const uploadOutputs = () => {
-    toast.error('文件上传接口尚未开放，请待后端就绪后再上传报告');
+    // 任务 DTO 仅有单一 fileId，报告上传会覆盖用户材料；见对接纪要
+    toast.error('报告文件暂无独立字段，无法上传（避免覆盖用户材料）');
   };
 
   const saveNote = () => {
@@ -278,8 +278,19 @@ export function AdminWorkflowWorkbench() {
     toast.error('报告推送接口尚未开放');
   };
 
-  const download = () => {
-    toast.error('文件存储尚未接入，无法下载材料');
+  const download = async (fileId: number, displayName?: string) => {
+    try {
+      const name = await downloadSysFile(fileId, displayName);
+      addAdminOperationLog({
+        operator: 'admin',
+        taskId: current?.id,
+        action: '下载用户材料',
+        detail: name,
+      });
+      toast.success('材料已开始下载');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '下载材料失败');
+    }
   };
 
   if (loading) {
@@ -381,7 +392,7 @@ export function AdminWorkflowWorkbench() {
                   <button
                     key={file.id}
                     type="button"
-                    onClick={download}
+                    onClick={() => void download(Number(file.id), file.name)}
                     className="flex items-center gap-3 rounded-xl border p-3 text-left hover:border-blue-300 hover:bg-blue-50"
                   >
                     <FileArchive className="h-5 w-5 text-blue-500" />
@@ -394,7 +405,7 @@ export function AdminWorkflowWorkbench() {
                 ))
               ) : (
                 <div className="col-span-2 rounded-xl border border-dashed p-5 text-center text-sm text-slate-400">
-                  文件上传尚未接入，暂无材料可下载
+                  暂无关联材料可下载
                 </div>
               )}
             </div>
@@ -449,7 +460,7 @@ export function AdminWorkflowWorkbench() {
             </div>
             <p className="mt-3 flex items-center justify-end gap-1 text-xs text-slate-400">
               <Bell className="h-3.5 w-3.5" />
-              推送与文件能力待后端接口接入
+              报告推送与独立报告上传待后端补充接口
             </p>
           </div>
         </section>

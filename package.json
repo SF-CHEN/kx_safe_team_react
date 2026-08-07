@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "api:docs": "node script/doc.cjs --pull"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.3",
