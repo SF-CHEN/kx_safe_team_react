@@ -9,13 +9,39 @@ export interface KnowledgeResource {
   desc: string;
   date: string;
   color: string;
+  fileUrl?: string;
+  downloadName?: string;
 }
 
 export const KNOWLEDGE_RESOURCES: Record<KnowledgeCategory, KnowledgeResource[]> = {
   白皮书: [
-    { id: 'model-security-2025', title: '《AI大模型安全评测白皮书 2025》', desc: '系统梳理大模型安全风险分类与全维度评测方法体系', date: '2025年3月', color: '#2563eb' },
-    { id: 'application-security', title: '《AI应用安全风险防控白皮书》', desc: 'AI系统安全测试与漏洞防护最佳实践，全链路安全指引', date: '2024年12月', color: '#7c3aed' },
-    { id: 'model-compliance', title: '《大模型合规治理白皮书》', desc: '国内外AI法规解读与企业合规路径规划指南', date: '2024年9月', color: '#059669' },
+    {
+      id: 'ai-security-risk-assessment',
+      title: '《人工智能安全风险测评》',
+      desc: '聚焦人工智能系统安全风险识别、分析与测评方法',
+      date: '公开资料',
+      color: '#2563eb',
+      fileUrl: '/whitepapers/ai-security-risk-assessment.pdf',
+      downloadName: '人工智能安全风险测评.pdf',
+    },
+    {
+      id: 'ai-security-governance',
+      title: '《人工智能安全治理白皮书》',
+      desc: '梳理人工智能安全治理框架、关键议题与实践路径',
+      date: '公开资料',
+      color: '#7c3aed',
+      fileUrl: '/whitepapers/ai-security-governance-whitepaper.pdf',
+      downloadName: '人工智能安全治理白皮书.pdf',
+    },
+    {
+      id: 'generative-ai-training-data-security',
+      title: '《网络安全技术 生成式人工智能预训练和优化训练数据安全规范》',
+      desc: '明确生成式人工智能预训练与优化训练数据的安全要求',
+      date: '公开资料',
+      color: '#059669',
+      fileUrl: '/whitepapers/generative-ai-training-data-security-specification.pdf',
+      downloadName: '网络安全技术 生成式人工智能预训练和优化训练数据安全规范.pdf',
+    },
   ],
   实践指南: [
     { id: 'filing-practice', title: '《大模型备案合规实践手册》', desc: '备案全流程详解及材料准备指引，助力企业合规落地', date: '2025年1月', color: '#059669' },

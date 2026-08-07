@@ -7,6 +7,7 @@ import {
   BadgeCheck, FileSearch, Copy, Trash2, AlertTriangle,
   Clock3, Pause, RotateCcw, Download, ListChecks, ChevronRight,
   CircleHelp, Check, X, Eye, EyeOff, Gauge, FileAudio,
+  FileText, Shuffle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
@@ -167,15 +168,24 @@ function UploadTile({
 }
 
 function PrivacyExperience({ requireLogin }: { requireLogin: RunGuard }) {
-  const [value, setValue] = useState('客户张明，身份证号110101199001011234，联系电话13800138000，请安排后续回访。');
+  const privacySamples = [
+    { name: '客服沟通记录', file: 'customer_service.txt', text: '客户张明，身份证号110101199001011234，联系电话13800138000，请安排后续回访。' },
+    { name: '合同文档', file: 'service_contract.txt', text: '请将合同发送至李女士邮箱 lina@example.com，银行卡号6222020202020202020。' },
+    { name: '员工信息表', file: 'employee_profile.txt', text: '新员工王伟的住址为杭州市滨江区示例路88号，紧急联系人电话13900139000。' },
+    { name: '金融业务记录', file: 'finance_record.txt', text: '借款人赵敏，护照号E12345678，开户地址为杭州市西湖区文三路99号。' },
+  ];
+  const [selectedSample, setSelectedSample] = useState(0);
+  const [value, setValue] = useState(privacySamples[0].text);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [masked, setMasked] = useState(false);
-  const samples = [
-    '客户张明，身份证号110101199001011234，联系电话13800138000，请安排后续回访。',
-    '请将合同发送至李女士邮箱 lina@example.com，银行卡号6222020202020202020。',
-    '新员工王伟的住址为杭州市滨江区示例路88号，紧急联系人电话13900139000。',
-  ];
+  const chooseSample = (index: number) => {
+    setSelectedSample(index); setValue(privacySamples[index].text); setDone(false); setMasked(false);
+  };
+  const randomSample = () => {
+    const next = (selectedSample + 1 + Math.floor(Math.random() * (privacySamples.length - 1))) % privacySamples.length;
+    chooseSample(next);
+  };
   const run = () => {
     if (!requireLogin()) return;
     if (!value.trim()) return;
@@ -195,15 +205,18 @@ function PrivacyExperience({ requireLogin }: { requireLogin: RunGuard }) {
         <div className="border-b border-slate-200 p-6 lg:border-b-0 lg:border-r lg:p-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
-              {samples.map((sample, index) => (
+              {privacySamples.slice(0, 3).map((sample, index) => (
                 <button
-                  key={index}
-                  onClick={() => { setValue(sample); setDone(false); setMasked(false); }}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 hover:border-blue-300 hover:text-blue-600"
+                  key={sample.name}
+                  onClick={() => chooseSample(index)}
+                  className={`inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 text-xs hover:border-blue-300 hover:text-blue-600 ${selectedSample === index ? 'border-blue-300 text-blue-600 shadow-sm' : 'border-slate-200 text-slate-600'}`}
                 >
-                  示例 {index + 1}
+                  <FileText className="h-3.5 w-3.5" />{sample.name}示例
                 </button>
               ))}
+              <button onClick={randomSample} className="inline-flex items-center gap-2 rounded-lg border border-dashed border-violet-300 bg-violet-50 px-3 py-2 text-xs text-violet-700 hover:bg-violet-100">
+                <Shuffle className="h-3.5 w-3.5" />随机生成一条场景文本
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => { setValue(''); setDone(false); }} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-500 hover:text-slate-900">
@@ -216,7 +229,7 @@ function PrivacyExperience({ requireLogin }: { requireLogin: RunGuard }) {
           </div>
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 bg-[#fafbfc] px-4 py-3">
-              <span className="text-xs text-slate-500">business_message.txt</span>
+              <span className="inline-flex items-center gap-2 text-xs text-slate-500"><FileText className="h-3.5 w-3.5" />{privacySamples[selectedSample]?.file || 'custom_input.txt'}</span>
               <span className="text-[11px] text-slate-400">{value.length}/1200</span>
             </div>
             {done && masked ? (
@@ -230,7 +243,7 @@ function PrivacyExperience({ requireLogin }: { requireLogin: RunGuard }) {
             ) : (
               <textarea
                 value={value}
-                onChange={e => { setValue(e.target.value); setDone(false); }}
+                onChange={e => { setValue(e.target.value); setSelectedSample(-1); setDone(false); }}
                 className="h-[360px] w-full resize-none bg-white p-6 text-[15px] leading-8 text-slate-700 outline-none"
                 placeholder="请输入需要审查的业务文本…"
                 maxLength={1200}
@@ -322,9 +335,9 @@ function AigcExperience({
       ];
   const mediaSamples = {
     image: [
-      { name: '新闻现场截图', meta: 'JPG · 1.8 MB', src: '/scenario-content-safety.webp' },
-      { name: 'AI生成城市海报', meta: 'PNG · 2.4 MB', src: '/scenario-app-security.webp' },
-      { name: '商品宣传素材', meta: 'PNG · 1.2 MB', src: '/scenario-enterprise-rag.webp' },
+      { name: '新闻现场截图', meta: 'WebP', src: '/scenario-content-safety.webp' },
+      { name: 'AI生成城市海报', meta: 'WebP', src: '/scenario-app-security.webp' },
+      { name: '商品宣传素材', meta: 'WebP', src: '/scenario-enterprise-rag.webp' },
     ],
     audio: [
       { name: '客服通话片段', meta: '00:18 · 普通话', tone: 'from-blue-600 to-cyan-400' },
@@ -484,7 +497,7 @@ function AigcExperience({
                       selectedSample === index ? 'border-blue-500' : 'border-transparent hover:border-blue-200'
                     }`}
                   >
-                    <img src={sample.src} alt={sample.name} className="h-full w-full object-cover" />
+                    <img src={sample.src} alt={sample.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                     <span className={`absolute left-0 top-0 px-2 py-1 text-[10px] font-bold text-white ${
                       index === mediaSamples.image.length - 1 ? 'bg-emerald-500' : 'bg-red-500'
                     }`}>
@@ -499,6 +512,7 @@ function AigcExperience({
                     src={uploadedImage || mediaSamples.image[selectedSample]?.src}
                     alt="待检测图片预览"
                     className="max-h-[420px] max-w-full object-contain"
+                    decoding="async"
                   />
                 ) : (
                   <div className="text-center text-slate-400">
@@ -556,7 +570,7 @@ function AigcExperience({
                 {mediaSamples.video.map((sample, index) => (
                   <button key={sample.name} onClick={() => { setSelectedSample(index); setUploadedMedia(null); setUploadedFile(null); resetDetection(); }}
                     className={`group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-2 bg-slate-100 transition ${selectedSample === index ? 'border-blue-500' : 'border-transparent hover:border-blue-200'}`}>
-                    <img src={sample.src} alt={sample.name} className="h-full w-full object-cover" />
+                    <img src={sample.src} alt={sample.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                     <span className={`absolute left-0 top-0 px-2 py-1 text-[10px] font-bold text-white ${index === 0 ? 'bg-emerald-500' : 'bg-red-500'}`}>{index === 0 ? '正样本' : '负样本'}</span>
                     <span className="absolute inset-0 flex items-center justify-center bg-slate-950/20"><Play className="h-6 w-6 fill-white text-white" /></span>
                   </button>

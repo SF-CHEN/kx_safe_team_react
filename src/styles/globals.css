@@ -26,6 +26,32 @@ body {
 
 ::selection { color: #fff; background: var(--rs-brand); }
 
+/* 可点击控件统一手型光标（原生 button 默认多为 default，易漏加 cursor-pointer） */
+button:not(:disabled):not([aria-disabled='true']),
+input[type='button']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled),
+a[href],
+summary,
+select:not(:disabled),
+label[for],
+[role='button']:not([aria-disabled='true']),
+[role='tab']:not([aria-disabled='true']),
+[role='menuitem'],
+[role='option'],
+[role='link'],
+[data-clickable] {
+  cursor: pointer;
+}
+
+button:disabled,
+button[disabled],
+input:disabled,
+select:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
 .rs-page {
   min-height: 100vh;
   color: var(--rs-ink);
@@ -104,6 +130,24 @@ body {
     radial-gradient(circle at 78% 38%, rgba(41,147,224,.19), transparent 26rem),
     linear-gradient(120deg,#f8fbff 0%,#eaf5ff 50%,#dceefb 100%) !important;
   border-bottom: 1px solid rgba(126,164,201,.25) !important;
+}
+
+/* Product hero height baseline: aligned with the model-data evaluation page. */
+.product-page-v3 .product-detail-hero--reference-height {
+  box-sizing: border-box;
+  height: 560px !important;
+  min-height: 560px !important;
+  padding-top: 52px !important;
+  padding-bottom: 48px !important;
+}
+
+/* Pages with an additional 45px product switcher keep the same 560px total. */
+.product-page-v3 .product-detail-hero--reference-height-context {
+  box-sizing: border-box;
+  height: 515px !important;
+  min-height: 515px !important;
+  padding-top: 38px !important;
+  padding-bottom: 36px !important;
 }
 
 .product-page-v3 .product-detail-hero::after {
@@ -215,6 +259,13 @@ body {
   .product-page-v3 .product-detail-hero {
     min-height: 500px !important;
     padding-inline: 20px !important;
+  }
+  .product-page-v3 .product-detail-hero--reference-height,
+  .product-page-v3 .product-detail-hero--reference-height-context {
+    height: auto !important;
+    min-height: 500px !important;
+    padding-top: 64px !important;
+    padding-bottom: 56px !important;
   }
   .product-page-v3 section[id] [class*="max-w-7xl"],
   .product-page-v3 section[id] [class*="max-w-6xl"],
@@ -375,6 +426,89 @@ body {
 .rongsu-hero__copy {
   width: min(560px, 47%);
   padding-bottom: 24px;
+}
+
+.rongsu-hero__overview {
+  width: min(600px, 49%);
+  margin-left: auto;
+  padding-bottom: 26px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rongsu-hero__overview-card {
+  min-height: 166px;
+  padding: 21px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 13px;
+  align-items: start;
+  border: 1px solid rgba(120,158,202,.28);
+  border-radius: 18px;
+  background: rgba(255,255,255,.56);
+  box-shadow: 0 14px 34px rgba(45,91,146,.09), inset 0 1px 0 rgba(255,255,255,.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.rongsu-hero__overview-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(71,128,199,.38);
+  box-shadow: 0 20px 42px rgba(45,91,146,.15), inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.rongsu-hero__overview-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+}
+
+.rongsu-hero__overview-icon > svg {
+  width: 22px;
+  height: 22px;
+}
+
+.rongsu-hero__overview-heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rongsu-hero__overview-heading > strong {
+  color: #18243a;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.rongsu-hero__overview-heading > span {
+  color: #708197;
+  font-size: 12px;
+}
+
+.rongsu-hero__overview-heading b {
+  margin-right: 3px;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.rongsu-hero__overview-card > small {
+  grid-column: 1 / -1;
+  align-self: end;
+  width: fit-content;
+  margin-top: 14px;
+  padding: 5px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .02em;
 }
 
 .rongsu-hero__platform-mark {
@@ -761,9 +895,16 @@ body {
   .rongsu-hero__controls,
   .rongsu-hero__quick-inner { width: min(100% - 48px, 960px); }
   .rongsu-hero__copy { width: 52%; }
+  .rongsu-hero__overview { width: 44%; gap: 10px; }
+  .rongsu-hero__overview-card { min-height: 138px; padding: 14px; }
   .rongsu-hero__quick-inner { grid-template-columns: repeat(3, minmax(0, 1fr)) 132px; }
   .rongsu-hero__quick-item { padding-inline: 16px; }
   .rongsu-hero__quick-bottom { gap: 8px; }
+}
+
+@media (max-width: 900px) {
+  .rongsu-hero__overview { display: none; }
+  .rongsu-hero__copy { width: min(600px, 68%); }
 }
 
 @media (max-width: 760px) {

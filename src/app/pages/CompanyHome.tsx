@@ -7,7 +7,6 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { PlatformFlow } from '../components/PlatformFlow';
 import { ScenarioSection } from '../components/ScenarioSection';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import { openHashRoute } from '@/utils/hashRoute';
 import ucImg1 from '../../imports/f97a42dec0b65b71dadfc87effb1d485.webp';
 import ucImg2 from '../../imports/0b33c101480034cdd24865f0eac08e24.webp';
 import ucImg3 from '../../imports/image-9.png';
@@ -15,6 +14,7 @@ import {
   HOME_KNOWLEDGE_TABS,
   KNOWLEDGE_RESOURCES,
 } from '../data/knowledgeResources';
+import { openHashRoute } from '@/utils/hashRoute';
 import {
   Shield, ArrowRight, ChevronRight,
   Globe, FileText, Database,
@@ -26,35 +26,41 @@ import {
 /* ─── Partner Data ─────────────────────────────────────────── */
 interface Partner {
   abbr: string; fullName: string; enName: string;
-  color: string; fontClass: string; isRect?: boolean;
+  color: string; fontClass: string; isRect?: boolean; logo?: string;
 }
 const PARTNERS_ROW1: Partner[] = [
-  { abbr: '服制院', fullName: '服务型制造研究院',             enName: 'SERVICE MFG. RESEARCH INST.',  color: '#1B6B3A', fontClass: 'font-art-mashan' },
-  { abbr: '儿院',   fullName: '浙大附属儿童医院',            enName: 'ZDUMC CHILDREN\'S HOSPITAL',   color: '#1565C0', fontClass: 'font-art-zhimang' },
-  { abbr: '启真',   fullName: '浙大启真未来城市科技',         enName: 'ZJU QIZHEN CITY TECH',        color: '#003087', fontClass: 'font-art-xiaowei' },
-  { abbr: 'CAICT', fullName: '中国信息通信研究院',            enName: 'CAICT',                       color: '#0068B7', fontClass: 'font-art-xiaowei', isRect: true },
-  { abbr: '浙工大', fullName: '浙江工业大学',                enName: 'ZJUT',                        color: '#1B3C6E', fontClass: 'font-art-zhimang' },
-  { abbr: '工信院', fullName: '浙江省工业和信息化研究院',     enName: 'ZJIIRI',                      color: '#145DA0', fontClass: 'font-art-huangyou', isRect: true },
-  { abbr: '老年院', fullName: '杭州市老年病医院',             enName: 'HANGZHOU GERIATRIC HOSP.',    color: '#2B7A78', fontClass: 'font-art-xiaowei' },
-  { abbr: '加迹',   fullName: '浙江加迹科技有限公司',         enName: 'ZHEJIANG JIAJI TECH',         color: '#5B34A2', fontClass: 'font-art-mashan' },
-  { abbr: '起萧',   fullName: '杭州起萧科技有限公司',         enName: 'HANGZHOU QIXIAO TECH',        color: '#1A6480', fontClass: 'font-art-zhimang' },
-  { abbr: '规划院', fullName: '浙大城乡规划设计院',           enName: 'ZJU URBAN-RURAL PLANNING',    color: '#5B3A1A', fontClass: 'font-art-xiaowei' },
+  { abbr: '服制院', fullName: '服务型制造研究院',             enName: 'SERVICE MFG. RESEARCH INST.',  color: '#1B6B3A', fontClass: 'font-art-mashan', logo: '/partners/isom.png' },
+  { abbr: '儿院',   fullName: '浙大附属儿童医院',            enName: 'ZDUMC CHILDREN\'S HOSPITAL',   color: '#1565C0', fontClass: 'font-art-zhimang', logo: '/partners/zju-children.png' },
+  { abbr: '启真',   fullName: '浙大启真未来城市科技',         enName: 'ZJU QIZHEN CITY TECH',        color: '#003087', fontClass: 'font-art-xiaowei', logo: '/partners/zju-qizhen.png' },
+  { abbr: 'CAICT', fullName: '中国信息通信研究院',            enName: 'CAICT',                       color: '#0068B7', fontClass: 'font-art-xiaowei', isRect: true, logo: '/partners/caict.png' },
+  { abbr: '浙工大', fullName: '浙江工业大学',                enName: 'ZJUT',                        color: '#1B3C6E', fontClass: 'font-art-zhimang', logo: '/partners/zjut.jpg' },
+  { abbr: '工信院', fullName: '浙江省工业和信息化研究院',     enName: 'ZJIIRI',                      color: '#145DA0', fontClass: 'font-art-huangyou', isRect: true, logo: '/partners/zjiiri.png' },
+  { abbr: '老年院', fullName: '杭州市老年病医院',             enName: 'HANGZHOU GERIATRIC HOSP.',    color: '#2B7A78', fontClass: 'font-art-xiaowei', logo: '/partners/hangzhou-geriatric.png' },
+  { abbr: '加迹',   fullName: '浙江加迹科技有限公司',         enName: 'ZHEJIANG JIAJI TECH',         color: '#5B34A2', fontClass: 'font-art-mashan', logo: '/partners/jiaji-tech.png' },
 ];
 const PARTNERS_ROW2: Partner[] = [];
 
 function PartnerCard({ partner }: { partner: Partner }) {
   return (
-    <div className="partner-item glass-glow rounded-2xl p-5 flex flex-col items-center gap-3 cursor-default min-h-[130px] justify-center">
-      <div
-        className={`${partner.isRect ? 'rounded-xl w-14 h-10' : 'rounded-full w-12 h-12'} flex items-center justify-center shrink-0 shadow-md`}
-        style={{ backgroundColor: partner.color }}
-      >
-        <span className="text-white font-bold text-base leading-none">{partner.abbr}</span>
-      </div>
-      <div className="text-center">
-        <div className="text-sm text-gray-900 leading-tight font-black" style={{ fontFamily: '"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif', letterSpacing: '-0.01em' }}>{partner.fullName}</div>
-        <div className="text-[9px] text-gray-500 mt-0.5 tracking-widest font-semibold" style={{ fontFamily: '"Times New Roman","Georgia",serif' }}>{partner.enName}</div>
-      </div>
+    <div className="partner-item glass-glow rounded-2xl px-5 py-6 flex min-h-[184px] flex-col items-center justify-center gap-4 cursor-default">
+      {partner.logo ? (
+        <div className="flex h-24 w-full shrink-0 items-center justify-center">
+          <img
+            src={partner.logo}
+            alt={`${partner.fullName} Logo`}
+            className="max-h-[92px] max-w-[196px] object-contain object-center"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <div
+          className={`${partner.isRect ? 'rounded-xl w-14 h-10' : 'rounded-full w-12 h-12'} flex items-center justify-center shrink-0 shadow-md`}
+          style={{ backgroundColor: partner.color }}
+        >
+          <span className="text-white font-bold text-base leading-none">{partner.abbr}</span>
+        </div>
+      )}
+      <div className="min-h-5 text-center text-[15px] font-black leading-5 text-slate-800" style={{ fontFamily: '"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif', letterSpacing: '-0.01em' }}>{partner.fullName}</div>
     </div>
   );
 }
@@ -84,7 +90,7 @@ const PORTAL_PRODUCTS = [
     id: 'model',
     name: '模型侧',
     tagline: '大模型全栈可信度综合评估',
-    desc: '依托 IEEE 国际标准，提供权威可信的全层次模型评测认证',
+    desc: '依托于国内外标准，提供权威可信的全层次模型评测认证',
     icon: Brain,
     grad: 'from-blue-500 to-indigo-600',
     accentColor: '#3b82f6',
@@ -92,8 +98,7 @@ const PORTAL_PRODUCTS = [
       { name: '深度模型可信测评', path: '/deep-model-eval' },
       { name: '具身智能可信评测', path: '/embodied-intelligence' },
       { name: '智能体安全评测', path: '/agent-safety' },
-      { name: '大模型性能评测', path: '/llm-evaluation' },
-      { name: '大模型安全评测', path: '/safety-evaluation' },
+      { name: '大语言模型可信评测', path: '/llm-evaluation' },
     ],
     helpSection: 'section-model',
     primaryPath: '/llm-evaluation',
@@ -216,6 +221,15 @@ const RESOURCE_ICONS: Record<HomeKnowledgeTab, React.ElementType> = {
 /* ─── Homepage Hero Carousel ───────────────────────────────── */
 const HERO_SLIDES = [
   {
+    eyebrow: 'XUANJIAN · AI SECURITY PLATFORM',
+    title: 'AI 安全与评测',
+    highlight: '全栈服务平台',
+    desc: '覆盖数据治理、模型评测、系统安全、合规治理四大领域，为 AI 产品全生命周期提供一站式科学评测与安全治理服务。',
+    background: '/rongsu-ai-security-hero.webp',
+    accent: '#1677ff',
+    glow: 'rgba(22,119,255,0.22)',
+  },
+  {
     eyebrow: 'XUANJIAN · DATA SECURITY',
     title: '数据侧',
     highlight: '让数据可信、合规、可用',
@@ -260,6 +274,8 @@ const HERO_FEATURED_LINKS = [
     desc: resource.desc,
     date: resource.date,
     color: resource.color,
+    fileUrl: resource.fileUrl,
+    downloadName: resource.downloadName,
   })),
   {
     kind: 'about' as const,
@@ -270,7 +286,23 @@ const HERO_FEATURED_LINKS = [
   },
 ] as const;
 
-function downloadKnowledgeResource(title: string, desc: string, date: string) {
+function downloadKnowledgeResource(
+  title: string,
+  desc: string,
+  date: string,
+  fileUrl?: string,
+  downloadName?: string,
+) {
+  if (fileUrl) {
+    const anchor = document.createElement('a');
+    anchor.href = fileUrl;
+    anchor.download = downloadName || `${title.replace(/[《》]/g, '')}.pdf`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    return;
+  }
+
   const content = `${title}\n\n${desc}\n\n发布日期：${date}\n\n杭州榕数科技有限公司 · 玄鉴 AI安全与评测平台`;
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -429,7 +461,7 @@ export function CompanyHome() {
     setChatMessages(prev => [...prev, userMsg]);
     setChatInput('');
     setTimeout(() => {
-      setChatMessages(prev => [...prev, { from: 'agent', text: '感谢您的留言！我们的专属顾问将在工作时间（9:00–18:00）内尽快回复您，或拨打 0571-87837371 获取即时支持。', ts: '刚刚' }]);
+      setChatMessages(prev => [...prev, { from: 'agent', text: '感谢您的留言！我们的专属顾问将在工作时间（9:00–18:00）内尽快回复您，或拨打 13940451397 获取即时支持。', ts: '刚刚' }]);
     }, 800);
   };
 
@@ -469,7 +501,7 @@ export function CompanyHome() {
             <div className="rongsu-hero__main">
               <article className="rongsu-hero__copy" aria-live="polite">
                 <div className="rongsu-hero__platform-mark">
-                  <img src="/xuanjian-brand-logo.png" alt="玄鉴" />
+                  <img src="/xuanjian-brand-logo.png" alt="玄鉴" fetchPriority="high" decoding="async" />
                   <span className="rongsu-hero__brand-copy">
                     <span className="rongsu-hero__brand-line">
                       <strong>玄鉴</strong>
@@ -513,6 +545,33 @@ export function CompanyHome() {
                   </Button>
                 </div>
               </article>
+
+              {activeHeroSlide === 0 && (
+                <aside className="rongsu-hero__overview" aria-label="玄鉴平台四大产品体系">
+                  {[
+                    { name: '数据侧', count: 3, note: '审查 · 评测 · 治理', icon: Database, color: '#7c3aed' },
+                    { name: '模型侧', count: 4, note: '性能 · 安全 · 可信', icon: Brain, color: '#2563eb' },
+                    { name: '系统侧', count: 2, note: '代码 · 渗透 · 防护', icon: Shield, color: '#0891b2' },
+                    { name: '合规治理侧', count: 3, note: '备案 · 标准 · 教学', icon: FileText, color: '#059669' },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div className="rongsu-hero__overview-card" key={item.name}>
+                        <span className="rongsu-hero__overview-icon" style={{ color: item.color, background: `${item.color}14` }}>
+                          <Icon aria-hidden="true" />
+                        </span>
+                        <div className="rongsu-hero__overview-heading">
+                          <strong>{item.name}</strong>
+                          <span><b style={{ color: item.color }}>{item.count}</b> 项服务</span>
+                        </div>
+                        <small style={{ color: item.color, background: `${item.color}0d`, borderColor: `${item.color}22` }}>
+                          {item.note}
+                        </small>
+                      </div>
+                    );
+                  })}
+                </aside>
+              )}
             </div>
           </div>
 
@@ -543,7 +602,7 @@ export function CompanyHome() {
                   style={{ '--quick-accent': item.color } as React.CSSProperties}
                   onClick={() => {
                     if (item.kind === 'resource') {
-                      downloadKnowledgeResource(item.title, item.desc, item.date);
+                      downloadKnowledgeResource(item.title, item.desc, item.date, item.fileUrl, item.downloadName);
                     } else {
                       window.scrollTo(0, 0);
                       navigate(item.path);
@@ -574,11 +633,11 @@ export function CompanyHome() {
           3. PRODUCT MATRIX — 数美 style (修改点1)
       ══════════════════════════════════════════════════════════ */}
       <ScrollReveal>
-        <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg,#f8faff,#fff)' }}>
+        <section id="product-matrix" className="scroll-mt-24 py-20 px-4" style={{ background: 'linear-gradient(180deg,#f8faff,#fff)' }}>
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <div className="rongsu-product-matrix__heading">
-                <img src="/xuanjian-brand-logo.png" alt="" aria-hidden="true" />
+                <img src="/xuanjian-brand-logo.png" alt="" aria-hidden="true" loading="lazy" decoding="async" />
                 <span>
                   <Badge className="mb-2 bg-blue-50 text-blue-700 border-blue-200 text-xs">玄鉴 · 产品矩阵</Badge>
                   <h2 className="text-gray-900" style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.2 }}>
@@ -738,6 +797,8 @@ export function CompanyHome() {
                         src={uc.imgUrl}
                         alt={uc.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div
                         style={{
@@ -871,7 +932,7 @@ export function CompanyHome() {
       ══════════════════════════════════════════════════════════ */}
       <ScrollReveal>
         <section
-          className="py-12 px-4"
+          className="hidden py-12 px-4"
           style={{ background: 'linear-gradient(180deg,#f8faff,#fff)' }}
         >
           <div className="max-w-7xl mx-auto">
@@ -1077,7 +1138,7 @@ export function CompanyHome() {
       {/* ── Chat Dialog ── */}
       {showChat && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '24px', pointerEvents: 'none' }}>
-          <div style={{ width: 360, background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', pointerEvents: 'auto' }}>
+          <div style={{ width: 420, height: 'min(620px, calc(100vh - 48px))', maxWidth: 'calc(100vw - 48px)', background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', pointerEvents: 'auto' }}>
             {/* Header */}
             <div style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1096,7 +1157,7 @@ export function CompanyHome() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, maxHeight: 320, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, background: '#f8fafc' }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
               {chatMessages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexDirection: msg.from === 'user' ? 'row-reverse' : 'row' }}>
                   {msg.from === 'agent' && (
@@ -1141,7 +1202,7 @@ export function CompanyHome() {
             </div>
 
             <div style={{ padding: '8px 14px', background: '#fff', textAlign: 'center', fontSize: 10, color: '#94a3b8', borderTop: '1px solid #f8fafc' }}>
-              工作日 9:00–18:00 · 电话 0571-87837371
+              工作日 9:00–18:00 · 电话 13940451397
             </div>
           </div>
         </div>
@@ -1149,9 +1210,9 @@ export function CompanyHome() {
 
       {/* ── Login / Register Modal (guest trial) ── */}
       {showLoginModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+        <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowLoginModal(false)}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: '32px 36px', width: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '32px 36px', width: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', cursor: 'default' }} onClick={e => e.stopPropagation()}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#4f46e5,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <Sparkles className="w-6 h-6 text-white" />

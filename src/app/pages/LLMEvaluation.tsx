@@ -11,7 +11,7 @@ import { StickySubNav } from '../components/StickySubNav';
 import { useUser } from '../context/UserContext';
 import {
   Plus, BarChart2, Brain, Code2, BookOpen,
-  Zap, Shield, Target, TrendingUp, ChevronDown, Play, CheckCircle,
+  Zap, Shield, Target, TrendingUp, ChevronDown, Play, CheckCircle, CheckCircle2,
   ExternalLink, ArrowRight,
 } from 'lucide-react';
 import {
@@ -152,37 +152,15 @@ function LLMHeroIllustration() {
 
 // ── Interactive Demo ──────────────────────────────────────────────
 
-function EvalDemo({ onStart }: { onStart: () => boolean }) {
+function EvalDemo({ onStart: _onStart }: { onStart: () => boolean }) {
   const [model, setModel] = useState(MODELS_DEMO[0]);
   const [dataset, setDataset] = useState(DATASETS_DEMO[0]);
   const [modelOpen, setModelOpen] = useState(false);
   const [datasetOpen, setDatasetOpen] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle');
+  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('done');
   const [step, setStep] = useState(0);
-  const [radarData, setRadarData] = useState(DEMO_RADAR_DATA);
+  const [radarData, setRadarData] = useState(DEMO_RADAR_FINAL);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const run = () => {
-    if (!onStart()) return;
-    if (status === 'running') return;
-    setStatus('running'); setStep(0); setRadarData(DEMO_RADAR_DATA);
-    let s = 0;
-    timerRef.current = setInterval(() => {
-      s++; setStep(s);
-      // Gradually grow radar
-      const pct = Math.min(s / (EVAL_STEPS_DEMO.length - 1), 1);
-      setRadarData(DEMO_RADAR_FINAL.map((row, ri) => ({
-        ...row,
-        A: Math.round(DEMO_RADAR_FINAL[ri].A * pct),
-        B: Math.round(DEMO_RADAR_FINAL[ri].B * pct),
-        C: Math.round(DEMO_RADAR_FINAL[ri].C * pct),
-      })));
-      if (s >= EVAL_STEPS_DEMO.length - 1) {
-        clearInterval(timerRef.current!);
-        setStatus('done');
-      }
-    }, 600);
-  };
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -200,7 +178,7 @@ function EvalDemo({ onStart }: { onStart: () => boolean }) {
             {modelOpen && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 {MODELS_DEMO.map(m => (
-                  <button key={m} onClick={() => { setModel(m); setModelOpen(false); setStatus('idle'); }}
+                  <button key={m} onClick={() => { setModel(m); setModelOpen(false); setStatus('done'); setRadarData(DEMO_RADAR_FINAL); }}
                     style={{ width: '100%', padding: '9px 14px', textAlign: 'left', border: 'none', background: m === model ? '#eff6ff' : '#fff', color: m === model ? '#2563eb' : '#374151', fontSize: 13, fontWeight: m === model ? 700 : 400, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
                     {m}
                   </button>
@@ -220,7 +198,7 @@ function EvalDemo({ onStart }: { onStart: () => boolean }) {
             {datasetOpen && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 {DATASETS_DEMO.map(d => (
-                  <button key={d} onClick={() => { setDataset(d); setDatasetOpen(false); setStatus('idle'); }}
+                  <button key={d} onClick={() => { setDataset(d); setDatasetOpen(false); setStatus('done'); setRadarData(DEMO_RADAR_FINAL); }}
                     style={{ width: '100%', padding: '9px 14px', textAlign: 'left', border: 'none', background: d === dataset ? '#eff6ff' : '#fff', color: d === dataset ? '#2563eb' : '#374151', fontSize: 13, fontWeight: d === dataset ? 700 : 400, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
                     {d}
                   </button>
@@ -240,13 +218,12 @@ function EvalDemo({ onStart }: { onStart: () => boolean }) {
         </div>
 
         <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', padding: '8px 0', borderTop: '1px solid #f1f5f9' }}>
-          无需部署，在线体验大模型能力边界
+          内置样例用于展示正式报告结构
         </div>
 
-        <button onClick={run} disabled={status === 'running'}
-          style={{ padding: '13px', borderRadius: 12, background: status === 'running' ? '#e2e8f0' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', border: 'none', color: status === 'running' ? '#94a3b8' : '#fff', fontSize: 15, fontWeight: 800, cursor: status === 'running' ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: status !== 'running' ? '0 4px 16px rgba(99,102,241,0.4)' : 'none' }}>
-          <Play size={16} /> {status === 'running' ? '评测中...' : status === 'done' ? '重新评测' : '开始评测'}
-        </button>
+        <div style={{ padding: '13px', borderRadius: 12, background: '#eef2ff', color: '#4338ca', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <CheckCircle2 size={16} /> 基准评测结果预览
+        </div>
       </div>
 
       {/* Right — results */}
@@ -265,7 +242,7 @@ function EvalDemo({ onStart }: { onStart: () => boolean }) {
                 <BarChart2 style={{ width: 28, height: 28, color: '#94a3b8' }} />
               </div>
               <div style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center' }}>
-                配置完成后点击「开始评测」<br />实时查看多维能力雷达图
+                选择内置模型与数据集，查看多维能力雷达图示例
               </div>
             </div>
           )}
@@ -465,9 +442,9 @@ export function LLMEvaluation() {
   return (
     <div>
       {/* Hero */}
-      <section className="product-detail-hero" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#0f172a 100%)' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height-context" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#0f172a 100%)' }}>
         <ProductHeroBackground side="model" concept="llm-performance" />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '80px 48px', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 48px', width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -499,7 +476,7 @@ export function LLMEvaluation() {
 
       <StickySubNav items={[
         { id: 'llme-dimensions', label: '评测维度' },
-        { id: 'llme-demo', label: '交互式演示' },
+        { id: 'llme-demo', label: '结果预览' },
         { id: 'llme-solutions', label: '应用场景' },
         { id: 'llme-quickstart', label: '快速接入' },
       ]} />
@@ -543,9 +520,9 @@ export function LLMEvaluation() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <Badge style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', marginBottom: 12, fontSize: 12 }}>在线体验</Badge>
-              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>交互式演示区</h2>
-              <p style={{ fontSize: 16, color: '#64748b' }}>无需部署，在线体验大模型能力边界，实时生成多维评测雷达图</p>
+              <Badge style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', marginBottom: 12, fontSize: 12 }}>效果预览</Badge>
+              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>基准评测结果预览</h2>
+              <p style={{ fontSize: 16, color: '#64748b' }}>使用内置模型与数据集展示多维能力雷达图；正式评测请创建任务</p>
             </div>
           </ScrollReveal>
           <EvalDemo onStart={allowOnlineDemo} />

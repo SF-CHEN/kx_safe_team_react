@@ -1,5 +1,5 @@
 import { createTempClient } from '@/api/client';
-import type { SysUser, UserLoginVo } from '@/api/types';
+import type { SysUser, UserLoginVo, UserRoleCode } from '@/api/types';
 import { getToken } from '@/utils/auth';
 import { unwrapGatewayData } from '@/utils/gateway';
 import { md5Password } from '@/utils/md5';
@@ -11,8 +11,13 @@ export interface AuthUser {
   username?: string;
   nickname?: string;
   email?: string;
+  /** 前端归一化角色：admin | user */
   role?: string;
+  /** 后端原始角色码 */
+  role_code?: UserRoleCode | string;
   is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthSession {
@@ -26,14 +31,17 @@ function mapSysUser(user?: SysUser | null): AuthUser {
   if (user == null || user.id == null) {
     throw new Error('登录返回缺少用户信息');
   }
-  const role = String(user.role || 'USER').toUpperCase();
+  const roleCode = String(user.role || 'USER').toUpperCase();
   return {
     id: user.id as number | string,
     username: user.username,
     nickname: user.username,
     email: '',
-    role: role === 'ADMIN' ? 'admin' : 'user',
+    role: roleCode === 'ADMIN' ? 'admin' : 'user',
+    role_code: roleCode,
     is_active: user.deleted !== true,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt,
   };
 }
 
@@ -109,20 +117,33 @@ export async function fetchAuthUsers(params?: {
   pageSize?: number;
   pageCurrent?: number;
   username?: string;
+  /** 后端角色码：ADMIN | USER；管理后台用户列表应传 USER */
+  role?: UserRoleCode;
 }): Promise<{ items: AuthUser[]; total: number }> {
   const client = createTempClient();
+  const entity: { username?: string; role?: UserRoleCode } = {};
+  if (params?.username) entity.username = params.username;
+  if (params?.role) entity.role = params.role;
   const { data } = await client.post(
     '/temp/sys-user/page',
     {
       pageSize: params?.pageSize ?? 10,
       pageCurrent: params?.pageCurrent ?? 1,
-      entity: params?.username ? { username: params.username } : undefined,
+      entity: Object.keys(entity).length ? entity : undefined,
     },
     { headers: { 'Content-Type': 'application/json' } },
   );
   const page = unwrapGatewayData<{ records?: SysUser[]; total?: number }>(data);
+  const items: AuthUser[] = [];
+  for (const row of page.records || []) {
+    try {
+      items.push(mapSysUser(row));
+    } catch {
+      // 跳过缺少 id 的异常记录
+    }
+  }
   return {
-    items: (page.records || []).map((row) => mapSysUser(row)),
+    items,
     total: Number(page.total || 0),
   };
 }
@@ -140,5 +161,52 @@ export async function updateAuthUserStatus(
     },
     { headers: { 'Content-Type': 'application/json' } },
   );
+  return unwrapGatewayData(data);
+}
+
+export async function createAuthUser(payload: {
+  username: string;
+  password: string;
+  role?: UserRoleCode;
+}): Promise<AuthUser | null> {
+  const client = createTempClient();
+  const { data } = await client.post(
+    '/temp/sys-user/add',
+    {
+      username: payload.username.trim(),
+      password: md5Password(payload.password),
+      role: payload.role || 'USER',
+    },
+    { headers: { 'Content-Type': 'application/json' } },
+  );
+  const created = unwrapGatewayData<SysUser | boolean | null>(data);
+  if (created && typeof created === 'object' && 'id' in created && created.id != null) {
+    return mapSysUser(created);
+  }
+  // 部分后端 add 只返回成功标记，不回传用户对象
+  return null;
+}
+
+export async function updateAuthUserRole(
+  userId: number | string,
+  role: UserRoleCode,
+): Promise<unknown> {
+  const client = createTempClient();
+  const { data } = await client.put(
+    '/temp/sys-user/update',
+    {
+      id: Number(userId),
+      role,
+    },
+    { headers: { 'Content-Type': 'application/json' } },
+  );
+  return unwrapGatewayData(data);
+}
+
+export async function deleteAuthUser(userId: number | string): Promise<unknown> {
+  const client = createTempClient();
+  const { data } = await client.delete('/temp/sys-user/deleteOne', {
+    params: { id: Number(userId) },
+  });
   return unwrapGatewayData(data);
 }

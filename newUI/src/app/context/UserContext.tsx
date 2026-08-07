@@ -135,9 +135,17 @@ const USER_ACTIVE_KEY = 'xuanjian-user-session-active';
 const USER_CREDENTIAL_KEY = 'xuanjian-local-credentials-v1';
 
 async function hashPassword(password: string): Promise<string> {
-  const bytes = new TextEncoder().encode(password);
-  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
-  return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
+  // 非安全上下文（非 localhost/HTTPS）下 crypto.subtle 可能不可用，退化为简单摘要，保证原型可登录。
+  if (window.crypto?.subtle) {
+    const bytes = new TextEncoder().encode(password);
+    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
+  }
+  let hash = 0;
+  for (let i = 0; i < password.length; i += 1) {
+    hash = ((hash << 5) - hash + password.charCodeAt(i)) | 0;
+  }
+  return `fallback-${password.length}-${(hash >>> 0).toString(16)}`;
 }
 
 function readCredentials(): LocalCredential[] {
@@ -218,12 +226,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch {
       saved = null;
     }
+    // 已注册账号：校验密码
     if (credential && credential.passwordHash !== passwordHash) return false;
-    // 兼容升级前已注册的本地演示账号：首次登录时绑定当前密码。
-    if (!credential && saved?.email !== identifier) return false;
+
+    // 原型演示：未注册账号首次登录即创建本地凭证（与注册等效），避免「点登录无跳转」。
+    // 兼容升级前已有 session 的演示账号：首次登录时绑定当前密码。
     const target = saved?.email === identifier
       ? normalizeCustomerUser(saved)
-      : { ...mockLoggedInUser, id: credential!.userId, name: getDefaultUserName(identifier), email: identifier, role: 'user' as const };
+      : {
+          ...mockLoggedInUser,
+          id: credential?.userId || `user-${Date.now()}`,
+          name: getDefaultUserName(identifier),
+          email: identifier,
+          role: 'user' as const,
+          myModels: [],
+          myTasks: [],
+          myEvalSets: [],
+        };
     if (!credential) {
       credentials.push({ userId: target.id, identifier, passwordHash, updatedAt: new Date().toISOString() });
       writeCredentials(credentials);

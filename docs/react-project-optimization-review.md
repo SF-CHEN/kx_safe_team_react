@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | P0 | 路由同步导入、管理员路由无守卫 | 首屏加载慢；后台访问边界不清晰 |
 | P0 | 生产 SEO 基础配置不正确 | 搜索引擎无法正常收录，页面描述不准确 |
-| P1 | 静态资源约 37.81MB | 下载耗时高，可能影响 LCP 和移动端体验 |
+| P1 | 静态资源已清理（当前约 18MB；仍可继续压 scenarios-v2 等） | 下载耗时与 LCP；同步原型时易回退 |
 | P1 | 27 个源码文件超过 500 行 | 组件复用和维护成本高 |
 | P1 | 内联样式与硬编码颜色较多 | 视觉规范难以统一，改版成本高 |
 | P2 | strict 关闭、缺少质量脚本 | 类型风险和回归风险较高 |
@@ -58,15 +58,20 @@
 
 ### 4. 压缩和分层加载静态资源
 
-**证据：** `src/imports` 与 `public` 合计约 37.81MB；最大 PNG 约 5.09MB，首页和场景图多在 1.5–1.8MB。源码未发现 `loading="lazy"`、`srcSet`、`sizes` 或 `fetchPriority`。
+**证据（2026-08-07 复核）：**
 
-**建议：**
+- 清理后 `src/imports` + `public` 约 **18MB** 量级（此前峰值约 54MB）。
+- Hero / scenario 已切到 **WebP**；同名大 PNG 与未引用旧图（`login.png`、课程页旧素材、`hero.png` 等）已删除。
+- 白皮书 PDF 走 `public/whitepapers/` + URL 下载（符合「勿进模块依赖」）。
+- 部分页面已补 `loading="lazy"` / `fetchPriority="high"`；`ImageWithFallback` 默认懒加载。仍缺系统的 `srcSet` / `sizes`；部分 Hero 仍用 CSS `background-image`（已指向 webp）。
 
-- 非首屏图片转 WebP/AVIF。
-- 首屏图使用 `fetchPriority="high"`，下方内容使用 `loading="lazy"`。
-- 为图片声明宽高或 `aspect-ratio`，避免布局跳动。
-- 根据移动端和桌面端输出不同尺寸。
-- PDF 放入静态资源或 CDN，避免进入模块依赖。
+**建议（按优先级）：**
+
+1. **同步原型时守门**：`newUI` → `src` 拷图前检查体积；已有 WebP 时不要再拷同名大 PNG/JPG；PDF 只放 `public/`（或 CDN）。可用 `node .agents/skills/newui-prototype-sync/scripts/find-unused-assets.mjs` 扫死资源。详见 `.agents/skills/newui-prototype-sync`。
+2. **分层加载（已部分落地，需保持）**：首屏 LCP 图 `fetchPriority="high"`；页脚/列表/用例等非首屏 `loading="lazy"`；共享组件默认懒加载。
+3. **继续压缩**：`scenarios-v2/`、`about-rongsu-city-hero.png`、`xuanjian-brand-logo.png` 等仍可转 WebP；目标单张展示图小于 300–500KB。
+4. **Hero 背景**：有条件时把关键 LCP 背景从 CSS `background-image` 改为带宽高的 `<img>`（或 `<picture>`），以便声明优先级与尺寸。
+5. **响应式**：按移动/桌面输出 1x/2x 或宽度档位，补 `srcSet` + `sizes`；为图片声明宽高或 `aspect-ratio`，避免 CLS。
 
 ### 5. 拆分超大页面和重复业务组件
 

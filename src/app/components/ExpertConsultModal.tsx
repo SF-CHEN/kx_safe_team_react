@@ -38,16 +38,17 @@ export function ExpertConsultModal({
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 800);
+    const subject = encodeURIComponent(`${serviceName}专家咨询预约`);
+    const body = encodeURIComponent(`姓名：${form.name}\n企业邮箱：${form.email}\n手机号：${form.phone}\n公司：${form.company}\n咨询主题：${form.topic || '未选择'}`);
+    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
+    setLoading(false);
+    setSubmitted(true);
   };
 
   const inputClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 p-5 backdrop-blur-md" onClick={close}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 p-5 backdrop-blur-md cursor-pointer" onClick={close}>
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -63,9 +64,9 @@ export function ExpertConsultModal({
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50">
               <CheckCircle2 className="h-8 w-8 text-emerald-500" />
             </div>
-            <h3 className="mt-6 text-2xl font-black text-slate-950">咨询预约已提交</h3>
+            <h3 className="mt-6 text-2xl font-black text-slate-950">请在邮件客户端确认发送</h3>
             <p className="mt-3 text-sm leading-7 text-slate-500">
-              专家将在 24 小时内与您联系，并结合您的业务情况准备针对性的{serviceName}建议。
+              咨询信息已整理至邮件正文；发送后专家会结合您的业务情况准备针对性的{serviceName}建议。
             </p>
             <button onClick={close} className="mt-7 rounded-xl px-7 py-3 text-sm font-bold text-white" style={{ background: accent }}>
               完成

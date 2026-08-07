@@ -1,24 +1,17 @@
-/* 艺术字仅用于合作方缩写徽章；完整自托管 5 套 CJK 艺术字体会引入数百个 unicode-range 子集（十余 MB），
-   对首屏不划算。改为本机中文字体栈，避免 Google Fonts @import 阻塞与境外依赖。 */
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Ma+Shan+Zheng&family=Long+Cang&family=Zhi+Mang+Xing&family=ZCOOL+QingKe+HuangYou&display=swap');
 
 .font-art-xiaowei {
-  font-family: 'STKaiti', 'KaiTi', 'Songti SC', 'SimSun', serif;
+  font-family: 'ZCOOL XiaoWei', serif;
 }
-
 .font-art-mashan {
-  font-family: 'STXingkai', 'STKaiti', 'KaiTi', 'Microsoft YaHei', cursive;
+  font-family: 'Ma Shan Zheng', cursive;
 }
-
 .font-art-longcang {
-  font-family: 'STXingkai', 'KaiTi', 'FangSong', cursive;
+  font-family: 'Long Cang', cursive;
 }
-
 .font-art-zhimang {
-  font-family: 'STKaiti', 'KaiTi', 'FangSong', 'Microsoft YaHei', cursive;
+  font-family: 'Zhi Mang Xing', cursive;
 }
-
 .font-art-huangyou {
-  font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-family: 'ZCOOL QingKe HuangYou', cursive;
 }

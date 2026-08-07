@@ -11,9 +11,8 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Checkbox } from './ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
-  Plus, Minus, CheckCircle2, AlertTriangle, Lock, Clock,
+  CheckCircle2, AlertTriangle, Lock, Clock,
   FileText, Eye, Crown, Bot, Network, Shield, Wrench, Users
 } from 'lucide-react';
 import { useUser, EvalTask, MyModel } from '../context/UserContext';
@@ -21,12 +20,7 @@ import { toast } from 'sonner';
 
 type PricingPlan = 'free' | 'paid';
 type AgentType = 'single' | 'multi';
-type ModelSource = 'builtin' | 'custom_new' | 'my_models';
-
-const BUILTIN_MODELS = [
-  'Qwen2.5-7B-Instruct', 'Qwen2.5-14B-Instruct', 'ChatGLM4-9B',
-  'LLaMA-2-13B-Chat', 'ChatGPT-3.5-turbo', 'DeepSeek-V3', 'Claude-3.5-Sonnet',
-];
+type ModelSource = 'custom_new' | 'my_models';
 
 const EVAL_MODULES = [
   {
@@ -75,13 +69,11 @@ export function AgentEvalModal({ open, onClose }: Props) {
   const { user, addTask, addModel } = useUser();
   const [taskName, setTaskName] = useState('');
   const [agentType, setAgentType] = useState<AgentType>('single');
-  const [modelSource, setModelSource] = useState<ModelSource>('builtin');
-  const [selectedBuiltinModel, setSelectedBuiltinModel] = useState('');
+  const [modelSource, setModelSource] = useState<ModelSource>('custom_new');
   const [selectedMyModel, setSelectedMyModel] = useState('');
   const [customModelName, setCustomModelName] = useState('');
   const [customApiBase, setCustomApiBase] = useState('');
   const [customApiKey, setCustomApiKey] = useState('');
-  const [sampleCount, setSampleCount] = useState(50);
   const [selectedModules, setSelectedModules] = useState<string[]>(['intrinsic', 'tool']);
   const [pricingPlan, setPricingPlan] = useState<PricingPlan>('paid');
 
@@ -94,13 +86,11 @@ export function AgentEvalModal({ open, onClose }: Props) {
   const resetForm = () => {
     setTaskName('');
     setAgentType('single');
-    setModelSource('builtin');
-    setSelectedBuiltinModel('');
+    setModelSource('custom_new');
     setSelectedMyModel('');
     setCustomModelName('');
     setCustomApiBase('');
     setCustomApiKey('');
-    setSampleCount(50);
     setSelectedModules(['intrinsic', 'tool']);
     setPricingPlan('paid');
   };
@@ -116,9 +106,7 @@ export function AgentEvalModal({ open, onClose }: Props) {
       return;
     }
 
-    const modelName = modelSource === 'builtin'
-      ? selectedBuiltinModel
-      : modelSource === 'my_models'
+    const modelName = modelSource === 'my_models'
         ? user.myModels.find(m => m.id === selectedMyModel)?.name || ''
         : customModelName;
 
@@ -152,18 +140,20 @@ export function AgentEvalModal({ open, onClose }: Props) {
       id: `t_${Date.now()}`,
       name: taskName,
       model: modelName,
-      modelType: modelSource === 'builtin' ? '开源' : '自定义',
+      modelType: '自定义',
       evalSet: `智能体安全评测 · ${agentType === 'single' ? '单智能体' : '多智能体'}`,
       evalType: '智能体安全评测',
-      status: pricingPlan === 'free' ? '排队中' : '评测中',
+      status: '待受理',
       score: null,
       createdAt: new Date().toLocaleString('zh-CN'),
       plan: pricingPlan,
+      requirement: `重点评测模块：${moduleNames}`,
+      configSummary: `智能体类型：${agentType === 'single' ? '单智能体' : '多智能体'}；模型：${modelName}`,
     };
 
     addTask(newTask);
-    toast.success('智能体安全评测任务创建成功！', {
-      description: `评测模块：${moduleNames}。${pricingPlan === 'free' ? '免费任务优先级较低，请耐心等待。' : '任务正在处理中，预计30分钟内完成。'}`,
+    toast.success('智能体安全评测任务已提交', {
+      description: `评测模块：${moduleNames}。技术团队受理后将开展正式评测。`,
     });
     handleClose();
   };
@@ -245,31 +235,14 @@ export function AgentEvalModal({ open, onClose }: Props) {
               className="flex gap-6"
             >
               <div className="flex items-center gap-1.5">
-                <RadioGroupItem value="builtin" id="a-builtin" />
-                <Label htmlFor="a-builtin" className="text-sm cursor-pointer">内置模型</Label>
-              </div>
-              <div className="flex items-center gap-1.5">
                 <RadioGroupItem value="custom_new" id="a-custom" />
-                <Label htmlFor="a-custom" className="text-sm cursor-pointer">自定义 API</Label>
+                <Label htmlFor="a-custom" className="text-sm cursor-pointer">自定义模型（API）</Label>
               </div>
               <div className="flex items-center gap-1.5">
                 <RadioGroupItem value="my_models" id="a-mymodels" />
                 <Label htmlFor="a-mymodels" className="text-sm cursor-pointer">我的模型</Label>
               </div>
             </RadioGroup>
-
-            {modelSource === 'builtin' && (
-              <Select value={selectedBuiltinModel} onValueChange={setSelectedBuiltinModel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择内置大模型" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BUILTIN_MODELS.map(m => (
-                    <SelectItem key={m} value={m}>{m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
 
             {modelSource === 'custom_new' && (
               <div className="border rounded-lg p-4 space-y-3 bg-gray-50">
@@ -311,39 +284,6 @@ export function AgentEvalModal({ open, onClose }: Props) {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Sample Count */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">
-              <span className="text-red-500">*</span> 测试用例数量
-              {pricingPlan === 'free' && (
-                <span className="ml-2 text-xs text-orange-500">(免费限50条)</span>
-              )}
-            </Label>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSampleCount(Math.max(10, sampleCount - 10))}
-                className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-50"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
-              <Input
-                type="number"
-                value={pricingPlan === 'free' ? Math.min(sampleCount, 50) : sampleCount}
-                onChange={e => setSampleCount(Number(e.target.value))}
-                className="w-24 text-center"
-                max={pricingPlan === 'free' ? 50 : 5000}
-                min={10}
-              />
-              <button
-                onClick={() => setSampleCount(Math.min(pricingPlan === 'free' ? 50 : 5000, sampleCount + 10))}
-                className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-50"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-xs text-gray-400">条用例</span>
-            </div>
           </div>
 
           {/* Evaluation Modules */}

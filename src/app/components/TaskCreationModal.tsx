@@ -11,31 +11,18 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Checkbox } from './ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
-  ChevronRight, ChevronLeft, X, Minus, Plus, CheckCircle2,
+  ChevronRight, ChevronLeft, X, CheckCircle2,
   Shield, Zap, Lock, Clock, FileText, Eye, Star, Globe,
-  Bot, Image as ImageIcon, AlertTriangle, Info, Crown, Sparkles, Settings
+  Bot, Image as ImageIcon, AlertTriangle, Info, Crown, Sparkles
 } from 'lucide-react';
 import { useUser, EvalTask, MyModel } from '../context/UserContext';
 import { toast } from 'sonner';
 
 type TaskType = 'llm' | 'multimodal';
 type PageType = 'safety' | 'llm';
-type ModelSource = 'builtin' | 'custom_new' | 'my_models';
-type EvalMode = 'scene' | 'advanced';
+type ModelSource = 'custom_new' | 'my_models';
 type PricingPlan = 'free' | 'paid';
-
-const BUILTIN_MODELS = [
-  'Qwen2.5-7B-Instruct', 'Qwen2.5-14B-Instruct', 'ChatGLM4-9B',
-  'LLaMA-2-13B-Chat', 'ChatGPT-3.5-turbo', 'DeepSeek-V3',
-];
-
-const BUILTIN_MULTIMODAL_MODELS = [
-  'Qwen2.5-VL-7B-Instruct', 'Qwen2.5-VL-72B', 'LLaVA-1.6-34B',
-  'InternVL2-26B', 'CogVLM2-19B',
-];
 
 const PRESET_SCENES_SAFETY = [
   {
@@ -140,39 +127,29 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
   );
   const [taskType, setTaskType] = useState<TaskType>('llm');
   const [taskName, setTaskName] = useState('');
-  const [modelSource, setModelSource] = useState<ModelSource>('builtin');
-  const [selectedBuiltinModel, setSelectedBuiltinModel] = useState('');
+  const [modelSource, setModelSource] = useState<ModelSource>('custom_new');
   const [selectedMyModel, setSelectedMyModel] = useState('');
   const [customModelName, setCustomModelName] = useState('');
   const [customApiBase, setCustomApiBase] = useState('');
   const [customApiKey, setCustomApiKey] = useState('');
-  const [sampleCount, setSampleCount] = useState(100);
-  const [evalMode, setEvalMode] = useState<EvalMode>('scene');
   const [selectedScene, setSelectedScene] = useState('');
-  const [selectedDimensions, setSelectedDimensions] = useState<string[]>([]);
-  const [selectedLLMDims, setSelectedLLMDims] = useState<string[]>([]);
+  const [customScenario, setCustomScenario] = useState('');
   const [pricingPlan, setPricingPlan] = useState<PricingPlan>('paid');
   const [notifyEmail, setNotifyEmail] = useState(user.email || '');
   const [enableEmail, setEnableEmail] = useState(true);
 
   const presetScenes = pageType === 'safety' ? PRESET_SCENES_SAFETY : PRESET_SCENES_LLM;
-  const models = taskType === 'multimodal' ? BUILTIN_MULTIMODAL_MODELS : BUILTIN_MODELS;
-
   const resetForm = () => {
     setStep(pageType === 'safety' ? 'type' : 'config');
     setTaskType('llm');
     setTaskName('');
-    setModelSource('builtin');
-    setSelectedBuiltinModel('');
+    setModelSource('custom_new');
     setSelectedMyModel('');
     setCustomModelName('');
     setCustomApiBase('');
     setCustomApiKey('');
-    setSampleCount(100);
-    setEvalMode('scene');
     setSelectedScene('');
-    setSelectedDimensions([]);
-    setSelectedLLMDims([]);
+    setCustomScenario('');
     setPricingPlan('paid');
   };
 
@@ -186,9 +163,7 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       toast.error('请填写任务名称');
       return;
     }
-    const modelName = modelSource === 'builtin'
-      ? selectedBuiltinModel
-      : modelSource === 'my_models'
+    const modelName = modelSource === 'my_models'
         ? user.myModels.find(m => m.id === selectedMyModel)?.name || selectedMyModel
         : customModelName;
 
@@ -214,42 +189,37 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       ? '大模型评测'
       : taskType === 'multimodal' ? '多模态大模型安全评测' : '大模型安全评测';
 
-    const sceneName = evalMode === 'scene'
-      ? presetScenes.find(s => s.id === selectedScene)?.name || '通用安全合规评测'
-      : selectedDimensions.join('、') || selectedLLMDims.join('、') || '自定义维度';
+    const presetSceneName = presetScenes.find(s => s.id === selectedScene)?.name || '';
+    const scenarioDescription = customScenario.trim();
+    if (!presetSceneName && !scenarioDescription) {
+      toast.error('请选择预设场景或填写测试场景描述');
+      return;
+    }
+    const sceneName = [
+      presetSceneName,
+      scenarioDescription ? `用户补充需求：${scenarioDescription}` : '',
+    ].filter(Boolean).join('；');
 
     const newTask: EvalTask = {
       id: `t_${Date.now()}`,
       name: taskName,
       model: modelName,
-      modelType: modelSource === 'builtin' ? '开源' : '自定义',
+      modelType: '自定义',
       evalSet: sceneName,
       evalType: evalTypeName,
-      status: pricingPlan === 'free' ? '排队中' : '评测中',
+      status: '待受理',
       score: null,
       createdAt: new Date().toLocaleString('zh-CN'),
       plan: pricingPlan,
+      requirement: scenarioDescription || presetSceneName,
+      configSummary: `测试类型：${taskType === 'multimodal' ? '多模态模型' : '文本模型'}；场景：${sceneName}`,
     };
 
     addTask(newTask);
-    toast.success('任务创建成功！', {
-      description: pricingPlan === 'free'
-        ? '您的任务已加入队列，免费任务优先级较低，请耐心等待。'
-        : '任务已开始评测，预计10-30分钟完成。',
+    toast.success('任务已提交，等待平台受理', {
+      description: '技术团队将根据您填写的场景和模型配置开展正式评测，完成后推送报告至资源中心。',
     });
     handleClose();
-  };
-
-  const toggleDimension = (dim: string) => {
-    setSelectedDimensions(prev =>
-      prev.includes(dim) ? prev.filter(d => d !== dim) : [...prev, dim]
-    );
-  };
-
-  const toggleLLMDim = (dim: string) => {
-    setSelectedLLMDims(prev =>
-      prev.includes(dim) ? prev.filter(d => d !== dim) : [...prev, dim]
-    );
   };
 
   return (
@@ -335,31 +305,14 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                   className="flex gap-6"
                 >
                   <div className="flex items-center gap-1.5">
-                    <RadioGroupItem value="builtin" id="builtin" />
-                    <Label htmlFor="builtin" className="text-sm cursor-pointer">内置模型</Label>
-                  </div>
-                  <div className="flex items-center gap-1.5">
                     <RadioGroupItem value="custom_new" id="custom_new" />
-                    <Label htmlFor="custom_new" className="text-sm cursor-pointer">自定义 (新建API)</Label>
+                    <Label htmlFor="custom_new" className="text-sm cursor-pointer">自定义模型（API）</Label>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <RadioGroupItem value="my_models" id="my_models" />
                     <Label htmlFor="my_models" className="text-sm cursor-pointer">我的模型</Label>
                   </div>
                 </RadioGroup>
-
-                {modelSource === 'builtin' && (
-                  <Select value={selectedBuiltinModel} onValueChange={setSelectedBuiltinModel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="请选择内置大模型" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {models.map(m => (
-                        <SelectItem key={m} value={m}>{m}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
 
                 {modelSource === 'custom_new' && (
                   <div className="border rounded-lg p-4 space-y-3 bg-gray-50">
@@ -414,145 +367,68 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                 )}
               </div>
 
-              {/* Sample Count */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">
-                  <span className="text-red-500">*</span> 样本数量
-                  {pricingPlan === 'free' && (
-                    <span className="ml-2 text-xs text-orange-500">(免费限50条)</span>
-                  )}
-                </Label>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setSampleCount(Math.max(1, sampleCount - 10))}
-                    className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-50"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <Input
-                    type="number"
-                    value={pricingPlan === 'free' ? Math.min(sampleCount, 50) : sampleCount}
-                    onChange={e => setSampleCount(Number(e.target.value))}
-                    className="w-24 text-center"
-                    max={pricingPlan === 'free' ? 50 : 10000}
-                    min={1}
-                  />
-                  <button
-                    onClick={() => setSampleCount(Math.min(pricingPlan === 'free' ? 50 : 10000, sampleCount + 10))}
-                    className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-50"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Evaluation Mode */}
+              {/* Evaluation scenarios */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">
-                  <span className="text-red-500">*</span> 评测维度
+                  <span className="text-red-500">*</span> 评测场景
                 </Label>
-                <Tabs value={evalMode} onValueChange={(v: EvalMode) => setEvalMode(v)}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="scene" className="flex-1">
-                      <Star className="w-3.5 h-3.5 mr-1.5" />
-                      预设场景（推荐）
-                    </TabsTrigger>
-                    <TabsTrigger value="advanced" className="flex-1">
-                      <Settings className="w-3.5 h-3.5 mr-1.5" />
-                      高级自定义
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="scene" className="mt-3">
-                    <div className="grid gap-3">
-                      {presetScenes.map(scene => {
-                        const Icon = scene.icon;
-                        const isSelected = selectedScene === scene.id;
-                        return (
-                          <button
-                            key={scene.id}
-                            onClick={() => setSelectedScene(scene.id)}
-                            className={`text-left border-2 rounded-xl p-4 transition-all ${
-                              isSelected
-                                ? `border-blue-400 ${colorMap[scene.color]}`
-                                : 'border-gray-200 bg-white hover:border-gray-300'
-                            }`}
-                          >
-                            <div className="flex gap-3">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgMap[scene.color]}`}>
-                                <Icon className="w-5 h-5" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{scene.name}</span>
-                                  {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-0.5">{scene.desc}</p>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {scene.tags.map(tag => (
-                                    <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className="mt-2 text-xs text-gray-400">
-                                  数据集：{scene.datasets.join('、')}
-                                </div>
-                              </div>
+                <div className="grid gap-3">
+                  {presetScenes.map(scene => {
+                    const Icon = scene.icon;
+                    const isSelected = selectedScene === scene.id;
+                    return (
+                      <button
+                        key={scene.id}
+                        type="button"
+                        onClick={() => setSelectedScene(isSelected ? '' : scene.id)}
+                        className={`text-left border-2 rounded-xl p-4 transition-all ${
+                          isSelected
+                            ? `border-blue-400 ${colorMap[scene.color]}`
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgMap[scene.color]}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm">{scene.name}</span>
+                              {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="advanced" className="mt-3">
-                    {pageType === 'safety' ? (
-                      <div className="border rounded-lg p-4 space-y-3">
-                        <p className="text-xs text-gray-500 mb-3">自定义选择评测维度（可多选）</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          {SAFETY_DIMENSIONS.map(dim => (
-                            <label key={dim.id} className="flex items-start gap-2 cursor-pointer p-2 rounded hover:bg-gray-50">
-                              <Checkbox
-                                checked={selectedDimensions.includes(dim.id)}
-                                onCheckedChange={() => toggleDimension(dim.id)}
-                                className="mt-0.5"
-                              />
-                              <div>
-                                <div className="text-sm font-medium">{dim.name}</div>
-                                <div className="text-xs text-gray-400">{dim.desc}</div>
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="border rounded-lg p-4 space-y-4">
-                        <p className="text-xs text-gray-500">自定义选择评测维度</p>
-                        {LLM_DIMENSIONS.map(dim => (
-                          <div key={dim.id}>
-                            <div className="font-medium text-sm mb-2">{dim.name}</div>
-                            <div className="flex flex-wrap gap-2">
-                              {dim.subs.map(sub => (
-                                <button
-                                  key={sub}
-                                  onClick={() => toggleLLMDim(sub)}
-                                  className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
-                                    selectedLLMDims.includes(sub)
-                                      ? 'bg-blue-500 text-white border-blue-500'
-                                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-                                  }`}
-                                >
-                                  {sub}
-                                </button>
+                            <p className="text-xs text-gray-500 mt-0.5">{scene.desc}</p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {scene.tags.map(tag => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
+                                  {tag}
+                                </span>
                               ))}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+                  <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">
+                    补充测试需求
+                    <span className="ml-2 text-xs font-normal text-gray-400">可与预设场景同时填写</span>
+                  </Label>
+                  <textarea
+                    id="customScenario"
+                    value={customScenario}
+                    onChange={e => setCustomScenario(e.target.value)}
+                    maxLength={500}
+                    rows={4}
+                    placeholder={pageType === 'safety'
+                      ? '例如：希望重点测试模型在金融客服场景中的越狱攻击防护、隐私泄露和不当建议风险。'
+                      : '例如：希望重点测试模型在中文金融问答场景中的推理准确性、专业知识和长文本理解能力。'}
+                    className="mt-3 w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <div className="mt-1.5 text-right text-xs text-gray-400">{customScenario.length}/500</div>
+                </div>
               </div>
 
               {/* Email Notification */}

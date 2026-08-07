@@ -587,20 +587,19 @@ export function ModelFilingService() {
 
           {/* Horizontal 4-step flow */}
           <div className="relative">
-            {/* Connecting line */}
             <div
               className="absolute hidden lg:block"
+              aria-hidden="true"
               style={{
-                top: 32,
-                left: 'calc(12.5% + 32px)',
-                right: 'calc(12.5% + 32px)',
+                top: 31,
+                left: '12.5%',
+                right: '12.5%',
                 height: 2,
-                background: 'linear-gradient(90deg, #bfdbfe 0%, #93c5fd 40%, #6ee7b7 100%)',
-                borderRadius: 2,
+                background: 'linear-gradient(90deg,rgba(59,130,246,.35),rgba(14,165,233,.35),rgba(16,185,129,.35),rgba(139,92,246,.35))',
+                borderRadius: 999,
                 zIndex: 0,
               }}
             />
-
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {[
                 {
@@ -653,7 +652,7 @@ export function ModelFilingService() {
                     style={{ zIndex: 10 }}
                   >
                     {/* Step number badge + hex icon row */}
-                    <div className="flex items-center gap-4 mb-5">
+                    <div className="relative z-10 flex items-center justify-center gap-4 mb-5">
                       <div className="relative shrink-0">
                         <HexIcon gradient={s.hexGrad}>
                           <Icon className="w-6 h-6" style={{ color: s.accentColor }} />
@@ -667,17 +666,6 @@ export function ModelFilingService() {
                         </div>
                       </div>
 
-                      {/* Arrow between steps (inline, only on lg) */}
-                      {i < 3 && (
-                        <motion.div
-                          animate={{ x: [0, 5, 0] }}
-                          transition={{ duration: 1.8, repeat: Infinity }}
-                          className="hidden lg:flex items-center"
-                          style={{ position: 'absolute', right: -20, top: 16, zIndex: 20 }}
-                        >
-                          <ArrowRight className="w-5 h-5" style={{ color: s.accentColor, opacity: 0.6 }} />
-                        </motion.div>
-                      )}
                     </div>
 
                     {/* Card */}
@@ -843,7 +831,7 @@ export function ModelFilingService() {
       </section>
 
       {/* 7. Case Studies ─────────────────────────────────────── */}
-      <section className="order-[8] py-24 bg-slate-50">
+      <section className="hidden order-[8] py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-gray-900 mb-4">他们已成功拿证，开启商业化</h2>

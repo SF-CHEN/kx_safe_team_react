@@ -167,29 +167,15 @@
     line-height: 1.5;
   }
 
-  button,
-  [role="button"] {
-    cursor: pointer;
+  button {
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    cursor: pointer;
   }
 
-  button:disabled,
-  button[aria-disabled="true"],
-  [role="button"][aria-disabled="true"] {
+  button:disabled {
     cursor: not-allowed;
-  }
-
-  select,
-  summary {
-    cursor: pointer;
-  }
-
-  label:has(input[type="checkbox"]),
-  label:has(input[type="radio"]),
-  label:has(input[type="file"]) {
-    cursor: pointer;
   }
 
   input {

@@ -1,20 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { Eye, EyeOff, Mail, Phone, UserRound } from 'lucide-react';
+import { Eye, EyeOff, Mail } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUser } from '../context/UserContext';
+import { getDefaultUserName, useUser } from '../context/UserContext';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
-
-type RegisterMode = 'phone' | 'email';
 
 export function Register() {
   const navigate = useNavigate();
   const location = useLocation();
   const { register } = useUser();
-  const [mode, setMode] = useState<RegisterMode>('email');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -28,12 +23,15 @@ export function Register() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (mode === 'phone') {
-      toast.warning('手机号注册即将开放，请使用邮箱注册');
+    if (!identifier || !password) {
+      toast.error('请填写手机号/邮箱和密码');
       return;
     }
-    if (!username.trim() || !email.trim() || !password) {
-      toast.error('请填写用户名、邮箱和密码');
+    const normalizedIdentifier = identifier.trim();
+    const isPhone = /^1\d{10}$/.test(normalizedIdentifier);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedIdentifier);
+    if (!isPhone && !isEmail) {
+      toast.error('请输入正确的手机号码或邮箱地址');
       return;
     }
     if (password.length < 6) {
@@ -46,7 +44,12 @@ export function Register() {
     }
     setLoading(true);
     try {
-      await register(username.trim(), email.trim(), password, username.trim());
+      const displayName = getDefaultUserName(normalizedIdentifier);
+      const username = isPhone
+        ? normalizedIdentifier
+        : (normalizedIdentifier.split('@')[0].trim() || normalizedIdentifier);
+      const email = isEmail ? normalizedIdentifier : '';
+      await register(username, email, password, displayName);
       toast.success('注册成功，欢迎使用玄鉴平台');
       navigate(returnTo);
     } catch (err) {
@@ -77,42 +80,24 @@ export function Register() {
               <h1 className="mt-3 text-3xl font-black text-slate-950">免费注册玄鉴</h1>
               <p className="mt-2 text-sm text-slate-500">注册后即可使用在线体验并管理评测任务</p>
               <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[11px] font-semibold text-slate-400">
-                <span>邮箱注册已对接</span><span>体验数据不留存</span><span>支持任务与报告管理</span>
+                <span>手机号或邮箱注册</span><span>体验数据不留存</span><span>支持任务与报告管理</span>
               </div>
             </div>
 
-            <div className="mb-7 flex border-b border-slate-200">
-              {([['email', '邮箱注册'], ['phone', '手机号注册']] as const).map(([key, label]) => (
-                <button key={key} type="button" onClick={() => setMode(key)} className={`relative flex-1 pb-3 text-sm font-bold ${mode === key ? 'text-blue-700' : 'text-slate-400'}`}>
-                  {label}{mode === key && <span className="absolute bottom-0 left-6 right-6 h-0.5 rounded-full bg-blue-600" />}
-                </button>
-              ))}
+            <div className="mb-7 border-b border-slate-200 pb-3">
+              <span className="relative inline-flex text-sm font-black text-blue-700">
+                手机号或邮箱注册
+                <span className="absolute -bottom-[13px] left-0 right-0 h-0.5 rounded-full bg-blue-600" />
+              </span>
             </div>
 
             <form onSubmit={submit} className="space-y-4">
-              {mode === 'email' ? (
-                <>
-                  <div className="relative">
-                    <UserRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input value={username} onChange={event => setUsername(event.target.value)} placeholder="请输入用户名" className={`${inputClass} pl-11`} />
-                  </div>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="请输入企业邮箱地址" className={`${inputClass} pl-11`} />
-                  </div>
-                </>
-              ) : (
-                <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
-                  手机号注册即将开放，请使用邮箱注册。
-                  <div className="relative mt-3 opacity-50 pointer-events-none">
-                    <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input value={phone} readOnly placeholder="请输入手机号码" className={`${inputClass} pl-11`} />
-                  </div>
-                </div>
-              )}
-
               <div className="relative">
-                <input type={showPwd ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="设置登录密码（至少 6 位）" className={`${inputClass} pr-11`} />
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={identifier} onChange={event => setIdentifier(event.target.value)} placeholder="请输入手机号码或邮箱地址" className={`${inputClass} pl-11`} autoComplete="username" />
+              </div>
+              <div className="relative">
+                <input type={showPwd ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="设置登录密码（至少 6 位）" className={`${inputClass} pr-11`} autoComplete="new-password" />
                 <button type="button" onClick={() => setShowPwd(current => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
               {password && <div className="flex items-center gap-2 px-1"><div className="flex flex-1 gap-1">{[1, 2, 3].map(level => <span key={level} className={`h-1 flex-1 rounded-full ${password.length >= level * 4 ? (password.length >= 10 ? 'bg-emerald-500' : 'bg-blue-500') : 'bg-slate-200'}`} />)}</div><span className="text-[10px] text-slate-400">密码安全强度</span></div>}
@@ -122,13 +107,13 @@ export function Register() {
                 <span>我已阅读并同意 <button type="button" className="text-blue-600">《服务条款》</button> 和 <button type="button" className="text-blue-600">《隐私政策》</button></span>
               </label>
 
-              <button type="submit" disabled={loading || mode === 'phone'} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
+              <button type="submit" disabled={loading} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
                 {loading ? '注册中…' : '注册并开始体验'}
               </button>
             </form>
 
             <p className="mt-6 text-center text-sm text-slate-500">已有账号？ <Link to="/login" state={location.state} className="font-bold text-blue-600">返回登录</Link></p>
-            <div className="mt-8 rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-700">邮箱注册已对接现网认证接口；手机验证码注册暂未开放。</div>
+            <div className="mt-8 rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-700">注册已对接现网认证接口；填写手机号或邮箱并设置密码即可完成注册。</div>
           </div>
         </div>
       </main>

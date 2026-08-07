@@ -5,7 +5,6 @@ import { Badge } from '../components/ui/badge';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { StickySubNav } from '../components/StickySubNav';
-import { useUser } from '../context/UserContext';
 import {
   Shield, Cpu, Radio, Eye, AlertTriangle, CheckCircle,
   Play, FileText, ChevronRight, Zap, Target, Activity,
@@ -157,7 +156,6 @@ const ATTACK_OPTIONS: { key: AttackType; label: string; icon: React.ReactNode; c
 
 // ── Component ─────────────────────────────────────────────────────────
 export function EmbodiedIntelligence() {
-  const { isGuest } = useUser();
   const [activeScene, setActiveScene] = useState<SceneTab>('industrial');
   const [attacks, setAttacks] = useState<Set<AttackType>>(new Set());
   const [showReport, setShowReport] = useState(false);
@@ -172,39 +170,44 @@ export function EmbodiedIntelligence() {
 
   const isAttacked = attacks.size > 0;
   const scene = SCENES[activeScene];
+  const bookingReady = Boolean(formData.name.trim() && formData.company.trim() && formData.contact.trim());
+  const sendBooking = () => {
+    if (!bookingReady) return;
+    const robotLabels: Record<string, string> = { arm: '机械臂', quadruped: '四足机器人', wheeled: '轮式机器人', humanoid: '人形机器人' };
+    const subject = encodeURIComponent('具身智能可信评测预约');
+    const body = encodeURIComponent(`姓名：${formData.name}\n公司：${formData.company}\n机器人类型：${robotLabels[formData.robot] || formData.robot}\n联系方式：${formData.contact}`);
+    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
 
       {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="product-detail-hero relative overflow-hidden" style={{ background: '#060e1d', minHeight: 600, display: 'flex', alignItems: 'center' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height relative overflow-hidden" style={{ background: '#060e1d', minHeight: 600, display: 'flex', alignItems: 'center' }}>
         <ProductHeroBackground side="model" concept="embodied" />
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 48px', position: 'relative', zIndex: 10, width: '100%' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', position: 'relative', zIndex: 10, width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 48, alignItems: 'center' }}>
             <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', borderRadius: 99, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', marginBottom: 24 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', borderRadius: 99, background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', marginBottom: 16 }}>
                 <Cpu size={13} style={{ color: '#34d399' }} />
                 <span style={{ color: '#34d399', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em' }}>具身智能 · 可信评测</span>
               </div>
-              <h1 style={{ color: '#fff', fontSize: 'clamp(1.75rem,3.5vw,2.7rem)', fontWeight: 900, lineHeight: 1.25, letterSpacing: '-0.02em', marginBottom: 20 }}>
+              <h1 style={{ color: '#fff', fontSize: 'clamp(1.75rem,3.5vw,2.7rem)', fontWeight: 900, lineHeight: 1.25, letterSpacing: '-0.02em', marginBottom: 14 }}>
                 具身智能全链路<br />
                 <span style={{ background: 'linear-gradient(90deg,#34d399,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   可信评测与安全验证
                 </span>平台
               </h1>
-              <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.8, maxWidth: 560, marginBottom: 32 }}>
+              <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.8, maxWidth: 560, marginBottom: 20 }}>
                 聚焦物理交互中的感知欺骗与控制漏洞，提供覆盖"感知-决策-执行"闭环的标准化测评服务，确保智能体在复杂环境下的作业可靠性与人机安全性。
               </p>
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 36 }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
                 <Button size="lg" onClick={() => document.getElementById('ei-cta')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   style={{ background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', color: '#fff', fontWeight: 700, boxShadow: '0 0 24px rgba(16,185,129,0.4)' }}>
-                  <Plus size={16} style={{ marginRight: 6 }} />申请试用评测
-                </Button>
-                <Button size="lg" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', color: '#e2e8f0', fontWeight: 500 }}>
-                  <FileText size={15} style={{ marginRight: 6 }} />查看评测标准白皮书
+                  <Plus size={16} style={{ marginRight: 6 }} />预约实机评测
                 </Button>
               </div>
-              <div style={{ display: 'flex', gap: 28, paddingTop: 24, borderTop: '1px solid rgba(71,104,139,0.18)' }}>
+              <div style={{ display: 'flex', gap: 24, paddingTop: 16, borderTop: '1px solid rgba(71,104,139,0.18)' }}>
                 {HERO_STATS.map((s, i) => (
                   <div key={i} style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 24, fontWeight: 900, color: '#1e293b', lineHeight: 1 }}>{s.value}{s.unit}</div>
@@ -339,7 +342,7 @@ export function EmbodiedIntelligence() {
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
               <div style={{ display: 'inline-block', fontSize: 13, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 12, padding: '4px 16px', background: '#eff6ff', borderRadius: 20 }}>
-                交互式演示
+                效果预览
               </div>
               <h2 style={{ fontSize: 'clamp(26px,3vw,38px)', fontWeight: 900, color: '#0f172a', margin: '0 0 10px' }}>虚拟攻防沙盘</h2>
               <p style={{ fontSize: 14, color: '#64748b' }}>选择攻击手段，实时观察具身智能系统的失效模式</p>
@@ -774,7 +777,7 @@ export function EmbodiedIntelligence() {
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1.5px solid #e2e8f0', fontSize: 14, color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc' }} />
               </div>
             </div>
-            <Button style={{ width: '100%', height: 48, background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 15, borderRadius: 12, boxShadow: '0 4px 20px rgba(16,185,129,0.35)', cursor: 'pointer' }}>
+            <Button disabled={!bookingReady} onClick={sendBooking} style={{ width: '100%', height: 48, background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 15, borderRadius: 12, boxShadow: bookingReady ? '0 4px 20px rgba(16,185,129,0.35)' : 'none', cursor: bookingReady ? 'pointer' : 'not-allowed', opacity: bookingReady ? 1 : 0.55 }}>
               <ChevronRight size={18} style={{ marginRight: 6 }} />提交预约，获取免费诊断报告
             </Button>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginTop: 20 }}>

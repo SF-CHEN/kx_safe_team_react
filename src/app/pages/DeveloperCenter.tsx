@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useUser } from '../context/UserContext';
 import {
   Zap, Key, Book, Package, BarChart2, HelpCircle, MessageSquare,
@@ -229,8 +229,8 @@ function QuickStart({ env, product }: { env: string; product: string }) {
   const isCodeAudit = product === 'codeaudit';
   const isPrivacy = product === 'privacy';
   const baseUrl = env === '生产'
-    ? (isAigc ? 'api.aisc.zjulab.com' : isCodeAudit ? 'api-audit.aisc.zjulab.com' : isPrivacy ? 'api-privacy.aisc.zjulab.com' : 'api-sec.aisc.zjulab.com')
-    : (isAigc ? 'api-test.aisc.zjulab.com' : isCodeAudit ? 'api-audit-test.aisc.zjulab.com' : isPrivacy ? 'api-privacy-test.aisc.zjulab.com' : 'api-sec-test.aisc.zjulab.com');
+    ? 'api.example.com'
+    : 'sandbox-api.example.com';
 
   const AIGC_INIT_CODE = `import aisc
 
@@ -302,7 +302,7 @@ print(report.issues[0].line) # 42`;
   "box_mode":    "whitebox",
   "robustness":  72.4,
   "privacy_risk": "LOW",
-  "report_url":  "https://api-sec.aisc.zjulab.com/v1/eval/report/eval_9f3b2c1d",
+  "report_url":  "https://api.example.com/v1/eval/report/eval_demo",
   "metrics": {
     "FGSM_resistance":  0.724,
     "PGD_resistance":   0.658,
@@ -319,7 +319,7 @@ print(report.issues[0].line) # 42`;
   "critical_count": 1,
   "high_count":    1,
   "medium_count":  1,
-  "report_url":    "https://api-audit.aisc.zjulab.com/v1/audit/report/audit_7c4d1f9a",
+  "report_url":    "https://api.example.com/v1/audit/report/audit_demo",
   "issues": [
     { "id": "SQL_INJ_001", "severity": "CRITICAL", "line": 42, "rule": "sql_injection" },
     { "id": "XSS_002",     "severity": "HIGH",     "line": 87, "rule": "reflected_xss" }
@@ -360,7 +360,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
   },
   "risk_level":       "HIGH",
   "desensitized":     true,
-  "report_url":       "https://api-privacy.aisc.zjulab.com/v1/privacy/report/priv_3e7a2b9c",
+  "report_url":       "https://api.example.com/v1/privacy/report/priv_demo",
   "timestamp":        "2026-05-14T11:30:22Z"
 }`;
 
@@ -480,7 +480,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
               <span style={{ fontSize: 16, fontWeight: 700, color: T.accent }}>{val}</span>
             </div>
           ))}
-          <a href="#" style={{ display: 'block', marginTop: 8, fontSize: 13, color: T.accent, textDecoration: 'none' }}>升级以提高限额 →</a>
+              <Link to="/about" style={{ display: 'block', marginTop: 8, fontSize: 13, color: T.accent, textDecoration: 'none' }}>联系顾问申请正式接入 →</Link>
         </div>
 
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: '20px' }}>
@@ -869,7 +869,7 @@ function ApiDocsSection({ product }: { product: string }) {
   const isCodeAudit = product === 'codeaudit';
   const isPrivacy = product === 'privacy';
   const ENDPOINTS = product === 'aigc' ? AIGC_ENDPOINTS : isCodeAudit ? CODEAUDIT_ENDPOINTS : isPrivacy ? PRIVACY_ENDPOINTS : SEC_ENDPOINTS;
-  const baseApiUrl = product === 'aigc' ? 'api.aisc.zjulab.com' : isCodeAudit ? 'api-audit.aisc.zjulab.com' : isPrivacy ? 'api-privacy.aisc.zjulab.com' : 'api-sec.aisc.zjulab.com';
+  const baseApiUrl = 'api.example.com';
   const [active, setActive] = useState(ENDPOINTS[0]);
   React.useEffect(() => { setActive(ENDPOINTS[0]); }, [product]);
   const tags = [...new Set(ENDPOINTS.map(e => e.tag))];
@@ -1137,7 +1137,7 @@ public class Main {
   cURL: {
     lang: 'bash',
     code: `# 文本审核（同步）
-curl -X POST "https://api.aisc.zjulab.com/v1/moderation/text" \\
+curl -X POST "https://api.example.com/v1/moderation/text" \\
   -H "Authorization: Bearer sk-proj-your-key-here" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -1147,7 +1147,7 @@ curl -X POST "https://api.aisc.zjulab.com/v1/moderation/text" \\
   }'
 
 # 视频鉴伪（异步）
-curl -X POST "https://api.aisc.zjulab.com/v1/detect/video" \\
+curl -X POST "https://api.example.com/v1/detect/video" \\
   -H "Authorization: Bearer sk-proj-your-key-here" \\
   -d '{"url": "https://example.com/video.mp4", "async": true}'`,
   },
@@ -1173,32 +1173,32 @@ function SdkSection({ product }: { product: string }) {
     if (isCodeAudit) {
       if (lang === 'Python') return `import aisc_codeaudit\n\nclient = aisc_codeaudit.Client(api_key="sk-test-your-key-here")\n\n# 提交代码片段进行漏洞扫描\ntask = client.audit.scan(\n    code=open("./src/app.py").read(),\n    language="python",\n    rules=["sql_injection", "xss", "path_traversal"],\n)\nprint(task.task_id)   # "audit_7c4d1f9a"\nprint(task.status)    # "scanning"\n\n# 获取扫描报告\nreport = client.audit.report(task.task_id)\nprint(report.total_issues)    # 3\nprint(report.critical_count)  # 1`;
       if (lang === 'Node.js') return `import AuditClient from '@aisc/codeaudit-node';\n\nconst client = new AuditClient({ apiKey: 'sk-test-your-key-here' });\n\n// 扫描代码文件\nconst task = await client.audit.scan({\n  code: fs.readFileSync('./src/app.js', 'utf8'),\n  language: 'javascript',\n  rules: ['xss', 'path_traversal'],\n});\nconsole.log(task.taskId);  // "audit_7c4d1f9a"\n\n// 获取 AI 修复建议\nconst fix = await client.audit.fix(task.issues[0].id);\nconsole.log(fix.suggestedCode);`;
-      if (lang === 'cURL') return `# 提交代码扫描任务\ncurl -X POST "https://api-audit.aisc.zjulab.com/v1/audit/scan" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "code": "import sqlite3\\ndef get(uid): query = \\"SELECT * FROM users WHERE id=\\" + uid",\n    "language": "python",\n    "rules": ["sql_injection"]\n  }'`;
+      if (lang === 'cURL') return `# 提交代码扫描任务\ncurl -X POST "https://api.example.com/v1/audit/scan" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "code": "import sqlite3\\ndef get(uid): query = \\"SELECT * FROM users WHERE id=\\" + uid",\n    "language": "python",\n    "rules": ["sql_injection"]\n  }'`;
     }
     if (isSec) {
       if (lang === 'Python') return `import aisc_sec\n\nclient = aisc_sec.Client(api_key="sk-test-your-key-here")\n\n# 创建模型安全评测任务\ntask = client.eval.model(\n    model_path="./model.pth",\n    dataset_path="./test_data.zip",\n    attacks=["FGSM", "PGD", "DeepFool"],\n    box_mode="whitebox",\n)\nprint(task.task_id)    # "eval_9f3b2c1d"\nprint(task.status)     # "running"\n\n# 获取评测报告\nreport = client.eval.report(task.task_id)\nprint(report.robustness)  # 72.4`;
       if (lang === 'Node.js') return `import SecClient from '@aisc/sec-node';\n\nconst client = new SecClient({ apiKey: 'sk-test-your-key-here' });\n\n// 提交数据集安全评测\nconst task = await client.eval.dataset({\n  datasetPath: './dataset.zip',\n  evalDimensions: ['privacy', 'poisoning'],\n});\nconsole.log(task.taskId);  // "eval_9f3b2c1d"\n\n// 轮询任务状态\nconst result = await client.eval.report(task.taskId);\nconsole.log(result.privacyRisk);  // "LOW"`;
-      if (lang === 'cURL') return `# 创建模型评测任务\ncurl -X POST "https://api-sec.aisc.zjulab.com/v1/eval/model" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model_url": "https://...", "attacks": ["FGSM", "PGD"], "box_mode": "whitebox"}'`;
+      if (lang === 'cURL') return `# 创建模型评测任务\ncurl -X POST "https://api.example.com/v1/eval/model" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model_url": "https://...", "attacks": ["FGSM", "PGD"], "box_mode": "whitebox"}'`;
     }
     if (isPrivacy) {
       if (lang === 'Python') return `import aisc_privacy\n\nclient = aisc_privacy.Client(api_key="sk-test-your-key-here")\n\n# 扫描文本中的敏感信息\ntask = client.privacy.scan(\n    content=open("./customer_records.txt").read(),\n    data_type="text",\n    dimensions=["身份证号", "手机号码", "银行卡号"],\n    desensitize=True,\n)\nprint(task.task_id)    # "priv_3e7a2b9c"\nprint(task.status)     # "scanning"\n\n# 获取审查报告\nreport = client.privacy.report(task.task_id)\nprint(report.total_findings)        # 12\nprint(report.risk_level)            # "HIGH"\nprint(report.desensitized_content)  # 脱敏后文本`;
       if (lang === 'Node.js') return `import PrivacyClient from '@aisc/privacy-node';\n\nconst client = new PrivacyClient({ apiKey: 'sk-test-your-key-here' });\n\n// 扫描文本敏感信息\nconst task = await client.privacy.scan({\n  content: fs.readFileSync('./records.txt', 'utf8'),\n  dataType: 'text',\n  dimensions: ['身份证号', '手机号码'],\n  desensitize: true,\n});\nconsole.log(task.taskId);  // "priv_3e7a2b9c"\n\n// 获取脱敏结果\nconst report = await client.privacy.report(task.taskId);\nconsole.log(report.totalFindings);  // 12\nconsole.log(report.riskLevel);      // "HIGH"`;
-      if (lang === 'cURL') return `# 创建敏感信息扫描任务\ncurl -X POST "https://api-privacy.aisc.zjulab.com/v1/privacy/scan" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "content": "张三，手机：13812345678，身份证：110101199001011234",\n    "data_type": "text",\n    "dimensions": ["身份证号", "手机号码"],\n    "desensitize": true\n  }'`;
+      if (lang === 'cURL') return `# 创建敏感信息扫描任务\ncurl -X POST "https://api.example.com/v1/privacy/scan" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "content": "张三，手机：13812345678，身份证：110101199001011234",\n    "data_type": "text",\n    "dimensions": ["身份证号", "手机号码"],\n    "desensitize": true\n  }'`;
     }
     if (isLlmEval) {
       if (lang === 'Python') return `import aisc_llmeval\n\nclient = aisc_llmeval.Client(api_key="sk-test-your-key-here")\n\n# 创建大模型性能评测任务\ntask = client.eval.create(\n    model="your-model-api-endpoint",\n    datasets=["MMLU", "HumanEval", "GSM8K"],\n    dimensions=["generation", "understanding", "reasoning", "code"],\n)\nprint(task.task_id)   # "llm_4a8b2f9e"\nprint(task.status)    # "running"\n\n# 获取评测报告\nreport = client.eval.report(task.task_id)\nprint(report.overall_score)   # 79.8\nprint(report.radar_scores)    # {'generation': 82, 'reasoning': 71, ...}`;
       if (lang === 'Node.js') return `import LlmEvalClient from '@aisc/llmeval-node';\n\nconst client = new LlmEvalClient({ apiKey: 'sk-test-your-key-here' });\n\n// 创建评测任务\nconst task = await client.eval.create({\n  model: 'your-model-api-endpoint',\n  datasets: ['MMLU', 'HumanEval'],\n  dimensions: ['generation', 'reasoning'],\n});\nconsole.log(task.taskId);  // "llm_4a8b2f9e"\n\n// 获取报告\nconst report = await client.eval.report(task.taskId);\nconsole.log(report.overallScore);   // 79.8\nconsole.log(report.radarScores);`;
-      if (lang === 'cURL') return `# 创建大模型评测任务\ncurl -X POST "https://api-llmeval.aisc.zjulab.com/v1/eval/create" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "your-model-api-endpoint", "datasets": ["MMLU","GSM8K"], "dimensions": ["generation","reasoning"]}'`;
+      if (lang === 'cURL') return `# 创建大模型评测任务\ncurl -X POST "https://api.example.com/v1/eval/create" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "your-model-api-endpoint", "datasets": ["MMLU","GSM8K"], "dimensions": ["generation","reasoning"]}'`;
     }
     if (isSafetyEval) {
       if (lang === 'Python') return `import aisc_safetyeval\n\nclient = aisc_safetyeval.Client(api_key="sk-test-your-key-here")\n\n# 创建大模型安全评测任务\ntask = client.safety.evaluate(\n    model="your-model-api-endpoint",\n    attack_types=["jailbreak", "prompt_injection", "hallucination"],\n    dimensions=["refusal_rate", "safety_score", "robustness"],\n)\nprint(task.task_id)      # "safe_6b3c8a1d"\nprint(task.status)       # "running"\n\n# 获取安全评测报告\nreport = client.safety.report(task.task_id)\nprint(report.safety_score)    # 84.2\nprint(report.risk_level)      # "MEDIUM"`;
       if (lang === 'Node.js') return `import SafetyEvalClient from '@aisc/safetyeval-node';\n\nconst client = new SafetyEvalClient({ apiKey: 'sk-test-your-key-here' });\n\n// 提交安全评测任务\nconst task = await client.safety.evaluate({\n  model: 'your-model-api-endpoint',\n  attackTypes: ['jailbreak', 'prompt_injection'],\n  dimensions: ['refusal_rate', 'safety_score'],\n});\nconsole.log(task.taskId);  // "safe_6b3c8a1d"\n\n// 获取安全报告\nconst report = await client.safety.report(task.taskId);\nconsole.log(report.safetyScore);  // 84.2\nconsole.log(report.riskLevel);    // "MEDIUM"`;
-      if (lang === 'cURL') return `# 创建大模型安全评测任务\ncurl -X POST "https://api-safetyeval.aisc.zjulab.com/v1/safety/evaluate" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "your-model-api-endpoint", "attack_types": ["jailbreak","prompt_injection"], "dimensions": ["safety_score"]}'`;
+      if (lang === 'cURL') return `# 创建大模型安全评测任务\ncurl -X POST "https://api.example.com/v1/safety/evaluate" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model": "your-model-api-endpoint", "attack_types": ["jailbreak","prompt_injection"], "dimensions": ["safety_score"]}'`;
     }
     if (isAgentEval) {
       if (lang === 'Python') return `import aisc_agenteval\n\nclient = aisc_agenteval.Client(api_key="sk-test-your-key-here")\n\n# 创建智能体安全评测任务\ntask = client.agent.evaluate(\n    agent_endpoint="your-agent-api-endpoint",\n    attack_vectors=["prompt_injection", "memory_attack", "tool_abuse"],\n    scenarios=["finance", "hr", "code_execution"],\n)\nprint(task.task_id)    # "agent_2d9f1c7b"\nprint(task.status)     # "running"\n\n# 获取评测报告\nreport = client.agent.report(task.task_id)\nprint(report.security_score)  # 61.5\nprint(report.high_risk_count) # 3`;
       if (lang === 'Node.js') return `import AgentEvalClient from '@aisc/agenteval-node';\n\nconst client = new AgentEvalClient({ apiKey: 'sk-test-your-key-here' });\n\n// 提交智能体安全评测\nconst task = await client.agent.evaluate({\n  agentEndpoint: 'your-agent-api-endpoint',\n  attackVectors: ['prompt_injection', 'tool_abuse'],\n  scenarios: ['finance', 'hr'],\n});\nconsole.log(task.taskId);  // "agent_2d9f1c7b"\n\nconst report = await client.agent.report(task.taskId);\nconsole.log(report.securityScore);  // 61.5\nconsole.log(report.highRiskCount);  // 3`;
-      if (lang === 'cURL') return `# 创建智能体安全评测任务\ncurl -X POST "https://api-agenteval.aisc.zjulab.com/v1/agent/evaluate" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"agent_endpoint": "your-agent-api-endpoint", "attack_vectors": ["prompt_injection","tool_abuse"], "scenarios": ["finance"]}'`;
+      if (lang === 'cURL') return `# 创建智能体安全评测任务\ncurl -X POST "https://api.example.com/v1/agent/evaluate" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"agent_endpoint": "your-agent-api-endpoint", "attack_vectors": ["prompt_injection","tool_abuse"], "scenarios": ["finance"]}'`;
     }
     // Default: AIGC
     if (lang === 'Python') return SDK_LANGS['Python'].code;

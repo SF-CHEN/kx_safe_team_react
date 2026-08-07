@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useUser } from '../context/UserContext';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -518,13 +518,6 @@ export function Home() {
               <p className="text-blue-300 text-sm leading-relaxed mb-5">
                 国内领先的大模型安全评测平台，依托顶级实验室与高校技术资源，为AI系统安全保驾护航。
               </p>
-              <div className="flex gap-3">
-                {[Github, Twitter, Linkedin].map((Icon, i) => (
-                  <a key={i} href="#" className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-blue-500/50 transition-colors">
-                    <Icon className="w-4 h-4 text-blue-200" />
-                  </a>
-                ))}
-              </div>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-5 flex items-center gap-2">
@@ -562,9 +555,9 @@ export function Home() {
               </h4>
               <ul className="space-y-3">
                 {[
-                  { Icon: Mail, text: 'contact@aisa-fepro.com' },
-                  { Icon: Phone, text: '+86 010-8888-9999' },
-                  { Icon: MapPin, text: '北京市海淀区中关村科技园区' },
+                  { Icon: Mail, text: 'contact@hzrongshu.cn' },
+                  { Icon: Phone, text: '13940451397' },
+                  { Icon: MapPin, text: '杭州市滨江区长河街道聚才路239号火炬创新中心2号楼1314室' },
                 ].map(({ Icon, text }) => (
                   <li key={text} className="flex items-start gap-2.5 text-sm text-blue-300">
                     <Icon className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
@@ -574,17 +567,12 @@ export function Home() {
               </ul>
               <div className="mt-5 p-3 bg-white/10 rounded-xl border border-white/10">
                 <div className="text-xs text-blue-400 mb-1">商务合作</div>
-                <div className="text-xs text-blue-200">bd@aisa-fepro.com</div>
+                <div className="text-xs text-blue-200">contact@hzrongshu.cn</div>
               </div>
             </div>
           </div>
           <div className="border-t border-white/10 pt-6 flex items-center justify-between">
-            <div className="text-blue-400 text-xs">Copyright © 2022-2026 AISafePro-LM. All Rights Reserved. 京ICP备XXXXXXXX号</div>
-            <div className="flex items-center gap-4 text-xs text-blue-400">
-              {['隐私政策', '服务条款', 'Cookie 设置'].map(t => (
-                <a key={t} href="#" className="hover:text-blue-200 transition-colors">{t}</a>
-              ))}
-            </div>
+            <div className="text-blue-400 text-xs">Copyright © 2022–2026 杭州榕数科技有限公司 · 玄鉴 AI安全与评测平台</div>
           </div>
         </div>
       </footer>

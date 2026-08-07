@@ -116,9 +116,9 @@ function ModelSafetyTaskModal({ open, onClose }: ModalProps) {
   const curIdx = STEP_IDX[step];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
+    <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
       onClick={handleClose}>
-      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden' }}
+      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden', cursor: 'default' }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Deep-blue header ── */}
@@ -239,7 +239,7 @@ function ModelSafetyTaskModal({ open, onClose }: ModalProps) {
                       {grp.items.map(item => {
                         const sel = (metrics[grp.id] || []).includes(item);
                         return (
-                          <div key={item} onClick={() => toggleMetric(grp.id, item)}
+                          <div className="cursor-pointer" key={item} onClick={() => toggleMetric(grp.id, item)}
                             style={{ padding: '7px 14px', borderRadius: 8, cursor: 'pointer', border: `1.5px solid ${sel ? grp.color : '#e2e8f0'}`, background: sel ? grp.bg : '#fafbfc', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
                             {sel && <CheckCircle size={11} style={{ color: grp.color, flexShrink: 0 }} />}
                             <span style={{ fontSize: 13, fontWeight: 600, color: sel ? grp.color : '#374151' }}>{item}</span>
@@ -752,8 +752,8 @@ const DISTRIBUTION_ROWS = [
 function DatasetEvaluationLab() {
   const [boxMode, setBoxMode] = useState<BoxMode>('whitebox');
   const [dataset, setDataset] = useState('COCO');
-  const [stage, setStage] = useState<EvalStage>('idle');
-  const [progress, setProgress] = useState(0);
+  const [stage, setStage] = useState<EvalStage>('done');
+  const [progress, setProgress] = useState(100);
   const [activeMetric, setActiveMetric] = useState(0);
   const activeMetrics = boxMode === 'whitebox' ? WHITEBOX_DEMO_METRICS : BLACKBOX_DEMO_METRICS;
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(WHITEBOX_DEMO_METRICS.map(metric => metric.id));
@@ -762,45 +762,12 @@ function DatasetEvaluationLab() {
     const metrics = mode === 'whitebox' ? WHITEBOX_DEMO_METRICS : BLACKBOX_DEMO_METRICS;
     setBoxMode(mode);
     setSelectedMetrics(metrics.map(metric => metric.id));
-    setStage('idle');
-    setProgress(0);
+    setStage('done');
+    setProgress(100);
     setActiveMetric(0);
   };
 
-  const toggleMetric = (id: string) => {
-    if (stage === 'running') return;
-    setSelectedMetrics(current => current.includes(id)
-      ? current.length === 1 ? current : current.filter(item => item !== id)
-      : [...current, id]);
-    setStage('idle');
-    setProgress(0);
-  };
-
-  const runEvaluation = () => {
-    if (stage === 'done') {
-      setStage('idle');
-      setProgress(0);
-      setActiveMetric(0);
-      return;
-    }
-
-    setStage('running');
-    setProgress(0);
-    setActiveMetric(0);
-    let nextProgress = 0;
-    const timer = window.setInterval(() => {
-      nextProgress += 2;
-      setProgress(Math.min(nextProgress, 100));
-      setActiveMetric(Math.min(
-        Math.floor((nextProgress / 100) * selectedMetrics.length),
-        Math.max(selectedMetrics.length - 1, 0),
-      ));
-      if (nextProgress >= 100) {
-        window.clearInterval(timer);
-        window.setTimeout(() => setStage('done'), 250);
-      }
-    }, 45);
-  };
+  const toggleMetric = (id: string) => setActiveMetric(Math.max(activeMetrics.findIndex(metric => metric.id === id), 0));
 
   const selectedMetricDetails = activeMetrics.filter(metric => selectedMetrics.includes(metric.id));
   const overallScore = selectedMetricDetails.length
@@ -813,11 +780,11 @@ function DatasetEvaluationLab() {
         <ScrollReveal>
           <div style={{ textAlign: 'center', marginBottom: 44 }}>
             <div style={{ display: 'inline-block', fontSize: 11, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 800, marginBottom: 12 }}>
-              INTERACTIVE EVALUATION LAB
+              EVALUATION RESULT PREVIEW
             </div>
-            <h2 style={{ fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>模拟一次模型训练数据集评测</h2>
+            <h2 style={{ fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>模型数据安全评测结果示例</h2>
             <p style={{ fontSize: 15, color: '#64748b', maxWidth: 720, margin: '0 auto', lineHeight: 1.8 }}>
-              选择白盒或黑盒模式及评测指标，直观看到数据质量、分布偏差、异常样本与安全风险如何形成可执行的评测结论。
+              通过平台内置样例查看数据质量、分布偏差、异常样本与安全风险如何形成正式评测结论。
             </p>
           </div>
         </ScrollReveal>
@@ -920,10 +887,9 @@ function DatasetEvaluationLab() {
                   ))}
                 </div>
 
-                <button onClick={runEvaluation} disabled={stage === 'running'}
-                  style={{ width: '100%', marginTop: 18, padding: '12px 18px', borderRadius: 9, border: 'none', background: stage === 'done' ? '#0f172a' : stage === 'running' ? '#94a3b8' : 'linear-gradient(135deg,#2563eb,#7c3aed)', color: '#fff', fontSize: 13, fontWeight: 800, cursor: stage === 'running' ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-                  {stage === 'done' ? '↺ 重新评测' : stage === 'running' ? <><Zap size={14} /> 正在执行指标评测 {progress}%</> : <><Search size={14} /> 开始评测已选 {selectedMetrics.length} 项指标</>}
-                </button>
+                <div style={{ width: '100%', marginTop: 18, padding: '12px 18px', borderRadius: 9, background: '#ecfdf5', color: '#047857', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+                  <CheckCircle size={14} /> 内置评测报告样例
+                </div>
               </div>
 
               <div style={{ padding: 26, position: 'relative' }}>
@@ -931,7 +897,7 @@ function DatasetEvaluationLab() {
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a' }}>03 指标评测结果</div>
                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>
-                      {stage === 'idle' ? '点击“开始评测”生成指标结论与优化建议' : stage === 'running' ? `正在分析：${selectedMetricDetails[activeMetric]?.label || '数据集结构'}` : '评测已完成，可据此制定数据优化方案'}
+                      内置样例展示指标结论与优化建议；正式评测请创建任务
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -985,7 +951,7 @@ function DatasetEvaluationLab() {
             </div>
 
             <div style={{ padding: '12px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', fontSize: 10, color: '#94a3b8' }}>
-              <span>演示数据为平台内置样例 · 指标名称与“创建数据安全评测任务”保持一致</span>
+              <span>展示数据为平台内置样例 · 不会在产品介绍页执行正式评测</span>
               <span style={{ color: '#2563eb', fontWeight: 700 }}>评测结论可输出 HTML / PDF / JSON 报告</span>
             </div>
           </div>
@@ -1087,11 +1053,11 @@ export function ModelSafetyEval() {
 
       <StickySubNav items={[
         { id: 'mse-features', label: '核心功能' },
-        { id: 'mse-lab', label: '交互式演示' },
+        { id: 'mse-lab', label: '结果示例' },
         { id: 'mse-scenarios', label: '应用场景' },
         { id: 'mse-compat', label: '技术兼容性' },
         { id: 'mse-process', label: '评测流程' },
-        { id: 'mse-cta', label: '开始评测' },
+        { id: 'mse-cta', label: '创建正式任务' },
       ]} />
 
       {/* ── Core Features Z-layout ───────────────────────────── */}

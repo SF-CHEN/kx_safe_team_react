@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GlobalFooter } from './GlobalFooter';
 import { GuestGuard } from './GuestGuard';
-import { ScrollToTop } from './ScrollToTop';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useUser } from '../context/UserContext';
 import {
@@ -13,11 +12,13 @@ import {
 } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { toast } from 'sonner';
 import {
   ChevronDown, LogOut, Settings, BookOpen, LayoutDashboard,
   Database, BarChart2, Shield, FileText, ChevronRight,
   Sparkles, ExternalLink, Phone, MessageCircle, QrCode,
-  ArrowRight, Menu
+  ArrowRight, Menu, Bell, UserRound, LockKeyhole, AtSign, Save
 } from 'lucide-react';
 
 // ── Type definitions for nested menu ────────────────────────────
@@ -26,6 +27,7 @@ interface MenuLeaf {
   desc: string;
   path: string;
   isGroup?: false;
+  capabilities?: CapabilityTag[];
 }
 interface MenuChild {
   label: string;
@@ -37,8 +39,15 @@ interface MenuGroup {
   path?: string;   // if present → group header is clickable
   isGroup: true;
   children: MenuChild[];
+  capabilities?: CapabilityTag[];
 }
 type MenuItem = MenuLeaf | MenuGroup;
+type CapabilityTag = '可体验' | '可创建任务';
+
+function CapabilityTags({ tags }: { tags?: CapabilityTag[] }) {
+  if (!tags?.length) return null;
+  return <span className="ml-2 inline-flex shrink-0 gap-1">{tags.map(tag => <span key={tag} className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none ${tag === '可体验' ? 'border-sky-200 bg-sky-50 text-sky-600' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>{tag}</span>)}</span>;
+}
 
 interface ProductSeries {
   id: string;
@@ -64,12 +73,13 @@ const PRODUCT_SERIES: ProductSeries[] = [
     accentColor: '#8b5cf6',
     badge: null,
     items: [
-      { label: '个人敏感信息审查', desc: '个人数据隐私合规检测与处理', path: '/privacy-data-audit' },
-      { label: '模型数据安全评测', desc: '训练数据安全风险深度分析', path: '/model-safety-eval' },
+      { label: '个人敏感信息审查', desc: '个人数据隐私合规检测与处理', path: '/privacy-data-audit', capabilities: ['可体验'] },
+      { label: '模型数据安全评测', desc: '训练数据安全风险深度分析', path: '/model-safety-eval', capabilities: ['可创建任务'] },
       {
         label: 'AIGC内容审核与鉴伪',
         desc: 'AI生成内容审核与真伪鉴别',
         isGroup: true,
+        capabilities: ['可体验'],
         children: [
           { label: '文本内容审核与鉴伪', path: '/aigc-content?tab=text' },
           { label: '图像内容审核与鉴伪', path: '/aigc-content?tab=image' },
@@ -89,13 +99,14 @@ const PRODUCT_SERIES: ProductSeries[] = [
     accentColor: '#3b82f6',
     badge: null,
     items: [
-      { label: '深度模型可信测评', desc: '大模型全面可信度综合评估', path: '/deep-model-eval' },
+      { label: '深度模型可信测评', desc: '大模型全面可信度综合评估', path: '/deep-model-eval', capabilities: ['可创建任务'] },
       { label: '具身智能可信评测', desc: '物理交互场景可信安全评测', path: '/embodied-intelligence' },
-      { label: '智能体安全评测', desc: 'AI智能体行为安全综合评测', path: '/agent-safety' },
+      { label: '智能体安全评测', desc: 'AI智能体行为安全综合评测', path: '/agent-safety', capabilities: ['可创建任务'] },
       {
         label: '大语言模型可信评测',
         desc: '多维能力与安全评测套件',
         isGroup: true,
+        capabilities: ['可创建任务'],
         children: [
           { label: '大模型性能评测', path: '/llm-evaluation' },
           { label: '大模型安全评测', path: '/safety-evaluation' },
@@ -113,7 +124,7 @@ const PRODUCT_SERIES: ProductSeries[] = [
     accentColor: '#06b6d4',
     badge: null,
     items: [
-      { label: '代码漏洞审查', desc: 'AI代码安全扫描与深度审计', path: '/code-vulnerability-audit' },
+      { label: '代码漏洞审查', desc: 'AI代码安全扫描与深度审计', path: '/code-vulnerability-audit', capabilities: ['可体验'] },
       { label: '网络渗透测试', desc: 'AI系统网络安全渗透评估', path: '/penetration-test' },
     ],
   },
@@ -127,8 +138,8 @@ const PRODUCT_SERIES: ProductSeries[] = [
     accentColor: '#10b981',
     badge: null,
     items: [
-      { label: '人工智能安全教学平台', desc: 'AI安全教育培训解决方案', path: '/ai-safety-edu' },
-      { label: '大模型备案服务', desc: '备案全流程咨询与辅助', path: '/model-filing-service' },
+      { label: '人工智能安全教学平台', desc: 'AI安全教育培训解决方案', path: '/ai-safety-edu', capabilities: ['可体验'] },
+      { label: '大模型备案服务', desc: '备案全流程咨询与辅助', path: '/model-filing-service', capabilities: ['可体验'] },
       { label: '可信安全标准制定服务', desc: '国际国家标准参与制定', path: '/tianche-standard-service' },
     ],
   },
@@ -170,10 +181,10 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
     if (!input.trim()) return;
     setMessages(p => [...p, { from: 'user', text: input.trim(), ts: '刚刚' }]);
     setInput('');
-    setTimeout(() => setMessages(p => [...p, { from: 'agent', text: '感谢留言！专属顾问将在工作时间内尽快回复您，或拨打 0571-87837371。', ts: '刚刚' }]), 800);
+    setTimeout(() => setMessages(p => [...p, { from: 'agent', text: '感谢留言！专属顾问将在工作时间内尽快回复您，或拨打 13940451397。', ts: '刚刚' }]), 800);
   };
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 92, width: 380, maxWidth: 'calc(100vw - 112px)', background: '#fff', borderRadius: 20, boxShadow: '0 24px 70px rgba(15,23,42,0.22)', overflow: 'hidden', zIndex: 9998, display: 'flex', flexDirection: 'column', border: '1px solid #e5eaf1' }}>
+    <div style={{ position: 'fixed', bottom: 24, right: 92, width: 420, height: 'min(620px, calc(100vh - 48px))', maxWidth: 'calc(100vw - 112px)', background: '#fff', borderRadius: 20, boxShadow: '0 24px 70px rgba(15,23,42,0.22)', overflow: 'hidden', zIndex: 9998, display: 'flex', flexDirection: 'column', border: '1px solid #e5eaf1' }}>
       <div style={{ background: 'linear-gradient(135deg,#4f46e5,#6366f1)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <MessageCircle className="w-4 h-4 text-white" />
@@ -186,7 +197,7 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
           ✕
         </button>
       </div>
-      <div style={{ flex: 1, maxHeight: 280, overflowY: 'auto', padding: 14, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.map((m, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, flexDirection: m.from === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
             {m.from === 'agent' && <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><MessageCircle className="w-3 h-3 text-white" /></div>}
@@ -219,7 +230,7 @@ function FloatingContact() {
       tooltip: (
         <div className="p-4 w-44">
           <div className="font-bold text-gray-800 text-sm mb-1.5">电话咨询</div>
-          <div className="text-blue-600 font-mono font-bold text-base">0571-87837371</div>
+          <div className="text-blue-600 font-mono font-bold text-base">13940451397</div>
           <div className="text-gray-400 text-xs mt-1.5">工作日 9:00 – 18:00</div>
           <div className="text-gray-400 text-xs">节假日 10:00 – 17:00</div>
         </div>
@@ -332,13 +343,6 @@ const TIANHENG_ITEMS = [
   { label: '大模型性能评测', path: '/llm-evaluation' },
   { label: '大模型安全评测', path: '/safety-evaluation' },
 ];
-const AIGC_MODALITIES = [
-  { label: '文本', tab: 'text' },
-  { label: '图像', tab: 'image' },
-  { label: '音频', tab: 'audio' },
-  { label: '视频', tab: 'video' },
-];
-
 // ── Breadcrumb config ─────────────────────────────────────────────
 interface BreadcrumbCrumb { label: string; path?: string }
 
@@ -427,7 +431,10 @@ function PageBreadcrumb() {
               {/* 仅首页可点击 */}
               {isFirst ? (
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => {
+                    navigate('/');
+                    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+                  }}
                   style={{
                     background: 'none', border: 'none', padding: 0,
                     fontSize: 14, fontWeight: 500,
@@ -471,12 +478,7 @@ function SubNav() {
   const path = location.pathname;
 
   const isTianheng = TIANHENG_PATHS.includes(path);
-  const isAigc = path === '/aigc-content';
-
-  if (!isTianheng && !isAigc) return null;
-
-  const searchParams = new URLSearchParams(location.search);
-  const activeTab = searchParams.get('tab') || 'text';
+  if (!isTianheng) return null;
 
   const baseStyle: React.CSSProperties = {
     top: 120, // 76px header + 44px breadcrumb
@@ -490,45 +492,42 @@ function SubNav() {
 
   return (
     <div data-layout-subnav className="sticky" style={baseStyle}>
-      <div className="max-w-[1400px] mx-auto px-6 h-11 flex items-center gap-4">
+      <div className="max-w-[1400px] mx-auto px-6 h-[52px] flex items-center gap-5">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 shrink-0">
           <div
             className="w-5 h-5 rounded flex items-center justify-center shrink-0"
             style={{
-              background: isTianheng
-                ? 'linear-gradient(135deg,#3b82f6,#6366f1)'
-                : 'linear-gradient(135deg,#8b5cf6,#c084fc)',
+              background: 'linear-gradient(135deg,#3b82f6,#6366f1)',
             }}
           >
-            {isTianheng
-              ? <BarChart2 className="w-3 h-3 text-white" />
-              : <Database className="w-3 h-3 text-white" />
-            }
+            <BarChart2 className="w-3 h-3 text-white" />
           </div>
-          <span className="text-xs text-gray-400 font-medium">玄鉴</span>
-          <span className="text-gray-200 text-xs">/</span>
+          <span className="text-sm text-gray-500 font-medium">玄鉴</span>
+          <span className="text-gray-200 text-sm">/</span>
           <span
-            className="text-xs font-semibold"
-            style={{ color: isTianheng ? '#3b82f6' : '#8b5cf6' }}
+            className="text-sm font-semibold"
+            style={{ color: '#3b82f6' }}
           >
-            {isTianheng ? '模型评测' : '数据智能'}
+            模型评测
           </span>
         </div>
 
         <div className="w-px h-4 bg-gray-200 shrink-0" />
 
         {/* Navigation items */}
-        {isTianheng ? (
-          <div className="flex items-center gap-0.5 overflow-x-auto">
+        <div className="flex items-center gap-0.5 overflow-x-auto">
             {TIANHENG_ITEMS.map((item) => {
               const isActive = path === item.path;
               return (
                 <button
                   key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className="px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap"
+                  onClick={() => {
+                    navigate(item.path);
+                    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+                  }}
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
                   style={{
                     background: isActive ? '#3b82f6' : 'transparent',
                     color: isActive ? '#fff' : '#64748b',
@@ -551,50 +550,6 @@ function SubNav() {
               );
             })}
           </div>
-        ) : (
-          <>
-            {/* Modality tabs for AIGC */}
-            <div className="flex items-center gap-0.5">
-              {AIGC_MODALITIES.map((m) => {
-                const isActive = activeTab === m.tab;
-                return (
-                  <button
-                    key={m.tab}
-                    onClick={() => navigate(`/aigc-content?tab=${m.tab}`)}
-                    className="px-3 py-1 rounded-full text-xs font-medium transition-all"
-                    style={{
-                      background: isActive ? '#8b5cf6' : 'transparent',
-                      color: isActive ? '#fff' : '#64748b',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.08)';
-                        (e.currentTarget as HTMLElement).style.color = '#8b5cf6';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
-                        (e.currentTarget as HTMLElement).style.color = '#64748b';
-                      }
-                    }}
-                  >
-                    {m.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="w-px h-4 bg-gray-200 shrink-0" />
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-xs text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />内容审核
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />鉴伪检测
-              </span>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
@@ -631,7 +586,7 @@ function LeafItemRow({
         <span className="w-2 h-2 rounded-sm" style={{ background: accentColor, boxShadow: `5px 5px 0 ${accentColor}55` }} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[14px] font-semibold leading-5" style={{ color: hov ? accentColor : '#1e293b' }}>{item.label}</div>
+        <div className="flex items-center text-[14px] font-semibold leading-5" style={{ color: hov ? accentColor : '#1e293b' }}><span className="truncate">{item.label}</span><CapabilityTags tags={item.capabilities} /></div>
         <div className="text-[12px] mt-1 leading-5 truncate" style={{ color: '#8492a6' }}>{item.desc}</div>
       </div>
       <ChevronRight className="w-4 h-4 shrink-0" style={{ color: hov ? accentColor : '#cbd5e1' }} />
@@ -646,49 +601,61 @@ function GroupItemBlock({
   onNavigate: (path: string) => void;
   accentColor: string;
 }) {
-  const [hov, setHov] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div>
+    <div
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      onFocus={() => setExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setExpanded(false);
+      }}
+    >
       {/* Group header */}
-      <div
-        className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 select-none"
+      <button
+        type="button"
+        className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 select-none text-left"
         style={{
-          background: hov && item.path ? `${accentColor}0d` : 'transparent',
-          cursor: item.path ? 'pointer' : 'default',
+          background: expanded ? `${accentColor}0d` : 'transparent',
+          transform: expanded ? 'translateX(3px)' : 'translateX(0)',
         }}
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        onClick={() => item.path && onNavigate(item.path)}
+        aria-expanded={expanded}
+        onClick={() => setExpanded(value => !value)}
       >
-        <div>
-          <div
-            className="text-[14px] font-bold flex items-center gap-2"
-            style={{ color: hov && item.path ? accentColor : '#0f172a' }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: accentColor }}
-            />
-            {item.label}
-            {item.path && (
-              <ArrowRight
-                className="w-3 h-3 transition-transform"
-                style={{ transform: hov ? 'translateX(2px)' : 'translateX(0)' }}
-              />
-            )}
-          </div>
-          <div className="text-[12px] mt-1 pl-3.5 leading-5" style={{ color: '#8492a6' }}>{item.desc}</div>
+        <div
+          className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
+          style={{ color: accentColor, background: `${accentColor}12`, border: `1px solid ${accentColor}20` }}
+        >
+          <span className="w-2 h-2 rounded-sm" style={{ background: accentColor, boxShadow: `5px 5px 0 ${accentColor}55` }} />
         </div>
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center text-[14px] font-semibold leading-5" style={{ color: expanded ? accentColor : '#1e293b' }}><span className="truncate">{item.label}</span><CapabilityTags tags={item.capabilities} /></div>
+          <div className="text-[12px] mt-1 leading-5 truncate" style={{ color: '#8492a6' }}>{item.desc}</div>
+        </div>
+        <ChevronDown
+          className="w-4 h-4 shrink-0 transition-transform duration-300"
+          style={{ color: expanded ? accentColor : '#cbd5e1', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
 
-      {/* Sub-items: 2-column grid for 5+ children, 1-col otherwise */}
+      {/* Sub-items stay collapsed until the group receives hover or keyboard focus. */}
       <div
-        className={`ml-3 mt-1 mb-1 pl-3 ${item.children.length >= 5 ? 'grid grid-cols-2 gap-x-2 gap-y-0.5' : 'flex flex-col gap-0.5'}`}
-        style={{ borderLeft: `2px solid ${accentColor}30` }}
+        className="ml-3 overflow-hidden transition-all duration-300"
+        style={{
+          maxHeight: expanded ? `${item.children.length * 42 + 12}px` : '0px',
+          opacity: expanded ? 1 : 0,
+          marginTop: expanded ? 4 : 0,
+          marginBottom: expanded ? 4 : 0,
+        }}
       >
-        {item.children.map((child) => (
-          <ChildRow key={child.label} child={child} accentColor={accentColor} onNavigate={onNavigate} />
-        ))}
+        <div
+          className={`pl-3 ${item.children.length >= 5 ? 'grid grid-cols-2 gap-x-2 gap-y-0.5' : 'flex flex-col gap-0.5'}`}
+          style={{ borderLeft: `2px solid ${accentColor}30` }}
+        >
+          {item.children.map((child) => (
+            <ChildRow key={child.label} child={child} accentColor={accentColor} onNavigate={onNavigate} />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -723,10 +690,23 @@ function ChildRow({
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isGuest, logout } = useUser();
+  const { user, isGuest, logout, unreadCount, updateAccount, changePassword } = useUser();
+  const maskedAccount = /^1\d{10}$/.test(user.email)
+    ? `${user.email.slice(0, 3)}****${user.email.slice(-4)}`
+    : user.email.includes('@')
+      ? `${user.email.slice(0, 1)}***@${user.email.split('@')[1]}`
+      : user.email;
 
   const [megaOpen, setMegaOpen] = useState(false);
   const [showExperienceGuard, setShowExperienceGuard] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountName, setAccountName] = useState(user.name);
+  const [accountEmail, setAccountEmail] = useState(user.email);
+  const [notificationPreference, setNotificationPreference] = useState<'site' | 'contact' | 'both'>(user.notificationPreference || 'both');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [accountSaving, setAccountSaving] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -766,16 +746,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const handleNavigate = (path: string) => {
     setMegaOpen(false);
     navigate(path);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/');
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  };
+
+  const openAccountSettings = () => {
+    setAccountName(user.name);
+    setAccountEmail(user.email);
+    setNotificationPreference(user.notificationPreference || 'both');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setAccountOpen(true);
+  };
+
+  const saveAccountProfile = async () => {
+    setAccountSaving(true);
+    const result = await updateAccount({ name: accountName, email: accountEmail, notificationPreference });
+    setAccountSaving(false);
+    if (!result.ok) return toast.error(result.message || '账户信息保存失败');
+    toast.success('账户信息已保存');
+  };
+
+  const saveNewPassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) return toast.error('请完整填写密码信息');
+    if (newPassword !== confirmPassword) return toast.error('两次输入的新密码不一致');
+    setAccountSaving(true);
+    const result = await changePassword(currentPassword, newPassword);
+    setAccountSaving(false);
+    if (!result.ok) return toast.error(result.message || '密码修改失败');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    toast.success('密码修改成功，下次登录请使用新密码');
   };
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#ffffff' }}>
-      <ScrollToTop />
 
       {/* ─── Global Nav ─────────────────────────────────────────── */}
       <header
@@ -788,13 +800,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
           boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
         }}
       >
-        <div className="mx-auto h-[76px] w-full max-w-[1600px] px-6 flex items-center justify-between gap-5">
+        <div className="mx-auto h-[76px] w-full max-w-none px-8 flex items-center justify-between gap-5">
 
           {/* ── Logo ─────────────────────────────────────────────── */}
           <Link
             to="/"
             className="flex items-center shrink-0"
-            onClick={() => setMegaOpen(false)}
+            onClick={() => {
+              setMegaOpen(false);
+              window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            }}
           >
             <img
               src="/rongsu-logo.png"
@@ -805,6 +820,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* ── Center Nav ─────────────────────────────────────── */}
           <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center">
+            <Link
+              to="/"
+              className="px-4 py-2.5 rounded-lg text-[15px] font-medium transition-all duration-200"
+              style={{
+                color: location.pathname === '/' ? '#1e40af' : '#374151',
+                background: location.pathname === '/' ? 'rgba(37,99,235,0.07)' : 'transparent',
+              }}
+              onClick={() => {
+                setMegaOpen(false);
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+              }}
+            >
+              首页
+            </Link>
             {/* 产品 trigger */}
             <div
               className="relative"
@@ -860,7 +889,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       e.preventDefault();
                       setMegaOpen(false);
                       setShowExperienceGuard(true);
+                      return;
                     }
+                    setMegaOpen(false);
+                    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
                   }}
                 >
                   {item.label}
@@ -876,9 +908,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuItem onClick={() => navigate('/products-overview')}>产品矩阵</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigate('/')}>首页</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNavigate('/products-overview')}>产品矩阵</DropdownMenuItem>
               {SECONDARY_NAV.map(item => (
-                <DropdownMenuItem key={item.path} onClick={() => navigate(item.path)}>
+                <DropdownMenuItem key={item.path} onClick={() => handleNavigate(item.path)}>
                   {item.label}
                 </DropdownMenuItem>
               ))}
@@ -886,26 +919,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </DropdownMenu>
 
           {/* ── Right: User Area ────────────────────────────────── */}
-          <div className="hidden sm:flex items-center gap-2.5 shrink-0" style={{ position: 'relative', zIndex: 20 }}>
+          <div className="hidden sm:flex items-center gap-2.5 shrink-0 ml-auto" style={{ position: 'relative', zIndex: 20 }}>
             {isGuest ? (
               <>
-                <span
-                  className="hidden xl:inline-flex text-[13px] px-3.5 py-1.5 rounded-full border select-none font-medium"
-                  style={{ color: '#3b82f6', borderColor: 'rgba(59,130,246,0.35)', background: 'rgba(59,130,246,0.06)' }}
-                >
-                  游客模式
-                </span>
                 <Button
                   variant="outline"
                   className="text-[15px] h-10 px-5 font-medium"
                   style={{ borderColor: 'rgba(0,0,0,0.2)', color: '#374151', background: 'transparent' }}
-                  onClick={() => navigate('/login')}
+                  onClick={() => handleNavigate('/login')}
                 >
                   登录
                 </Button>
                 <Button
                   className="text-[15px] h-10 px-6 font-semibold bg-blue-600 hover:bg-blue-500 text-white"
-                  onClick={() => navigate('/register')}
+                  onClick={() => handleNavigate('/register')}
                 >
                   注册
                 </Button>
@@ -913,7 +940,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                  <button className="relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                     <Avatar className="w-7 h-7">
                       <AvatarFallback className="bg-blue-600 text-white text-xs">
                         {user.name.charAt(0).toUpperCase()}
@@ -921,16 +948,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                     <span className="text-sm text-gray-700">{user.name}</span>
                     <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                    {unreadCount > 0 && <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => navigate('/resource-center')}>
-                    <LayoutDashboard className="w-4 h-4 mr-2" />资源中心
+                  <div className="px-2 py-2.5">
+                    <div className="truncate text-sm font-semibold text-slate-800">{user.name}</div>
+                    {maskedAccount && <div className="mt-0.5 truncate text-xs text-slate-400">{maskedAccount}</div>}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleNavigate('/resource-center')}>
+                    <LayoutDashboard className="w-4 h-4 mr-2" />我的任务与报告
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/resource-center?tab=models')}>
-                    <BookOpen className="w-4 h-4 mr-2" />我的模型
+                  <DropdownMenuItem onClick={() => handleNavigate('/resource-center?tab=messages')}>
+                    <Bell className="w-4 h-4 mr-2" />消息通知
+                    {unreadCount > 0 && <span className="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">{unreadCount}</span>}
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleNavigate('/resource-center?tab=models')}>
+                    <BookOpen className="w-4 h-4 mr-2" />模型 API 配置
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openAccountSettings}>
                     <Settings className="w-4 h-4 mr-2" />账户设置
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -1035,6 +1072,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
         onClose={() => setShowExperienceGuard(false)}
         action="使用在线体验"
       />
+
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto p-0">
+          <DialogHeader className="border-b bg-gradient-to-r from-blue-50 to-white px-7 py-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white"><UserRound className="h-5 w-5" /></div>
+              <div><DialogTitle className="text-xl">账户设置</DialogTitle><p className="mt-1 text-sm text-slate-500">管理登录账号、安全设置与任务通知方式</p></div>
+            </div>
+          </DialogHeader>
+          <div className="space-y-7 px-7 pb-7">
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900"><UserRound className="h-4 w-4 text-blue-600" />基本信息</div>
+              <div className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500"><span className="font-semibold text-slate-700">用户编号：</span>{user.id}<span className="mx-3 text-slate-300">|</span><span className="font-semibold text-slate-700">账号类型：</span>普通用户</div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-2 text-sm font-semibold text-slate-700"><span>显示名称</span><input value={accountName} onChange={event => setAccountName(event.target.value)} maxLength={30} className="h-11 w-full rounded-xl border border-slate-200 px-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50" /></label>
+                <label className="space-y-2 text-sm font-semibold text-slate-700"><span>登录手机号／邮箱</span><div className="relative"><AtSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={accountEmail} onChange={event => setAccountEmail(event.target.value)} className="h-11 w-full rounded-xl border border-slate-200 pl-10 pr-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50" /></div></label>
+              </div>
+              <label className="block space-y-2 text-sm font-semibold text-slate-700"><span>任务通知方式</span><select value={notificationPreference} onChange={event => setNotificationPreference(event.target.value as 'site' | 'contact' | 'both')} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-blue-500"><option value="site">仅站内消息</option><option value="contact">仅登录手机号／邮箱</option><option value="both">站内消息＋登录手机号／邮箱</option></select><span className="block text-xs font-normal leading-5 text-slate-400">外部短信或邮件通知将在后端通知服务接入后正式启用。</span></label>
+              <div className="flex justify-end"><Button onClick={saveAccountProfile} disabled={accountSaving} className="bg-blue-600"><Save className="mr-2 h-4 w-4" />保存账户信息</Button></div>
+            </section>
+            <section className="space-y-4 border-t pt-6">
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900"><LockKeyhole className="h-4 w-4 text-blue-600" />修改密码</div>
+              <div className="grid gap-3 sm:grid-cols-3"><input type="password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} placeholder="当前密码" autoComplete="current-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /><input type="password" value={newPassword} onChange={event => setNewPassword(event.target.value)} placeholder="新密码（至少6位）" autoComplete="new-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /><input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} placeholder="再次输入新密码" autoComplete="new-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></div>
+              <div className="flex items-center justify-between gap-4"><p className="text-xs leading-5 text-slate-400">演示版使用浏览器本地加密摘要保存；正式环境需由后端完成身份校验、密码加密和安全审计。</p><Button variant="outline" onClick={saveNewPassword} disabled={accountSaving} className="shrink-0">修改密码</Button></div>
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── Main Content ────────────────────────────────────────── */}
       <main className={`flex-1 bg-transparent ${FORMAL_PRODUCT_PATHS.has(location.pathname) ? 'product-page-v3' : ''} ${location.pathname === '/products-overview' ? 'product-overview-v3' : ''}`}>

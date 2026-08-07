@@ -256,10 +256,10 @@ const DEMO_PRESETS: Record<DemoTab, {
 function InteractiveDemoSection() {
   const [tab, setTab] = useState<DemoTab>('text');
   const [sampleIdx, setSampleIdx] = useState(0);
-  const [scanning, setScanning] = useState(false);
-  const [scanned, setScanned] = useState(false);
+  const scanning = false;
+  const [scanned, setScanned] = useState(true);
   const [desensitized, setDesensitized] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(100);
 
   const demo = DEMO_PRESETS[tab];
   const sample = demo.samples[sampleIdx] ?? demo.samples[0];
@@ -267,36 +267,16 @@ function InteractiveDemoSection() {
   const handleTabChange = (t: DemoTab) => {
     setTab(t);
     setSampleIdx(0);
-    setScanning(false);
-    setScanned(false);
+    setScanned(true);
     setDesensitized(false);
-    setProgress(0);
+    setProgress(100);
   };
 
   const handleSampleChange = (idx: number) => {
     setSampleIdx(idx);
-    setScanning(false);
-    setScanned(false);
+    setScanned(true);
     setDesensitized(false);
-    setProgress(0);
-  };
-
-  const runScan = () => {
-    if (scanning || scanned) return;
-    setScanning(true);
-    setProgress(0);
-    let p = 0;
-    const iv = setInterval(() => {
-      p += Math.random() * 18 + 8;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(iv);
-        setProgress(100);
-        setTimeout(() => { setScanning(false); setScanned(true); }, 400);
-      } else {
-        setProgress(p);
-      }
-    }, 200);
+    setProgress(100);
   };
 
   return (
@@ -305,11 +285,11 @@ function InteractiveDemoSection() {
         <ScrollReveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 13, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 12, padding: '4px 16px', background: '#ede9fe', borderRadius: 20 }}>
-              交互式演示
+              效果预览
             </div>
-            <h2 style={{ fontSize: 32, fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>轻量级预览：实时扫描效果</h2>
+            <h2 style={{ fontSize: 32, fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>敏感信息识别效果预览</h2>
             <p style={{ fontSize: 15, color: '#64748b', maxWidth: 540, margin: '0 auto' }}>
-              从内置典型样本中选择，直观体验敏感信息识别与脱敏全流程，无需上传任何文件
+              查看典型业务场景中的字段识别、风险分级与脱敏结果；实际执行请前往在线体验专区
             </p>
           </div>
         </ScrollReveal>
@@ -372,7 +352,7 @@ function InteractiveDemoSection() {
               )}
             </div>
 
-            {/* Progress bar + scan button */}
+            {/* Preview status */}
             <div style={{ padding: '14px 20px', borderTop: '1px solid #ede9fe', background: '#faf8ff' }}>
               {(scanning || scanned) && (
                 <div style={{ height: 4, background: '#ede9fe', borderRadius: 2, overflow: 'hidden', marginBottom: 10 }}>
@@ -380,19 +360,9 @@ function InteractiveDemoSection() {
                     style={{ height: '100%', background: 'linear-gradient(90deg,#8b5cf6,#7c3aed)', borderRadius: 2 }} />
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <button onClick={runScan} disabled={scanning || scanned}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 18px', background: scanned ? '#10b981' : scanning ? 'rgba(139,92,246,0.15)' : `linear-gradient(135deg,${C.primary},${C.primaryDark})`, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: scanning || scanned ? 'default' : 'pointer', boxShadow: !scanning && !scanned ? '0 4px 16px rgba(139,92,246,0.35)' : 'none', flex: 1, justifyContent: 'center', transition: 'all 0.3s' }}>
-                  {scanned ? <><CheckCircle2 size={14} /> 识别完成</> : scanning ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}><RefreshCw size={14} /></motion.div> 扫描中...</> : <><Play size={14} /> 开始识别</>}
-                </button>
-                {scanned && (
-                  <button onClick={() => { setScanned(false); setDesensitized(false); setProgress(0); }}
-                    style={{ padding: '9px 14px', background: '#f1f5f9', border: 'none', borderRadius: 10, color: '#64748b', fontSize: 13, cursor: 'pointer' }}>
-                    重置
-                  </button>
-                )}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', color: '#059669', fontSize: 13, fontWeight: 700 }}>
+                <CheckCircle2 size={14} /> 内置样例结果预览
               </div>
-              {scanning && <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#94a3b8', textAlign: 'center' }}>正在进行语义分析与规则匹配...</p>}
             </div>
           </div>
 
@@ -462,7 +432,7 @@ function InteractiveDemoSection() {
                         </div>
 
                         <div style={{ marginTop: 14, padding: '10px 14px', background: '#f0fdf4', borderRadius: 10, border: '1px solid rgba(22,163,74,0.2)', fontSize: 12, color: '#15803d', lineHeight: 1.6 }}>
-                          💡 <strong>操作建议</strong>：开启上方"脱敏效果"查看处理后版本，或前往创建正式任务导出完整合规报告
+                          💡 <strong>操作建议</strong>：开启上方"脱敏效果"查看处理后版本；如需处理自有数据，请前往在线体验专区或预约专家咨询
                         </div>
                       </div>
                     )}
@@ -678,6 +648,9 @@ function LeadFormSection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.company) return;
+    const subject = encodeURIComponent('个人敏感信息审查专家咨询');
+    const body = encodeURIComponent(`姓名：${form.name}\n电话：${form.phone}\n公司：${form.company}`);
+    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
     setSubmitted(true);
   };
 
@@ -700,9 +673,9 @@ function LeadFormSection() {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             style={{ background: '#fff', border: '2px solid rgba(139,92,246,0.25)', borderRadius: 20, padding: '48px 32px', textAlign: 'center', boxShadow: '0 8px 40px rgba(139,92,246,0.12)' }}>
             <CheckCircle2 size={48} style={{ color: '#8b5cf6', margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>提交成功！</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>请在邮件客户端确认发送</h3>
             <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: 0 }}>
-              感谢您的关注。我们的合规顾问将在 <strong style={{ color: '#7c3aed' }}>24 小时内</strong>与您联系，并发送专属的合规自查清单至您的联系方式。
+              咨询信息已整理至邮件正文；发送后合规顾问会与您联系，并提供相应的合规自查资料。
             </p>
           </motion.div>
         ) : (
@@ -875,7 +848,7 @@ export function PrivacyDataAudit() {
       <StickySubNav items={[
         { id: 'pda-compliance', label: '合规依据' },
         { id: 'pda-capability', label: '核心能力矩阵' },
-        { id: 'pda-demo', label: '交互式演示' },
+        { id: 'pda-demo', label: '效果预览' },
         { id: 'pda-flow', label: '服务流程' },
         { id: 'pda-scenarios', label: '应用场景' },
         { id: 'pda-cta', label: '预约演示' },

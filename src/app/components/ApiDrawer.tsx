@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router';
 import { X, Copy, Check, Code2, Key, Globe, Zap, Bell, RefreshCw, ChevronDown } from 'lucide-react';
 
 interface ApiDrawerProps {
@@ -28,7 +29,7 @@ const SAMPLE_KEYS = {
 type Lang = 'curl' | 'python' | 'javascript';
 
 function getCode(lang: Lang, modality: string, func: string, apiKey: string, callbackUrl: string, asyncMode: boolean): string {
-  const endpoint = `https://api.aisc.zjulab.com/v1/${FUNC_ENDPOINT[func]}/${MODALITY_ENDPOINT[modality]}`;
+  const endpoint = `https://api.example.com/v1/${FUNC_ENDPOINT[func]}/${MODALITY_ENDPOINT[modality]}`;
   const body = JSON.stringify({
     content: modality === 'text' ? '待审核文本内容...' : undefined,
     url: modality !== 'text' ? `https://example.com/sample.${modality === 'image' ? 'jpg' : modality === 'audio' ? 'mp3' : 'mp4'}` : undefined,
@@ -134,14 +135,14 @@ export function ApiDrawer({ open, onClose, modality, func }: ApiDrawerProps) {
 
   if (!open) return null;
 
-  const endpoint = `https://api.aisc.zjulab.com/v1/${FUNC_ENDPOINT[func]}/${MODALITY_ENDPOINT[modality]}`;
+  const endpoint = `https://api.example.com/v1/${FUNC_ENDPOINT[func]}/${MODALITY_ENDPOINT[modality]}`;
   const funcLabel = func === 'audit' ? '内容审核' : 'AI鉴伪';
   const funcColor = func === 'audit' ? '#f59e0b' : '#8b5cf6';
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', alignItems: 'stretch' }}>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ flex: 1, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+      <div onClick={onClose} style={{ cursor: 'pointer',  flex: 1, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
 
       {/* Drawer panel */}
       <div style={{ width: '100%', maxWidth: 1060, background: '#0f172a', display: 'flex', flexDirection: 'column', overflowY: 'auto', boxShadow: '-24px 0 80px rgba(0,0,0,0.5)' }}>
@@ -287,12 +288,12 @@ export function ApiDrawer({ open, onClose, modality, func }: ApiDrawerProps) {
 
             {/* Docs link */}
             <div style={{ paddingTop: 4 }}>
-              <a href="#" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
+              <Link to="/developer" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6366f1', textDecoration: 'none', fontWeight: 600 }}>
                 查看完整 API 接口文档 →
-              </a>
+              </Link>
               <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {['Python SDK', 'Node.js SDK', 'Java SDK', 'Go SDK'].map(s => (
-                  <a key={s} href="#" style={{ padding: '3px 10px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, fontSize: 10, color: '#64748b', textDecoration: 'none', fontFamily: 'monospace' }}>{s}</a>
+                  <Link key={s} to="/developer" style={{ padding: '3px 10px', background: '#1e293b', border: '1px solid #334155', borderRadius: 6, fontSize: 10, color: '#64748b', textDecoration: 'none', fontFamily: 'monospace' }}>{s}</Link>
                 ))}
               </div>
             </div>

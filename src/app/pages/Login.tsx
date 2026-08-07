@@ -1,26 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, MessageSquareText, Phone, X } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
-
-type LoginMode = 'password' | 'code';
 
 export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useUser();
-  const [mode, setMode] = useState<LoginMode>('password');
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
-  const [code, setCode] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotAccount, setForgotAccount] = useState('');
+  const [forgotDone, setForgotDone] = useState(false);
 
   const returnTo = (location.state as { from?: string } | null)?.from || '/';
   const inputClass = 'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100';
@@ -32,12 +29,8 @@ export function Login() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError(null);
-    if (mode === 'code') {
-      toast.warning('手机验证码登录即将开放，请使用账号密码登录');
-      return;
-    }
     if (!account || !password) {
-      const msg = '请输入账号和密码';
+      const msg = '请输入手机号/邮箱和密码';
       setFormError(msg);
       toast.error(msg);
       return;
@@ -86,42 +79,31 @@ export function Login() {
               </div>
             </div>
 
-            <div className="mb-7 flex border-b border-slate-200">
-              {([['password', '账号密码登录'], ['code', '手机验证码登录']] as const).map(([key, label]) => (
-                <button key={key} type="button" onClick={() => setMode(key)} className={`relative flex-1 pb-3 text-sm font-bold ${mode === key ? 'text-blue-700' : 'text-slate-400'}`}>
-                  {label}{mode === key && <span className="absolute bottom-0 left-5 right-5 h-0.5 rounded-full bg-blue-600" />}
-                </button>
-              ))}
+            <div className="mb-7 border-b border-slate-200 pb-3">
+              <span className="relative inline-flex text-sm font-black text-blue-700">
+                账号密码登录
+                <span className="absolute -bottom-[13px] left-0 right-0 h-0.5 rounded-full bg-blue-600" />
+              </span>
             </div>
 
             <form onSubmit={submit} className="space-y-4">
               <div className="relative">
-                {mode === 'password' ? <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /> : <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />}
-                <input value={account} onChange={event => setAccount(event.target.value)} placeholder={mode === 'password' ? '请输入用户名或企业邮箱' : '请输入手机号码'} className={`${inputClass} pl-11`} />
+                <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={account} onChange={event => setAccount(event.target.value)} placeholder="请输入注册手机号或邮箱" className={`${inputClass} pl-11`} autoComplete="username" />
               </div>
 
-              {mode === 'password' ? (
-                <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input type={showPwd ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="请输入登录密码" className={`${inputClass} px-11`} />
-                  <button type="button" onClick={() => setShowPwd(current => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">
-                  手机验证码登录即将开放，请使用账号密码登录。
-                  <div className="mt-3 flex gap-3 opacity-50 pointer-events-none">
-                    <div className="relative flex-1"><MessageSquareText className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={code} readOnly placeholder="请输入验证码" className={`${inputClass} pl-11`} /></div>
-                    <button type="button" className="w-32 rounded-xl border border-blue-200 bg-blue-50 text-xs font-bold text-blue-700">获取验证码</button>
-                  </div>
-                </div>
-              )}
+              <div className="relative">
+                <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input type={showPwd ? 'text' : 'password'} value={password} onChange={event => setPassword(event.target.value)} placeholder="请输入登录密码" className={`${inputClass} px-11`} autoComplete="current-password" />
+                <button type="button" onClick={() => setShowPwd(current => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+              </div>
 
               <div className="flex items-center justify-between py-1 text-xs">
                 <label className="flex items-center gap-2 text-slate-500">
                   <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded border-slate-300" />
                   15 天内免登录
                 </label>
-                {mode === 'password' && <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>}
+                <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>
               </div>
 
               {formError ? (
@@ -130,7 +112,7 @@ export function Login() {
                 </div>
               ) : null}
 
-              <button type="submit" disabled={loading || mode === 'code'} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
+              <button type="submit" disabled={loading} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
                 {loading ? '登录中…' : '登 录'}
               </button>
             </form>
@@ -138,6 +120,10 @@ export function Login() {
             <div className="mt-6 flex items-center justify-between text-sm">
               <span className="text-slate-500">还没有账号？ <Link to="/register" state={location.state} className="font-bold text-blue-600">免费注册</Link></span>
               <button onClick={() => navigate('/')} className="text-xs text-slate-400 hover:text-blue-600">游客浏览 →</button>
+            </div>
+            <div className="mt-8 rounded-xl bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-700">使用注册时填写的手机号或邮箱与密码登录，登录后将返回您刚才访问的页面。</div>
+            <div className="mt-5 text-center">
+              <Link to="/admin" className="text-xs font-semibold text-slate-400 transition hover:text-blue-600">管理员入口 →</Link>
             </div>
           </div>
         </div>
@@ -147,14 +133,12 @@ export function Login() {
 
       {forgotOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
         <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
-          <button onClick={() => setForgotOpen(false)} className="absolute right-5 top-5 text-slate-400"><X className="h-4 w-4" /></button>
-          <div className="py-2">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-blue-500" />
-            <h3 className="mt-4 text-center text-xl font-black text-slate-900">找回密码即将开放</h3>
-            <p className="mt-2 text-center text-sm leading-6 text-slate-500">当前暂无密码重置接口，请联系管理员处理账号问题。</p>
-            <input value={forgotAccount} onChange={event => setForgotAccount(event.target.value)} className={`${inputClass} mt-6`} placeholder="手机号或邮箱（预留）" disabled />
-            <button type="button" disabled className="mt-4 h-11 w-full rounded-xl bg-slate-300 text-sm font-bold text-white">即将开放</button>
-          </div>
+          <button onClick={() => { setForgotOpen(false); setForgotDone(false); }} className="absolute right-5 top-5 text-slate-400"><X className="h-4 w-4" /></button>
+          {forgotDone ? (
+            <div className="py-5 text-center"><CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" /><h3 className="mt-4 text-xl font-black text-slate-900">重置申请已提交</h3><p className="mt-2 text-sm leading-6 text-slate-500">平台管理员将在核验账号后协助您重置密码。</p></div>
+          ) : (
+            <><h3 className="text-xl font-black text-slate-900">申请重置密码</h3><p className="mt-2 text-sm text-slate-500">输入注册手机号或邮箱，提交后由管理员协助处理</p><input value={forgotAccount} onChange={event => setForgotAccount(event.target.value)} className={`${inputClass} mt-6`} placeholder="手机号或邮箱" /><button onClick={() => { if (!forgotAccount) toast.error('请输入账号'); else setForgotDone(true); }} className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white">提交重置申请</button></>
+          )}
         </div>
       </div>}
     </div>

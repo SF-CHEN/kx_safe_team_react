@@ -4,7 +4,13 @@ import { CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react';
 export function AuthBrandPanel({ mode }: { mode: 'login' | 'register' }) {
   return (
     <div className="relative hidden min-h-[620px] overflow-hidden lg:block">
-      <img src="/rongsu-ai-security-hero.webp" alt="榕数科技玄鉴 AI 安全平台" className="absolute inset-0 h-full w-full object-cover object-[62%_center]" fetchPriority="high" decoding="async" />
+      <img
+        src="/rongsu-ai-security-hero.webp"
+        alt="榕数科技玄鉴 AI 安全平台"
+        className="absolute inset-0 h-full w-full object-cover object-[62%_center]"
+        fetchPriority="high"
+        decoding="async"
+      />
       <div className="absolute inset-0 bg-gradient-to-r from-[#eef6ff]/98 via-[#eef6ff]/82 to-[#eef6ff]/20" />
       <div className="relative flex h-full max-w-[620px] flex-col justify-between p-12 xl:p-16">
         <div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router';
-import { BarChart2, Mail, Phone, MapPin, Github, Twitter, Linkedin, BookOpen } from 'lucide-react';
+import { BarChart2, Mail, Phone, MapPin, BookOpen } from 'lucide-react';
 import rongShuLogo from '../../imports/____-_____3x.png';
 import yjyBjLogo from '../../imports/yjy.png';
 import qrCodeImg from '../../imports/image-8.png';
@@ -20,8 +20,7 @@ const FOOTER_SERVICE_COLS = [
       { name: '深度模型可信测评', path: '/deep-model-eval' },
       { name: '具身智能可信评测', path: '/embodied-intelligence' },
       { name: '智能体安全评测', path: '/agent-safety' },
-      { name: '大模型性能评测', path: '/llm-evaluation' },
-      { name: '大模型安全评测', path: '/safety-evaluation' },
+      { name: '大语言模型可信评测', path: '/llm-evaluation' },
     ],
   },
   {
@@ -60,6 +59,8 @@ export function GlobalFooter() {
                 src={rongShuLogo}
                 alt="杭州榕数科技"
                 className="h-11 w-auto shrink-0 object-contain brightness-0 invert"
+                loading="lazy"
+                decoding="async"
               />
               <span className="whitespace-nowrap text-base font-black leading-none text-white">
                 杭州榕数科技有限公司
@@ -68,7 +69,7 @@ export function GlobalFooter() {
             <div className="mb-3">
               <div className="mb-1 flex items-center gap-2">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/95 shadow-md ring-1 ring-white/50">
-                  <img src={yjyBjLogo} alt="浙大滨江研究院" className="h-[30px] w-[30px] rounded-full object-contain" />
+                  <img src={yjyBjLogo} alt="浙大滨江研究院" className="h-[30px] w-[30px] rounded-full object-contain" loading="lazy" decoding="async" />
                 </div>
                 <div className="text-base font-black leading-tight text-white">智能计算联合实验室</div>
               </div>
@@ -82,18 +83,6 @@ export function GlobalFooter() {
             <p className="mb-4 text-xs leading-relaxed text-blue-300">
               专注 AI 安全与评测领域，依托顶尖学术资源，构建科学可信的评测生态。
             </p>
-            <div className="flex gap-2">
-              {[Github, Twitter, Linkedin].map((Icon, index) => (
-                <a
-                  key={index}
-                  href="#"
-                  aria-label="社交媒体"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-white/20"
-                >
-                  <Icon className="h-3.5 w-3.5 text-blue-300" />
-                </a>
-              ))}
-            </div>
           </div>
 
           <div>
@@ -141,7 +130,7 @@ export function GlobalFooter() {
             <ul className="mb-4 space-y-3">
               <li className="flex items-center gap-2 text-sm text-blue-300">
                 <Phone className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                <span>0571-87837371</span>
+                <span>13940451397</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-blue-300">
                 <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500" />
@@ -149,12 +138,12 @@ export function GlobalFooter() {
               </li>
               <li className="flex items-start gap-2 text-xs leading-relaxed text-blue-300">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
-                <span>杭州市滨江区长河街道聚才路239号火炬创新中心2号楼</span>
+                <span>杭州市滨江区长河街道聚才路239号火炬创新中心2号楼1314室</span>
               </li>
             </ul>
             <div className="inline-flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.07] p-2">
               <div className="overflow-hidden rounded-lg bg-white p-1">
-                <img src={qrCodeImg} alt="榕数科技微信" className="block h-[88px] w-[88px] object-contain" />
+                <img src={qrCodeImg} alt="榕数科技微信" className="block h-[88px] w-[88px] object-contain" loading="lazy" decoding="async" />
               </div>
               <span className="text-[10px] text-white/45">扫码联系我们</span>
             </div>
@@ -163,12 +152,7 @@ export function GlobalFooter() {
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/[.08] pt-5">
           <div className="text-xs text-blue-400">
-            Copyright © 2022–2026 玄鉴 AI安全平台（浙江大学滨江研究院 × 杭州榕数科技）. All Rights Reserved. 浙ICP备XXXXXXXX号
-          </div>
-          <div className="flex items-center gap-4 text-xs text-blue-400">
-            {['隐私政策', '服务条款', 'Cookie 设置'].map((text) => (
-              <a key={text} href="#" className="transition-colors hover:text-blue-200">{text}</a>
-            ))}
+            Copyright © 2022–2026 玄鉴 AI安全平台（浙江大学滨江研究院 × 杭州榕数科技）. All Rights Reserved.
           </div>
         </div>
       </div>

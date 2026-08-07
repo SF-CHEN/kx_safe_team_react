@@ -10,6 +10,7 @@ import { StickySubNav } from '../components/StickySubNav';
 import { Badge } from '../components/ui/badge';
 import { ApiDrawer } from '../components/ApiDrawer';
 import { AigcDemoShowcase } from '../components/AigcDemoShowcase';
+import { AigcFeatureNav } from '../components/AigcFeatureNav';
 import { LivestreamMonitorMock, CommentDashboardMock, ComplianceReportMock } from '../components/IndustrySolutionMocks';
 import { openHashRoute } from '@/utils/hashRoute';
 
@@ -482,7 +483,7 @@ const DELIVER_VALUES = [
 // ── Main Component ────────────────────────────────────────────────
 
 export function AigcContent() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const rawTab = searchParams.get('tab') as TabKey | null;
   const activeTab: TabKey = ['text','image','audio','video'].includes(rawTab ?? '') ? (rawTab as TabKey) : 'text';
 
@@ -507,9 +508,9 @@ export function AigcContent() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="product-detail-hero order-[0]" style={{ position: 'relative', minHeight: 560, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#1e293b 100%)' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height-context order-[0]" style={{ position: 'relative', minHeight: 560, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#1e293b 100%)' }}>
         <ProductHeroBackground side="data" concept="aigc" />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '72px 48px', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 48px', width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 56, alignItems: 'center' }}>
 
             {/* Left: copy + 2 buttons */}
@@ -599,32 +600,23 @@ export function AigcContent() {
         </div>
       </section>
 
-      <StickySubNav items={[
-        { id: 'aigc-capability', label: '核心能力' },
-        { id: 'aigc-industry', label: '行业方案' },
-        { id: 'aigc-api', label: 'API接入' },
-        { id: 'aigc-cta', label: '在线体验' },
-      ]} />
+      <AigcFeatureNav />
 
-      {/* Tab Switch */}
-      <section id="aigc-tabs" className="order-[2]" style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', display: 'flex', gap: 0, justifyContent: 'center' }}>
-          {TABS.map(tab => (
-            <button key={tab.key}
-              onClick={() => setSearchParams({ tab: tab.key })}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '18px 28px', border: 'none', borderBottom: `3px solid ${activeTab === tab.key ? tab.color : 'transparent'}`, background: 'transparent', color: activeTab === tab.key ? tab.color : '#64748b', fontWeight: activeTab === tab.key ? 700 : 500, fontSize: 14, cursor: 'pointer', transition: 'all 0.2s' }}>
-              {tab.icon} {tab.label}内容
-            </button>
-          ))}
-        </div>
-      </section>
+      <StickySubNav items={[
+        { id: 'aigc-capability', label: '核心功能' },
+        { id: 'aigc-preview', label: '效果预览' },
+        { id: 'aigc-api', label: 'API接入' },
+        { id: 'aigc-industry', label: '行业方案' },
+        { id: 'aigc-advantages', label: '平台优势' },
+        { id: 'aigc-experience', label: '体验产品' },
+      ]} />
 
       {/* Capability Matrix — magazine layout */}
       <section id="aigc-capability" className="order-[3]" style={{ background: '#f8fafc', padding: '80px 0 120px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 48px' }}>
           <ScrollReveal>
             <div style={{ marginBottom: 64 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: currentTab.color, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>核心能力矩阵</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: currentTab.color, textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>核心能力</p>
               <h2 style={{ fontSize: 'clamp(28px,3.5vw,44px)', fontWeight: 900, color: '#0f172a', margin: 0, lineHeight: 1.1 }}>
                 {currentTab.label}内容安全<br />
                 <span style={{ color: currentTab.color }}>双引擎</span>
@@ -725,8 +717,10 @@ export function AigcContent() {
         </div>
       </section>
 
-      {/* Demo Showcase — synced to active tab */}
-      <AigcDemoShowcase activeTab={activeTab} />
+      {/* Effect preview: two preset examples for every modality */}
+      <div id="aigc-preview" className="order-[4]">
+        <AigcDemoShowcase activeTab={activeTab} />
+      </div>
 
       {/* OpenAPI 接入能力展示 */}
       <section id="aigc-api" className="order-[5]" style={{ background: 'linear-gradient(135deg,#f0f4ff 0%,#faf5ff 50%,#f0fdf4 100%)', padding: '88px 0' }}>
@@ -760,7 +754,7 @@ export function AigcContent() {
                   </div>
                   <div style={{ padding: '20px 20px', fontSize: 12, fontFamily: 'monospace', lineHeight: 1.8, color: '#94a3b8' }}>
                     <div><span style={{ color: '#f9a8d4' }}>curl</span> <span style={{ color: '#86efac' }}>-X POST</span> \</div>
-                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#a5f3fc' }}>"https://api.aisc.zjulab.com/v1/moderation/text"</span> \</div>
+                    <div style={{ paddingLeft: 16 }}><span style={{ color: '#a5f3fc' }}>"https://api.example.com/v1/moderation/text"</span> \</div>
                     <div style={{ paddingLeft: 16 }}><span style={{ color: '#86efac' }}>-H</span> <span style={{ color: '#a5f3fc' }}>"Authorization: Bearer sk-proj-xxx"</span> \</div>
                     <div style={{ paddingLeft: 16 }}><span style={{ color: '#86efac' }}>-d</span> <span style={{ color: '#fbbf24' }}>&#39;&#123;</span></div>
                     <div style={{ paddingLeft: 32 }}><span style={{ color: '#a5f3fc' }}>"content"</span><span style={{ color: '#fbbf24' }}>:</span> <span style={{ color: '#86efac' }}>"待审核文本..."</span><span style={{ color: '#fbbf24' }}>,</span></div>
@@ -834,7 +828,7 @@ export function AigcContent() {
       </section>
 
       {/* Industry Solutions */}
-      <section id="aigc-industry" className="order-[4]" style={{ background: '#f8fafc', padding: '80px 0', borderTop: '1px solid #e2e8f0' }}>
+      <section id="aigc-industry" className="order-[6]" style={{ background: '#f8fafc', padding: '80px 0', borderTop: '1px solid #e2e8f0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
@@ -895,37 +889,12 @@ export function AigcContent() {
         </div>
       </section>
 
-      {/* Advantages */}
-      <section style={{ background: '#fff', padding: '72px 0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
-          <ScrollReveal>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>核心优势</h2>
-              <p style={{ fontSize: 16, color: '#64748b' }}>企业级内容安全基础设施，生产环境验证</p>
-            </div>
-          </ScrollReveal>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 20 }}>
-            {ADVANTAGES.map(a => (
-              <ScrollReveal key={a.title}>
-                <div style={{ padding: '28px 24px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, borderTop: `3px solid ${a.color ?? '#6366f1'}` }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', marginBottom: 16 }}>
-                    {a.icon}
-                  </div>
-                  <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{a.title}</h3>
-                  <p style={{ margin: 0, fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>{a.desc}</p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Deliver Values */}
-      <section id="aigc-cta" className="order-[6]" style={{ background: 'linear-gradient(135deg,#eef2ff,#f0fdf4)', padding: '60px 0', borderTop: '1px solid #e2e8f0' }}>
+      <section id="aigc-advantages" className="order-[7]" style={{ background: 'linear-gradient(135deg,#eef2ff,#f0fdf4)', padding: '60px 0', borderTop: '1px solid #e2e8f0' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 6px' }}>交付价值</p>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0 }}>数据说话</h2>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 6px' }}>平台优势 · 交付价值</p>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: 0 }}>用数据呈现审核与鉴伪价值</h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'center', gap: 0, background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid #e2e8f0' }}>
             {DELIVER_VALUES.map((v, i) => (
@@ -934,6 +903,18 @@ export function AigcContent() {
                 <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, maxWidth: 100, margin: '0 auto' }}>{v.label}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="aigc-experience" className="order-[8]" style={{ background: '#fff', padding: '64px 0 72px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ maxWidth: 920, margin: '0 auto', padding: '0 48px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 8px', color: '#6366f1', fontSize: 12, fontWeight: 800, letterSpacing: '0.12em' }}>体验产品</p>
+          <h2 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: 30, fontWeight: 900 }}>选择模态，验证内容安全能力</h2>
+          <p style={{ margin: '0 0 28px', color: '#64748b', fontSize: 15 }}>产品页展示效果，实际样本检测请前往在线体验专区。</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button onClick={() => handleOnlineExperience(activeTab, 'audit')} style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#2563eb,#6366f1)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><Play size={15} style={{ display: 'inline', marginRight: 7 }} />体验内容审核</button>
+            <button onClick={() => handleOnlineExperience(activeTab, 'detect')} style={{ padding: '12px 24px', borderRadius: 10, border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4338ca', fontWeight: 800, cursor: 'pointer' }}><Fingerprint size={15} style={{ display: 'inline', marginRight: 7 }} />体验AI鉴伪</button>
           </div>
         </div>
       </section>

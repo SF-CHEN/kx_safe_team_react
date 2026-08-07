@@ -26,7 +26,11 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSubmitted(true); }, 900);
+    const subject = encodeURIComponent('网络渗透测试预约咨询');
+    const body = encodeURIComponent(`姓名：${form.name}\n公司：${form.company}\n邮箱：${form.email}\n电话：${form.phone}\n关注问题：${form.pain || '未填写'}`);
+    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
+    setLoading(false);
+    setSubmitted(true);
   };
 
   const inputStyle: React.CSSProperties = {
@@ -36,7 +40,7 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', padding: 24 }}
+    <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)', padding: 24 }}
       onClick={onClose}>
       <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.22 }}
@@ -54,13 +58,13 @@ function BookingModal({ onClose }: { onClose: () => void }) {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '2px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <CheckCircle2 size={30} style={{ color: '#10b981' }} />
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>预约成功！</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>请在邮件客户端确认发送</h3>
             <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.75, margin: '0 0 24px' }}>
-              感谢您的预约！我们的安全专家将在 <strong style={{ color: '#0f172a' }}>24 小时内</strong> 联系您。<br />
-              您可以先查看我们的渗透测试报告样本，了解交付物规格。
+              预约信息已整理至邮件正文，发送后我们的安全专家将在工作时间内联系您。<br />
+              如未唤起邮件客户端，请直接联系 contact@hzrongshu.cn。
             </p>
-            <a href="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}>
-              <Download size={15} /> 下载《渗透测试报告样本》PDF
+            <a href="mailto:contact@hzrongshu.cn?subject=网络渗透测试预约咨询" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}>
+              <Mail size={15} /> 重新打开邮件
             </a>
             <div style={{ marginTop: 16 }}>
               <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 13, cursor: 'pointer' }}>关闭</button>
@@ -279,7 +283,7 @@ function VideoModal({ capId, onClose }: { capId: string; onClose: () => void }) 
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
+      style={{ cursor: 'pointer',  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
       onClick={onClose}
     >
       <motion.div
@@ -509,9 +513,9 @@ export function PenetrationTest() {
       </AnimatePresence>
 
       {/* ══ 1. HERO ════════════════════════════════════════════════ */}
-      <section className="product-detail-hero" style={{ position: 'relative', minHeight: 560, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#1e293b 100%)' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height" style={{ position: 'relative', minHeight: 560, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#1e293b 100%)' }}>
         <ProductHeroBackground side="system" concept="penetration" />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '80px 48px', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 48px', width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -582,7 +586,7 @@ export function PenetrationTest() {
         { id: 'pt-capabilities', label: '核心能力' },
         { id: 'pt-scenarios', label: '应用场景' },
         { id: 'pt-process', label: '测试流程' },
-        { id: 'pt-cta', label: '立即检测' },
+        { id: 'pt-cta', label: '预约专家' },
       ]} />
 
       {/* ══ 2. CAPABILITIES — Zig-Zag layout (mirrors CodeVulnerabilityAudit) ══ */}

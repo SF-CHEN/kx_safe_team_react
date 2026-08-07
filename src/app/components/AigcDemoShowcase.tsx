@@ -393,7 +393,7 @@ function GanttChart({ segments, progress, onSeek }: { segments: RiskSegment[]; p
     onSeek(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
   };
   const BarRow = ({ segs, color }: { segs: RiskSegment[]; color: string }) => (
-    <div onClick={handleBarClick} style={{ flex: 1, height: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 5, position: 'relative', overflow: 'visible', cursor: 'crosshair' }}>
+    <div className="cursor-pointer" onClick={handleBarClick} style={{ flex: 1, height: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 5, position: 'relative', overflow: 'visible', cursor: 'crosshair' }}>
       {segs.map((s, i) => (<div key={i} style={{ position: 'absolute', top: 0, height: '100%', left: `${s.start * 100}%`, width: `${(s.end - s.start) * 100}%`, background: color, borderRadius: 4, opacity: 0.82 }} />))}
       <div style={{ position: 'absolute', top: -3, bottom: -3, left: cursorPct, width: 2, background: 'rgba(255,255,255,0.9)', transform: 'translateX(-50%)', borderRadius: 1, pointerEvents: 'none' }} />
     </div>
@@ -748,12 +748,12 @@ export function AigcDemoShowcase({ activeTab = 'video' }: { activeTab?: TabKey }
     <section style={{ background: '#f8fafc', padding: '80px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 48px' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>交互式演示</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>效果预览</p>
           <h2 style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#0f172a', margin: '0 0 14px', lineHeight: 1.1 }}>
-            实时检测 · 亲身体验
+            内容审核与 AI 鉴伪效果预览
           </h2>
           <p style={{ fontSize: 16, color: '#64748b', maxWidth: 560, margin: '0 auto' }}>
-            选择预设样本，即刻体验 AIGC 内容审核与深度伪造检测的全流程能力
+            切换预设样本，查看不同模态下的内容审核与 AI 鉴伪结果示例
           </p>
         </div>
 

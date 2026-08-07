@@ -187,15 +187,15 @@ function AttackDemo() {
   const [model, setModel] = useState(DEMO_MODELS[0]);
   const [modelOpen, setModelOpen] = useState(false);
   const [selectedAttacks, setSelectedAttacks] = useState<string[]>([ATTACK_TYPES[0], ATTACK_TYPES[1]]);
-  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle');
-  const [lineIdx, setLineIdx] = useState(0);
-  const [radarData, setRadarData] = useState(DEMO_RADAR_FINAL.map(d => ({ ...d, A: 0 })));
+  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('done');
+  const [lineIdx, setLineIdx] = useState(TERMINAL_LINES.length);
+  const [radarData, setRadarData] = useState(DEMO_RADAR_FINAL);
   const termRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function toggleAttack(a: string) {
     setSelectedAttacks(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
-    setStatus('idle');
+    setStatus('done');
   }
 
   function run() {
@@ -233,7 +233,7 @@ function AttackDemo() {
             {modelOpen && (
               <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, zIndex: 20, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 {DEMO_MODELS.map(m => (
-                  <button key={m} onClick={() => { setModel(m); setModelOpen(false); setStatus('idle'); }}
+                  <button key={m} onClick={() => { setModel(m); setModelOpen(false); setStatus('done'); setRadarData(DEMO_RADAR_FINAL); }}
                     style={{ width: '100%', padding: '9px 14px', textAlign: 'left', border: 'none', background: m === model ? '#fef3f2' : '#fff', color: m === model ? '#ef4444' : '#374151', fontSize: 13, fontWeight: m === model ? 700 : 400, cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
                     {m}
                   </button>
@@ -262,10 +262,9 @@ function AttackDemo() {
           已选 {selectedAttacks.length} 种攻击类型
         </div>
 
-        <button onClick={run} disabled={status === 'running' || selectedAttacks.length === 0}
-          style={{ padding: '13px', borderRadius: 12, background: status === 'running' || selectedAttacks.length === 0 ? '#e2e8f0' : 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: status === 'running' || selectedAttacks.length === 0 ? '#94a3b8' : '#fff', fontSize: 15, fontWeight: 800, cursor: status === 'running' || selectedAttacks.length === 0 ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: status === 'idle' && selectedAttacks.length > 0 ? '0 4px 16px rgba(239,68,68,0.4)' : 'none' }}>
-          <Play size={16} /> {status === 'running' ? '攻击测试中...' : status === 'done' ? '重新测试' : '开始模拟攻击'}
-        </button>
+        <div style={{ padding: '13px', borderRadius: 12, background: '#fef2f2', color: '#b91c1c', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <AlertTriangle size={16} /> 内置模型攻防报告预览
+        </div>
       </div>
 
       {/* Result */}
@@ -283,7 +282,7 @@ function AttackDemo() {
               <Shield style={{ width: 28, height: 28, color: '#fca5a5' }} />
             </div>
             <div style={{ fontSize: 14, color: '#94a3b8', textAlign: 'center' }}>
-              选择攻击类型后点击「开始模拟攻击」<br />实时查看攻击日志与安全评分
+              选择攻击类型，查看内置攻击日志与安全评分示例
             </div>
           </div>
         )}
@@ -435,9 +434,9 @@ export function SafetyEvaluation() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="product-detail-hero order-[0]" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#0f2a1e 100%)' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height-context order-[0]" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 60%,#0f2a1e 100%)' }}>
         <ProductHeroBackground side="model" concept="llm-safety" />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '80px 48px', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 48px', width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -469,7 +468,7 @@ export function SafetyEvaluation() {
 
       <StickySubNav items={[
         { id: 'se-matrix', label: '核心能力' },
-        { id: 'se-demo', label: '攻击模拟' },
+        { id: 'se-demo', label: '攻防预览' },
         { id: 'se-scenarios', label: '应用场景' },
         { id: 'se-cta', label: '监管标准' },
         { id: 'se-leaderboard', label: '评测排行榜' },
@@ -556,9 +555,9 @@ export function SafetyEvaluation() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <Badge style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', marginBottom: 12, fontSize: 12 }}>攻击模拟</Badge>
-              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>交互式攻击演示</h2>
-              <p style={{ fontSize: 16, color: '#64748b' }}>选择目标模型与攻击向量，实时查看攻击日志与安全评分雷达图</p>
+              <Badge style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', marginBottom: 12, fontSize: 12 }}>效果预览</Badge>
+              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>大模型攻防效果预览</h2>
+              <p style={{ fontSize: 16, color: '#64748b' }}>通过内置模型与攻击向量查看攻击日志、安全评分与整改方向</p>
             </div>
           </ScrollReveal>
           <AttackDemo />
@@ -728,7 +727,7 @@ export function SafetyEvaluation() {
           <div style={{ textAlign: 'center', marginTop: 48 }}>
             <button onClick={handleCreate}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.4)' }}>
-              <Plus size={18} /> 立即开始评测
+              <Plus size={18} /> 创建正式评测任务
             </button>
           </div>
         </div>

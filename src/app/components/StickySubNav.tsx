@@ -66,7 +66,10 @@ export function StickySubNav({ items }: StickySubNavProps) {
       for (const item of items) {
         const el = document.getElementById(item.id);
         if (!el) continue;
-        if (el.getBoundingClientRect().top <= offset + 8) current = item.id;
+        // Keep the active state aligned with the target after smooth scrolling.
+        // A slightly wider tolerance absorbs fractional pixels introduced by
+        // stacked sticky navigation layers.
+        if (el.getBoundingClientRect().top <= offset + 24) current = item.id;
       }
       setActiveId(current);
     };

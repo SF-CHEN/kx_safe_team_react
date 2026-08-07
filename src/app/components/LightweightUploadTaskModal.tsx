@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, FileArchive, FileText, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  addModelDataSafetyEvaluationTask,
+  addModelTrustEvaluationTask,
+} from '@/api/evaluation';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
+import { fileToStoredAttachment } from '../data/workflowStore';
 
 type Variant = 'model-data' | 'deep-model';
 
@@ -38,11 +43,12 @@ const COPY = {
 };
 
 export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
-  const { addTask } = useUser();
+  const { user, addTask } = useUser();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [request, setRequest] = useState('');
   const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const copy = COPY[variant];
 
   useEffect(() => {
@@ -50,10 +56,11 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       setFile(null);
       setRequest('');
       setSuccess(false);
+      setSubmitting(false);
     }
   }, [open]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!file) {
       toast.error('请先上传本地模型或工程文件');
       return;
@@ -62,22 +69,49 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       toast.error('请填写本次评测诉求');
       return;
     }
+    if (submitting) return;
 
-    const task: EvalTask = {
-      id: `${variant}-${Date.now()}`,
-      name: `${file.name}评测任务`,
-      model: copy.model,
-      modelType: '本地工程文件',
-      evalSet: request.trim(),
-      evalType: copy.evalType,
-      status: '评测中',
-      score: null,
-      createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
-      plan: 'paid',
+    const requirement = request.trim();
+    const userId = Number(user.id);
+    const payload = {
+      ...(Number.isFinite(userId) ? { userId } : {}),
+      evaluationRequirement: requirement,
+      // fileId：后端暂无上传接口，不传；见 docs/api-integration/20260807-eval-tasks.md Q1
     };
-    addTask(task);
-    setSuccess(true);
-    toast.success('评测任务已创建');
+
+    setSubmitting(true);
+    try {
+      const created =
+        variant === 'deep-model'
+          ? await addModelTrustEvaluationTask(payload)
+          : await addModelDataSafetyEvaluationTask(payload);
+
+      const attachment = await fileToStoredAttachment(file, 'input');
+      const createdAt =
+        created.createdAt ||
+        new Date().toLocaleString('zh-CN', { hour12: false });
+      const task: EvalTask = {
+        id: created.id != null ? String(created.id) : `${variant}-${Date.now()}`,
+        name: `${file.name}评测任务`,
+        model: copy.model,
+        modelType: '本地工程文件',
+        evalSet: requirement,
+        evalType: copy.evalType,
+        status: '待受理',
+        score: null,
+        createdAt,
+        plan: 'paid',
+        requirement,
+        attachments: [attachment],
+      };
+      addTask(task);
+      setSuccess(true);
+      toast.success('任务已提交，等待平台受理');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '任务提交失败');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -105,9 +139,9 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
               <CheckCircle2 className="h-8 w-8 text-emerald-500" />
             </div>
-            <h3 className="mt-5 text-xl font-bold text-slate-900">任务创建成功</h3>
+            <h3 className="mt-5 text-xl font-bold text-slate-900">任务提交成功</h3>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-              已收到您上传的文件和评测诉求，系统将据此确定重点评测方向并生成针对性报告。
+              已收到您上传的文件和评测诉求。技术团队受理后会下载材料开展正式评测，报告完成后将推送至资源中心。
             </p>
             <Button className="mt-7 bg-blue-600 hover:bg-blue-700" onClick={onClose}>完成</Button>
           </div>
@@ -173,8 +207,14 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
             </div>
 
             <div className="flex items-center justify-end gap-3 border-t bg-slate-50 px-7 py-4">
-              <Button variant="outline" onClick={onClose}>取消</Button>
-              <Button className="bg-blue-600 px-6 hover:bg-blue-700" onClick={submit}>创建评测任务</Button>
+              <Button variant="outline" onClick={onClose} disabled={submitting}>取消</Button>
+              <Button
+                className="bg-blue-600 px-6 hover:bg-blue-700"
+                onClick={() => void submit()}
+                disabled={submitting}
+              >
+                {submitting ? '提交中…' : '创建评测任务'}
+              </Button>
             </div>
           </>
         )}

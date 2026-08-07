@@ -10,7 +10,7 @@ const SCENARIOS = [
     tagline: 'AI 生成内容实时鉴别与违规内容自动审核',
     tag: '内容安全',
     color: '#6366f1',
-    imgUrl: '/scenario-content-safety.webp',
+    imgUrl: '/scenarios-v2/content-safety.png',
     overlay: 'linear-gradient(135deg,rgba(99,102,241,0.45) 0%,rgba(67,56,202,0.6) 100%)',
     context: '适用于社交平台、内容社区、短视频平台等需要大规模内容合规治理的场景',
   },
@@ -19,7 +19,7 @@ const SCENARIOS = [
     tagline: '政务 AI 准确性、安全性与合规全面评估认证',
     tag: '智能政务',
     color: '#2563eb',
-    imgUrl: '/scenario-government-qa.webp',
+    imgUrl: '/scenarios-v2/government-ai.png',
     overlay: 'linear-gradient(135deg,rgba(37,99,235,0.45) 0%,rgba(29,78,216,0.6) 100%)',
     context: '覆盖智慧政务、数字政府、行政服务大厅等公共服务领域的 AI 系统认证',
   },
@@ -28,7 +28,7 @@ const SCENARIOS = [
     tagline: 'RAG 系统答案质量与幻觉风险全面检测',
     tag: '企业 AI',
     color: '#0ea5e9',
-    imgUrl: '/scenario-enterprise-rag.webp',
+    imgUrl: '/scenarios-v2/enterprise-ai.png',
     overlay: 'linear-gradient(135deg,rgba(14,165,233,0.45) 0%,rgba(2,132,199,0.6) 100%)',
     context: '适合需要落地知识库、内部助手、文档问答等场景的企业 AI 团队',
   },
@@ -37,7 +37,7 @@ const SCENARIOS = [
     tagline: 'Agent 规划能力与工具调用全维度评估',
     tag: '智能体评测',
     color: '#8b5cf6',
-    imgUrl: '/scenario-agent-evaluation.webp',
+    imgUrl: '/scenarios-v2/agent-evaluation.png',
     overlay: 'linear-gradient(135deg,rgba(139,92,246,0.45) 0%,rgba(109,40,217,0.6) 100%)',
     context: '面向自动化工作流、RPA 增强、多模态 Agent 系统的可信度量与能力认证',
   },
@@ -46,7 +46,7 @@ const SCENARIOS = [
     tagline: '提示词注入与越狱攻击专项安全防护检测',
     tag: '系统安全',
     color: '#06b6d4',
-    imgUrl: '/scenario-app-security.webp',
+    imgUrl: '/scenarios-v2/system-security.png',
     overlay: 'linear-gradient(135deg,rgba(6,182,212,0.45) 0%,rgba(8,145,178,0.6) 100%)',
     context: '为面向终端用户的聊天机器人、客服 AI、代码助手等产品提供上线前安全认证',
   },
@@ -55,7 +55,7 @@ const SCENARIOS = [
     tagline: '备案全流程辅导，助力产品通过监管审查',
     tag: '合规备案',
     color: '#10b981',
-    imgUrl: '/scenario-compliance.webp',
+    imgUrl: '/scenarios-v2/compliance-filing.png',
     overlay: 'linear-gradient(135deg,rgba(16,185,129,0.45) 0%,rgba(5,150,105,0.6) 100%)',
     context: '为生成式 AI 产品提供从材料准备、技术核验到监管申报的一站式合规服务',
   },
@@ -179,7 +179,11 @@ export function ScenarioSection() {
                 position: 'relative',
                 borderRadius: 20,
                 overflow: 'hidden',
-                minHeight: 480,
+                alignSelf: 'center',
+                width: '100%',
+                aspectRatio: '1268 / 714',
+                background: '#eef5fb',
+                border: '1px solid #e2e8f0',
               }}
             >
               {/* Image */}
@@ -192,80 +196,10 @@ export function ScenarioSection() {
                   inset: 0,
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover',
+                  objectFit: 'contain',
+                  objectPosition: 'center',
                 }}
               />
-
-              {/* Color overlay */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: active.overlay,
-                  transition: 'background 0.4s ease',
-                }}
-              />
-
-              {/* Top tag badge */}
-              <div style={{ position: 'absolute', top: 24, left: 24 }}>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    padding: '5px 14px',
-                    borderRadius: 999,
-                    background: 'rgba(255,255,255,0.2)',
-                    border: '1px solid rgba(255,255,255,0.4)',
-                    color: '#fff',
-                    backdropFilter: 'blur(10px)',
-                  }}
-                >
-                  {active.tag}
-                </span>
-              </div>
-
-              {/* Bottom info overlay */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: '32px 32px 28px',
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)',
-                }}
-              >
-                <h3
-                  style={{
-                    color: '#fff',
-                    fontSize: '1.35rem',
-                    fontWeight: 900,
-                    marginBottom: 8,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {active.title}
-                </h3>
-                <p
-                  style={{
-                    color: 'rgba(255,255,255,0.85)',
-                    fontSize: '0.82rem',
-                    lineHeight: 1.6,
-                    marginBottom: 12,
-                  }}
-                >
-                  {active.tagline}
-                </p>
-                <p
-                  style={{
-                    color: 'rgba(255,255,255,0.6)',
-                    fontSize: '0.72rem',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {active.context}
-                </p>
-              </div>
             </div>
 
           </div>

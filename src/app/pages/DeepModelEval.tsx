@@ -113,9 +113,9 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
   const curIdx = STEP_IDX[step];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
+    <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
       onClick={handleClose}>
-      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden' }}
+      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden', cursor: 'default' }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
@@ -236,7 +236,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
                       {grp.items.map(item => {
                         const sel = (metrics[grp.id] || []).includes(item);
                         return (
-                          <div key={item} onClick={() => toggleMetric(grp.id, item)}
+                          <div className="cursor-pointer" key={item} onClick={() => toggleMetric(grp.id, item)}
                             style={{ padding: '7px 14px', borderRadius: 8, cursor: 'pointer', border: `1.5px solid ${sel ? grp.color : '#e2e8f0'}`, background: sel ? grp.bg : '#fafbfc', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
                             {sel && <CheckCircle size={11} style={{ color: grp.color, flexShrink: 0 }} />}
                             <span style={{ fontSize: 13, fontWeight: 600, color: sel ? grp.color : '#374151' }}>{item}</span>
@@ -841,8 +841,8 @@ function AdversarialAttackLab() {
   type AttackType = 'FGSM' | 'PGD' | 'GaussianBlur';
   const [attackType, setAttackType] = useState<AttackType>('FGSM');
   const [epsilon, setEpsilon] = useState(0.007);
-  const [isAttacking, setIsAttacking] = useState(false);
-  const [attacked, setAttacked] = useState(false);
+  const isAttacking = false;
+  const [attacked, setAttacked] = useState(true);
 
   const attacks: { id: AttackType; label: string; color: string; wrongLabel: string; wrongConf: number }[] = [
     { id: 'FGSM',        label: 'FGSM',        color: '#ef4444', wrongLabel: '汽车',  wrongConf: 34 },
@@ -851,12 +851,7 @@ function AdversarialAttackLab() {
   ];
   const current = attacks.find(a => a.id === attackType)!;
 
-  const handleAttack = () => {
-    setIsAttacking(true);
-    setTimeout(() => { setIsAttacking(false); setAttacked(true); }, 1200);
-  };
-  const handleReset = () => { setAttacked(false); };
-  const handleAttackTypeChange = (t: AttackType) => { setAttackType(t); setAttacked(false); };
+  const handleAttackTypeChange = (t: AttackType) => { setAttackType(t); setAttacked(true); };
 
   const noiseSeed = Math.round(epsilon * 1000);
   const noiseOpacity = Math.min(epsilon * 6, 0.82);
@@ -868,11 +863,11 @@ function AdversarialAttackLab() {
         <ScrollReveal>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <div style={{ display: 'inline-block', fontSize: 11, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 12, padding: '4px 16px', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20 }}>
-              交互式演示
+              效果预览
             </div>
-            <h2 style={{ fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>亲眼见证模型的脆弱性</h2>
+            <h2 style={{ fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>深度模型可信评测结果预览</h2>
             <p style={{ fontSize: 15, color: '#64748b', maxWidth: 560, margin: '0 auto', lineHeight: 1.8 }}>
-              选择攻击算法、调整扰动强度，上传自己的图片——系统实时展示对抗噪声如何让模型"认错"
+              通过内置攻击样例查看对抗扰动如何影响模型判断，以及正式报告如何呈现风险与加固建议
             </p>
           </div>
         </ScrollReveal>
@@ -887,19 +882,9 @@ function AdversarialAttackLab() {
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
                 <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 700, color: '#0f172a' }}>对抗攻击实验室</span>
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>上传任意图片，系统实时模拟攻击并展示模型如何被欺骗</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>内置样例展示不同攻击方式下的模型误判与可信度变化</span>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Upload size={12} /> 上传自己的图片
-                </button>
-                <button
-                  onClick={attacked ? handleReset : handleAttack}
-                  disabled={isAttacking}
-                  style={{ padding: '7px 18px', borderRadius: 8, border: 'none', background: attacked ? '#10b981' : isAttacking ? '#94a3b8' : '#ef4444', color: '#fff', fontSize: 12, fontWeight: 700, cursor: isAttacking ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 0.2s' }}>
-                  {attacked ? '↺ 重置' : isAttacking ? '攻击中…' : `▶ 发起 ${attackType} 攻击`}
-                </button>
-              </div>
+              <div style={{ padding: '7px 14px', borderRadius: 8, background: '#ecfdf5', color: '#047857', fontSize: 12, fontWeight: 700 }}>内置报告样例</div>
             </div>
 
             <div style={{ padding: '24px' }}>
@@ -927,7 +912,7 @@ function AdversarialAttackLab() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 220 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#374151', whiteSpace: 'nowrap' }}>扰动强度 ε</span>
                   <input type="range" min="0.001" max="0.3" step="0.001" value={epsilon}
-                    onChange={e => { setEpsilon(parseFloat(e.target.value)); setAttacked(false); }}
+                    onChange={e => { setEpsilon(parseFloat(e.target.value)); setAttacked(true); }}
                     style={{ flex: 1, accentColor: current.color, cursor: 'pointer', height: 4 }} />
                   <span style={{ fontSize: 13, fontWeight: 800, color: current.color, fontFamily: 'monospace', width: 42, textAlign: 'right' }}>{epsilon.toFixed(3)}</span>
                 </div>
@@ -1094,7 +1079,7 @@ function AdversarialAttackLab() {
                         </>
                       ) : (
                         <>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>等待发起攻击</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>原始样本识别结果</div>
                           <div style={{ fontSize: 10, color: '#d1d5db', marginTop: 2 }}>ResNet-50</div>
                         </>
                       )}
@@ -1151,9 +1136,9 @@ export function DeepModelEval() {
     {
       id: '02', side: 'right' as const, color: '#7c3aed',
       title: '对抗样本模拟实验室',
-      heading: '交互式对抗攻击效果实时可视化',
-      desc: '内置对抗样本生成模拟器，支持调节扰动强度与攻击类型，实时展示原始样本与对抗样本的对比效果及攻击成功率。帮助安全研究人员直观理解攻击机理，评估模型脆弱性边界。',
-      tags: ['交互式实验', '实时对比', 'ε 扰动调节', '误分析可视化'],
+      heading: '对抗攻击与防御效果可视化',
+      desc: '通过内置报告样例展示不同扰动强度与攻击类型下的原始样本、对抗样本、攻击成功率及防御效果，帮助用户直观理解攻击机理与模型脆弱性边界。',
+      tags: ['结果预览', '样本对比', '扰动强度', '误分析可视化'],
       svg: <AdversarialDemo />,
       onExperience: openModal,
     },
@@ -1220,11 +1205,11 @@ export function DeepModelEval() {
 
       <StickySubNav items={[
         { id: 'dme-features', label: '核心功能' },
-        { id: 'dme-lab', label: '交互式演示' },
+        { id: 'dme-lab', label: '结果预览' },
         { id: 'dme-scenarios', label: '应用场景' },
         { id: 'dme-compat', label: '技术兼容性' },
         { id: 'dme-process', label: '评测流程' },
-        { id: 'dme-cta', label: '开始评测' },
+        { id: 'dme-cta', label: '创建正式任务' },
       ]} />
 
       {/* ── Core Features Z-layout ───────────────────────────── */}

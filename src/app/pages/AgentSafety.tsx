@@ -153,9 +153,9 @@ function AgentDemo() {
   const [agentOpen, setAgentOpen] = useState(false);
   const [attack, setAttack] = useState(ATTACK_VECTORS[0]);
   const [attackOpen, setAttackOpen] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('idle');
-  const [msgIdx, setMsgIdx] = useState(0);
-  const [score, setScore] = useState(100);
+  const [status, setStatus] = useState<'idle' | 'running' | 'done'>('done');
+  const [msgIdx, setMsgIdx] = useState(CHAT_MESSAGES_IDLE.length + INJECTION_SEQUENCE.length);
+  const [score, setScore] = useState(60);
   const chatRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -182,7 +182,7 @@ function AgentDemo() {
 
   function reset() {
     if (timerRef.current) clearInterval(timerRef.current);
-    setStatus('idle'); setMsgIdx(CHAT_MESSAGES_IDLE.length); setScore(100);
+    setStatus('done'); setMsgIdx(CHAT_MESSAGES_IDLE.length + INJECTION_SEQUENCE.length); setScore(60);
   }
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
@@ -243,10 +243,9 @@ function AgentDemo() {
         <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center', padding: '8px 0', borderTop: '1px solid #f1f5f9' }}>
           模拟真实攻击场景
         </div>
-        <button onClick={status === 'idle' ? run : reset}
-          style={{ padding: '12px', borderRadius: 11, background: status === 'idle' ? 'linear-gradient(135deg,#ef4444,#dc2626)' : '#f1f5f9', border: 'none', color: status === 'idle' ? '#fff' : '#64748b', fontSize: 13, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, boxShadow: status === 'idle' ? '0 4px 14px rgba(239,68,68,0.4)' : 'none' }}>
-          <Play size={14} /> {status === 'idle' ? '发起攻击' : status === 'running' ? '攻击中...' : '重置'}
-        </button>
+        <div style={{ padding: '12px', borderRadius: 11, background: '#fef2f2', color: '#b91c1c', fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+          <AlertTriangle size={14} /> 内置攻击链结果预览
+        </div>
       </div>
 
       {/* Center — Agent chat log */}
@@ -451,9 +450,9 @@ export function AgentSafety() {
   return (
     <div>
       {/* Hero */}
-      <section className="product-detail-hero" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1a1035 60%,#0f2a1e 100%)' }}>
+      <section className="product-detail-hero product-detail-hero--reference-height" style={{ position: 'relative', minHeight: 520, display: 'flex', alignItems: 'center', overflow: 'hidden', background: 'linear-gradient(135deg,#0f172a 0%,#1a1035 60%,#0f2a1e 100%)' }}>
         <ProductHeroBackground side="model" concept="agent" />
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '80px 48px', width: '100%' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 1200, margin: '0 auto', padding: '0 48px', width: '100%' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -485,10 +484,10 @@ export function AgentSafety() {
 
       <StickySubNav items={[
         { id: 'as-matrix', label: '核心能力' },
-        { id: 'as-demo', label: '攻击模拟' },
+        { id: 'as-demo', label: '攻击链预览' },
         { id: 'as-scenarios', label: '应用场景' },
         { id: 'as-process', label: '评测流程' },
-        { id: 'as-cta', label: '开始评测' },
+        { id: 'as-cta', label: '创建正式任务' },
       ]} />
 
       {/* Core Capability Matrix — Z-layout */}
@@ -570,9 +569,9 @@ export function AgentSafety() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
           <ScrollReveal>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <Badge style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', marginBottom: 12, fontSize: 12 }}>注入模拟</Badge>
-              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>智能体攻击模拟演示</h2>
-              <p style={{ fontSize: 16, color: '#64748b' }}>三面板实时演示：攻击配置 · Agent 聊天日志注入动画 · 安全评分仪表盘</p>
+              <Badge style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', marginBottom: 12, fontSize: 12 }}>效果预览</Badge>
+              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>智能体攻击链效果预览</h2>
+              <p style={{ fontSize: 16, color: '#64748b' }}>通过内置样例查看攻击配置、Agent 注入链路与安全评分结果</p>
             </div>
           </ScrollReveal>
           <AgentDemo />

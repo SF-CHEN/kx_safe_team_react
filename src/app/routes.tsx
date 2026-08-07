@@ -76,6 +76,7 @@ function withSuspense(Component: ComponentType) {
 function Root() {
   return (
     <Layout>
+      <ScrollToTop />
       <Outlet />
     </Layout>
   );
@@ -144,7 +145,7 @@ export const router = createHashRouter([
     Component: StandaloneLayout,
     children: [
       { path: 'developer', Component: withSuspense(DeveloperCenter) },
-      { path: 'admin', Component: withSuspense(AdminDashboard) },
+      { path: 'admin/:section?', Component: withSuspense(AdminDashboard) },
     ],
   },
 ]);

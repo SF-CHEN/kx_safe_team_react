@@ -31,14 +31,19 @@ export function Login() {
       return;
     }
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 650));
-    const ok = await login(account.trim(), password);
-    setLoading(false);
-    if (ok) {
-      toast.success('登录成功');
-      navigate(returnTo);
-    } else {
-      toast.error('账号未注册或密码不正确');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 650));
+      const ok = await login(account.trim(), password);
+      if (ok) {
+        toast.success('登录成功');
+        navigate(returnTo, { replace: true });
+      } else {
+        toast.error('账号未注册或密码不正确');
+      }
+    } catch {
+      toast.error('登录失败，请稍后重试');
+    } finally {
+      setLoading(false);
     }
   };
 
