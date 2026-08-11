@@ -177,6 +177,16 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
     { from: 'agent' as const, text: '请问您想了解哪方面的内容？', ts: '刚刚' },
   ]);
   const [input, setInput] = React.useState('');
+  const messagesRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const container = messagesRef.current;
+      if (container) container.scrollTop = container.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages]);
+
   const send = () => {
     if (!input.trim()) return;
     setMessages(p => [...p, { from: 'user', text: input.trim(), ts: '刚刚' }]);
@@ -197,7 +207,7 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
           ✕
         </button>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div ref={messagesRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {messages.map((m, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, flexDirection: m.from === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
             {m.from === 'agent' && <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#4f46e5,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><MessageCircle className="w-3 h-3 text-white" /></div>}
@@ -219,6 +229,25 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
 function FloatingContact() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const hoverCloseTimer = useRef<number | null>(null);
+
+  const keepContactOpen = (id: string) => {
+    if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = null;
+    setHovered(id);
+  };
+
+  const scheduleContactClose = () => {
+    if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = window.setTimeout(() => {
+      setHovered(null);
+      hoverCloseTimer.current = null;
+    }, 160);
+  };
+
+  useEffect(() => () => {
+    if (hoverCloseTimer.current !== null) window.clearTimeout(hoverCloseTimer.current);
+  }, []);
 
   const contacts = [
     {
@@ -245,14 +274,8 @@ function FloatingContact() {
       tooltip: (
         <div className="p-4 w-44">
           <div className="font-bold text-gray-800 text-sm mb-1.5">在线咨询</div>
-          <div className="text-gray-600 text-xs leading-relaxed mb-3">
+          <div className="text-gray-600 text-xs leading-relaxed">
             专属客服为您提供 1 对 1 实时在线咨询服务
-          </div>
-          <div
-            className="text-center py-1.5 rounded-lg text-xs text-white cursor-pointer"
-            style={{ background: '#4f46e5' }}
-          >
-            开始咨询
           </div>
         </div>
       ),
@@ -291,8 +314,8 @@ function FloatingContact() {
           <div
             key={c.id}
             className="relative"
-            onMouseEnter={() => setHovered(c.id)}
-            onMouseLeave={() => setHovered(null)}
+            onMouseEnter={() => keepContactOpen(c.id)}
+            onMouseLeave={scheduleContactClose}
           >
             {/* Button */}
             <button
@@ -315,7 +338,9 @@ function FloatingContact() {
 
             {/* Tooltip card */}
             <div
-              className="absolute top-0 rounded-xl overflow-hidden pointer-events-none transition-all duration-200"
+              className="absolute top-0 rounded-xl transition-all duration-200"
+              onMouseEnter={() => keepContactOpen(c.id)}
+              onMouseLeave={scheduleContactClose}
               style={{
                 right: 76,
                 background: 'rgba(255,255,255,0.98)',
@@ -324,8 +349,11 @@ function FloatingContact() {
                 border: '1px solid rgba(226,232,240,0.8)',
                 opacity: isHovered ? 1 : 0,
                 transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+                pointerEvents: isHovered ? 'auto' : 'none',
+                userSelect: 'text',
               }}
             >
+              <span className="absolute -right-2 top-0 h-full w-2" aria-hidden="true" />
               {c.tooltip}
             </div>
           </div>

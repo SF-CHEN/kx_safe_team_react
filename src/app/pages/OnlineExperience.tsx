@@ -5,7 +5,7 @@ import {
   Image, Loader2, Play, ScanSearch, ShieldCheck, Sparkles,
   Upload, Video, Volume2, WandSparkles, AudioLines,
   BadgeCheck, FileSearch, Copy, Trash2, AlertTriangle,
-  Clock3, Pause, RotateCcw, Download, ListChecks, ChevronRight,
+  Pause, RotateCcw, Download, ListChecks, ChevronRight,
   CircleHelp, Check, X, Eye, EyeOff, Gauge, FileAudio,
   FileText, Shuffle,
 } from 'lucide-react';

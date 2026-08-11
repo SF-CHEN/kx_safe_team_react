@@ -4,6 +4,7 @@ import {
   FileText, Image, Mic, Video, ShieldCheck, Zap, BarChart2,
   CheckCircle, Eye, Fingerprint, Lock, Film, Code2, ArrowRight, Play,
 } from 'lucide-react';
+import { openHashRoute } from '@/utils/hashRoute';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { StickySubNav } from '../components/StickySubNav';
@@ -12,7 +13,6 @@ import { ApiDrawer } from '../components/ApiDrawer';
 import { AigcDemoShowcase } from '../components/AigcDemoShowcase';
 import { AigcFeatureNav } from '../components/AigcFeatureNav';
 import { LivestreamMonitorMock, CommentDashboardMock, ComplianceReportMock } from '../components/IndustrySolutionMocks';
-import { openHashRoute } from '@/utils/hashRoute';
 
 type TabKey = 'text' | 'image' | 'audio' | 'video';
 type FuncKey = 'audit' | 'detect';

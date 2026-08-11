@@ -304,7 +304,7 @@ export function TrainingEval() {
               {EVAL_MODULES.map((mod, i) => {
                 const Icon = mod.icon;
                 return (
-                  <div className="cursor-pointer"
+                  <div
                     key={mod.title}
                     onClick={() => setActiveModule(i)}
                     className={`bg-white rounded-2xl p-6 border cursor-pointer transition-all hover:shadow-md ${

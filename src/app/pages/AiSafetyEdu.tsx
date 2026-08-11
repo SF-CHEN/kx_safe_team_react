@@ -10,6 +10,7 @@ import {
   Trophy, RefreshCw, MessageSquare,
   Server, Cloud, AlertTriangle,
 } from 'lucide-react';
+import { openHashRoute } from '@/utils/hashRoute';
 import { Button } from '../components/ui/button';
 import { GuestGuard } from '../components/GuestGuard';
 import { useUser } from '../context/UserContext';
@@ -20,7 +21,6 @@ import IMG_MOD1 from '../../imports/image-1.png';
 import IMG_MOD2 from '../../imports/image-2.png';
 import IMG_MOD3 from '../../imports/image-3.png';
 import IMG_MOD4 from '../../imports/image-4.png';
-import { openHashRoute } from '@/utils/hashRoute';
 
 // ─── MOD 1: Light-theme compact hero card ─────────────────────────
 function SplitHeroCard() {
@@ -478,7 +478,7 @@ function AdvantagesSection() {
                 style={{ display: 'flex', flexDirection: 'column' }}>
                 {/* Image — fixed height, overflow-hidden only here */}
                 <div className="relative" style={{ height: 260, overflow: 'hidden', flexShrink: 0 }}>
-                  <img src={cur.imgUrl} alt={cur.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <img src={cur.imgUrl} alt={cur.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom,${cur.color}10 0%,rgba(0,0,0,0.25) 100%)` }} />
                   {/* Stat chips */}
                   <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
@@ -776,9 +776,7 @@ export function AiSafetyEdu() {
                     <div className="relative" style={{ minHeight: 420, background: '#f0f7ff' }}>
                       <img src={mod.img} alt={mod.key}
                         className="absolute inset-0 w-full h-full object-cover object-top"
-                        style={{ borderLeft: `1px solid ${mod.color}15` }}
-                        loading="lazy"
-                        decoding="async" />
+                        style={{ borderLeft: `1px solid ${mod.color}15` }} />
                       {/* Very light color accent only at bottom */}
                       <div className="absolute bottom-0 left-0 right-0 h-16"
                         style={{ background: `linear-gradient(to top,${mod.color}18,transparent)` }} />

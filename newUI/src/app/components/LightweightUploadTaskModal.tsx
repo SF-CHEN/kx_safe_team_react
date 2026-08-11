@@ -72,7 +72,7 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       modelType: '本地工程文件',
       evalSet: request.trim(),
       evalType: copy.evalType,
-      status: '待受理',
+      status: '处理中',
       score: null,
       createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
       plan: 'paid',

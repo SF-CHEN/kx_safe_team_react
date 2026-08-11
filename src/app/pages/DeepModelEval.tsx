@@ -113,9 +113,9 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
   const curIdx = STEP_IDX[step];
 
   return (
-    <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(6px)' }}
       onClick={handleClose}>
-      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden', cursor: 'default' }}
+      <div style={{ background: '#fff', borderRadius: 16, width: 760, maxWidth: '96vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 28px 90px rgba(0,0,0,0.22)', overflow: 'hidden' }}
         onClick={e => e.stopPropagation()}>
 
         {/* ── Header ── */}
@@ -236,7 +236,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
                       {grp.items.map(item => {
                         const sel = (metrics[grp.id] || []).includes(item);
                         return (
-                          <div className="cursor-pointer" key={item} onClick={() => toggleMetric(grp.id, item)}
+                          <div key={item} onClick={() => toggleMetric(grp.id, item)}
                             style={{ padding: '7px 14px', borderRadius: 8, cursor: 'pointer', border: `1.5px solid ${sel ? grp.color : '#e2e8f0'}`, background: sel ? grp.bg : '#fafbfc', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
                             {sel && <CheckCircle size={11} style={{ color: grp.color, flexShrink: 0 }} />}
                             <span style={{ fontSize: 13, fontWeight: 600, color: sel ? grp.color : '#374151' }}>{item}</span>

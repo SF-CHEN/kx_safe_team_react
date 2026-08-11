@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router';
 import { X, Copy, Check, Code2, Key, Globe, Zap, Bell, RefreshCw, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router';
 
 interface ApiDrawerProps {
   open: boolean;
@@ -142,7 +142,7 @@ export function ApiDrawer({ open, onClose, modality, func }: ApiDrawerProps) {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1100, display: 'flex', alignItems: 'stretch' }}>
       {/* Backdrop */}
-      <div onClick={onClose} style={{ cursor: 'pointer',  flex: 1, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+      <div onClick={onClose} style={{ flex: 1, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
 
       {/* Drawer panel */}
       <div style={{ width: '100%', maxWidth: 1060, background: '#0f172a', display: 'flex', flexDirection: 'column', overflowY: 'auto', boxShadow: '-24px 0 80px rgba(0,0,0,0.5)' }}>

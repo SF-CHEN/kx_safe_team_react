@@ -6,10 +6,10 @@ import {
   Play, ToggleLeft, ToggleRight, Calendar, Phone, Building,
   User,
 } from 'lucide-react';
+import { openHashRoute } from '@/utils/hashRoute';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { StickySubNav } from '../components/StickySubNav';
-import { openHashRoute } from '@/utils/hashRoute';
 
 // ── Color theme ───────────────────────────────────────────────────
 const C = {

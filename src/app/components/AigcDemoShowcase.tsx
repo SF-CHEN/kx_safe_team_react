@@ -393,7 +393,7 @@ function GanttChart({ segments, progress, onSeek }: { segments: RiskSegment[]; p
     onSeek(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
   };
   const BarRow = ({ segs, color }: { segs: RiskSegment[]; color: string }) => (
-    <div className="cursor-pointer" onClick={handleBarClick} style={{ flex: 1, height: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 5, position: 'relative', overflow: 'visible', cursor: 'crosshair' }}>
+    <div onClick={handleBarClick} style={{ flex: 1, height: 24, background: 'rgba(255,255,255,0.05)', borderRadius: 5, position: 'relative', overflow: 'visible', cursor: 'crosshair' }}>
       {segs.map((s, i) => (<div key={i} style={{ position: 'absolute', top: 0, height: '100%', left: `${s.start * 100}%`, width: `${(s.end - s.start) * 100}%`, background: color, borderRadius: 4, opacity: 0.82 }} />))}
       <div style={{ position: 'absolute', top: -3, bottom: -3, left: cursorPct, width: 2, background: 'rgba(255,255,255,0.9)', transform: 'translateX(-50%)', borderRadius: 1, pointerEvents: 'none' }} />
     </div>

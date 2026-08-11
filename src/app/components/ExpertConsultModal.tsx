@@ -48,7 +48,7 @@ export function ExpertConsultModal({
   const inputClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 p-5 backdrop-blur-md cursor-pointer" onClick={close}>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 p-5 backdrop-blur-md" onClick={close}>
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

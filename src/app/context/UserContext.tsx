@@ -16,6 +16,7 @@ import {
   getWorkflowTasks,
   markAllNotificationsRead,
   markNotificationRead,
+  recordPlatformActivity,
   upsertPlatformUser,
   type StoredAttachment,
   type UserNotification,
@@ -52,6 +53,12 @@ export interface EvalTask {
   attachments?: StoredAttachment[];
   reports?: StoredAttachment[];
   pushedAt?: string;
+  /** 管理员对用户可见的留言（可选，未接 API 时为空） */
+  publicMessage?: string;
+  supplementDueAt?: string;
+  supplementCategory?: string;
+  communications?: import('../data/workflowStore').WorkflowCommunication[];
+  terminationReason?: string;
 }
 
 export interface EvalSet {
@@ -206,6 +213,11 @@ function applyAuthSession(session: AuthSession, rememberMe: boolean): User {
 
 const UserContext = createContext<UserContextType | null>(null);
 
+/** 主站登录走后端鉴权，本地凭证重置仅用于原型联调占位。 */
+export async function adminResetLocalPassword(_userId: string, _password: string): Promise<boolean> {
+  return false;
+}
+
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(guestUser);
   const [sessionReady, setSessionReady] = useState(false);
@@ -217,27 +229,54 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshWorkflow = useCallback(() => {
-    const notices = getNotifications();
-    setNotifications(notices);
+    setNotifications(getNotifications());
     setUser((prev) => {
       if (prev.role === 'guest') return prev;
       const workflows = getWorkflowTasks().filter((item) => item.userId === prev.id);
       if (!workflows.length) return prev;
-      return {
-        ...prev,
-        myTasks: prev.myTasks.map((task) => {
-          const workflow = workflows.find((item) => item.id === task.id);
-          return workflow
-            ? {
-                ...task,
-                status: workflow.status,
-                reports: workflow.outputs,
-                attachments: workflow.inputs,
-                pushedAt: workflow.pushedAt,
-              }
-            : task;
-        }),
-      };
+      const merged = prev.myTasks.map((task) => {
+        const workflow = workflows.find((item) => item.id === task.id);
+        return workflow
+          ? {
+              ...task,
+              status: workflow.status,
+              reports: workflow.outputs,
+              attachments: workflow.inputs,
+              pushedAt: workflow.pushedAt,
+              publicMessage: workflow.publicMessage,
+              supplementDueAt: workflow.supplementDueAt,
+              supplementCategory: workflow.supplementCategory,
+              communications: workflow.communications,
+              terminationReason: workflow.terminationReason,
+            }
+          : task;
+      });
+      const known = new Set(merged.map((task) => task.id));
+      const extras: EvalTask[] = workflows
+        .filter((item) => !known.has(item.id))
+        .map((item) => ({
+          id: item.id,
+          name: item.name,
+          model: item.model,
+          modelType: '自定义',
+          evalSet: item.requirement,
+          evalType: item.product as EvalTask['evalType'],
+          status: item.status,
+          score: null,
+          createdAt: item.createdAt,
+          plan: 'paid',
+          requirement: item.requirement,
+          configSummary: item.configSummary,
+          attachments: item.inputs,
+          reports: item.outputs,
+          pushedAt: item.pushedAt,
+          publicMessage: item.publicMessage,
+          supplementDueAt: item.supplementDueAt,
+          supplementCategory: item.supplementCategory,
+          communications: item.communications,
+          terminationReason: item.terminationReason,
+        }));
+      return { ...prev, myTasks: [...extras, ...merged] };
     });
   }, []);
 
@@ -298,6 +337,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const next = applyAuthSession(session, rememberMe);
     setUser(next);
     upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || account });
+    recordPlatformActivity(next.id, '登录');
     return next;
   };
 
@@ -366,7 +406,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       model: task.model,
       requirement: task.requirement || task.evalSet || '按所选配置开展评测',
       configSummary: task.configSummary,
-      status: '待受理',
+      status: '处理中',
       createdAt: task.createdAt,
       updatedAt: task.createdAt,
       inputs: task.attachments || [],

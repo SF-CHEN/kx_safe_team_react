@@ -10,6 +10,7 @@ import {
   FileText, Shuffle,
 } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { recordPlatformActivity } from '../data/workflowStore';
 import { GuestGuard } from '../components/GuestGuard';
 
 type ExperienceKey = 'privacy' | 'aigc' | 'code' | 'course' | 'filing';
@@ -871,7 +872,7 @@ function FilingExperience({ requireLogin }: { requireLogin: RunGuard }) {
 }
 
 export function OnlineExperience() {
-  const { isGuest } = useUser();
+  const { isGuest, user } = useUser();
   const [params, setParams] = useSearchParams();
   const requested = params.get('tab') as ExperienceKey | null;
   const requestedModality = params.get('modality');
@@ -883,6 +884,9 @@ export function OnlineExperience() {
   useEffect(() => {
     if (requested && EXPERIENCES.some(item => item.key === requested)) setActive(requested);
   }, [requested]);
+  useEffect(() => {
+    if (!isGuest) recordPlatformActivity(user.id, '在线体验');
+  }, [isGuest, user.id]);
   const activeDetails = EXPERIENCE_DETAILS[active];
   const choose = (key: ExperienceKey) => {
     setActive(key);

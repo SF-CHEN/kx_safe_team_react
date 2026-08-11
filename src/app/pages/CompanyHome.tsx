@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useUser } from '../context/UserContext';
 import { Button } from '../components/ui/button';
@@ -433,6 +433,7 @@ export function CompanyHome() {
     { from: 'agent', text: '请问您想了解哪方面的内容？例如：大模型评测、AIGC内容审核、大模型备案服务，或其他问题？', ts: '刚刚' },
   ]);
   const [chatInput, setChatInput] = useState('');
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
@@ -447,6 +448,15 @@ export function CompanyHome() {
     }, 5600);
     return () => window.clearInterval(timer);
   }, [isHeroPaused]);
+
+  useEffect(() => {
+    if (!showChat) return;
+    const frame = window.requestAnimationFrame(() => {
+      const container = chatMessagesRef.current;
+      if (container) container.scrollTop = container.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [chatMessages, showChat]);
 
   const selectHeroSlide = (index: number) => {
     const nextIndex = (index + HERO_SLIDES.length) % HERO_SLIDES.length;
@@ -797,8 +807,6 @@ export function CompanyHome() {
                         src={uc.imgUrl}
                         alt={uc.title}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        loading="lazy"
-                        decoding="async"
                       />
                       <div
                         style={{
@@ -1157,7 +1165,7 @@ export function CompanyHome() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
+            <div ref={chatMessagesRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
               {chatMessages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexDirection: msg.from === 'user' ? 'row-reverse' : 'row' }}>
                   {msg.from === 'agent' && (
@@ -1210,9 +1218,9 @@ export function CompanyHome() {
 
       {/* ── Login / Register Modal (guest trial) ── */}
       {showLoginModal && (
-        <div style={{ cursor: 'pointer',  position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowLoginModal(false)}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: '32px 36px', width: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', cursor: 'default' }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '32px 36px', width: 400, boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ width: 52, height: 52, borderRadius: 16, background: 'linear-gradient(135deg,#4f46e5,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <Sparkles className="w-6 h-6 text-white" />

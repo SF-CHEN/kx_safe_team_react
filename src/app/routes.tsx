@@ -43,6 +43,7 @@ const PrivacyDataAudit = lazyPage(() => import('./pages/PrivacyDataAudit'), 'Pri
 const AdminDashboard = lazyPage(() => import('./pages/AdminDashboard'), 'AdminDashboard');
 const EmbodiedIntelligence = lazyPage(() => import('./pages/EmbodiedIntelligence'), 'EmbodiedIntelligence');
 const OnlineExperience = lazyPage(() => import('./pages/OnlineExperience'), 'OnlineExperience');
+const NotFound = lazyPage(() => import('./pages/NotFound'), 'NotFound');
 
 function PageFallback() {
   return (
@@ -132,6 +133,7 @@ export const router = createHashRouter([
       { path: 'training-eval', Component: withSuspense(TrainingEval) },
       { path: 'testset-generation', Component: withSuspense(TestSetGeneration) },
       { path: 'aisafepro', Component: withSuspense(Home) },
+      { path: '*', Component: withSuspense(NotFound) },
     ],
   },
   {
@@ -148,4 +150,5 @@ export const router = createHashRouter([
       { path: 'admin/:section?', Component: withSuspense(AdminDashboard) },
     ],
   },
+  { path: '*', Component: withSuspense(NotFound) },
 ]);

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  WORKFLOW_EVENT, createWorkflowTask, getNotifications, getWorkflowTasks,
-  markAllNotificationsRead, markNotificationRead, upsertPlatformUser,
+  FORMAL_TASK_PRODUCTS, WORKFLOW_EVENT, createWorkflowTask, getNotifications, getWorkflowTasks,
+  markAllNotificationsRead, markNotificationRead, recordPlatformActivity, upsertPlatformUser,
   type StoredAttachment, type UserNotification, type WorkflowStatus,
 } from '../data/workflowStore';
 
@@ -35,6 +35,11 @@ export interface EvalTask {
   attachments?: StoredAttachment[];
   reports?: StoredAttachment[];
   pushedAt?: string;
+  publicMessage?: string;
+  supplementDueAt?: string;
+  communications?: import('../data/workflowStore').WorkflowCommunication[];
+  terminationReason?: string;
+  deliveryNote?: string;
 }
 
 export interface EvalSet {
@@ -156,6 +161,15 @@ function writeCredentials(credentials: LocalCredential[]) {
   window.localStorage.setItem(USER_CREDENTIAL_KEY, JSON.stringify(credentials));
 }
 
+export async function adminResetLocalPassword(userId: string, password: string): Promise<boolean> {
+  const credentials = readCredentials();
+  const index = credentials.findIndex(item => item.userId === userId);
+  if (index < 0 || password.length < 6) return false;
+  credentials[index] = { ...credentials[index], passwordHash: await hashPassword(password), updatedAt: new Date().toISOString() };
+  writeCredentials(credentials);
+  return true;
+}
+
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(() => {
     try {
@@ -185,6 +199,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             reports: workflow.outputs,
             attachments: workflow.inputs,
             pushedAt: workflow.pushedAt,
+            publicMessage: workflow.publicMessage,
+            supplementDueAt: workflow.supplementDueAt,
+            communications: workflow.communications,
+            terminationReason: workflow.terminationReason,
+            deliveryNote: workflow.deliveryNote,
           } : task;
         }),
       };
@@ -226,11 +245,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch {
       saved = null;
     }
-    // 已注册账号：校验密码
-    if (credential && credential.passwordHash !== passwordHash) return false;
-
-    // 原型演示：未注册账号首次登录即创建本地凭证（与注册等效），避免「点登录无跳转」。
-    // 兼容升级前已有 session 的演示账号：首次登录时绑定当前密码。
+    // 原型演示：任意未空账号均可登录；未注册则创建凭证，已注册则按本次密码更新，避免本地凭证卡住「点登录进不去」。
     const target = saved?.email === identifier
       ? normalizeCustomerUser(saved)
       : {
@@ -246,9 +261,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (!credential) {
       credentials.push({ userId: target.id, identifier, passwordHash, updatedAt: new Date().toISOString() });
       writeCredentials(credentials);
+    } else if (credential.passwordHash !== passwordHash) {
+      const index = credentials.findIndex(item => item.identifier === identifier);
+      if (index >= 0) {
+        credentials[index] = { ...credentials[index], passwordHash, updatedAt: new Date().toISOString() };
+        writeCredentials(credentials);
+      }
     }
     setUser(target);
     upsertPlatformUser({ id: target.id, name: target.name, contact: target.email });
+    recordPlatformActivity(target.id, '登录');
     return true;
   };
 
@@ -265,6 +287,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       writeCredentials(credentials);
       setUser(next);
       upsertPlatformUser({ id: next.id, name: next.name, contact: next.email });
+      recordPlatformActivity(next.id, '登录');
       return true;
     }
     return false;
@@ -300,22 +323,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTask = (task: EvalTask) => {
-    setUser(prev => ({ ...prev, myTasks: [task, ...prev.myTasks] }));
+    const storedTask: EvalTask = FORMAL_TASK_PRODUCTS.has(task.evalType) ? { ...task, status: '处理中' } : task;
+    setUser(prev => ({ ...prev, myTasks: [storedTask, ...prev.myTasks] }));
     createWorkflowTask({
-      id: task.id,
+      id: storedTask.id,
       userId: user.id,
       userName: user.name,
       contact: user.email,
-      name: task.name,
-      product: task.evalType,
-      model: task.model,
-      requirement: task.requirement || task.evalSet || '按所选配置开展评测',
-      configSummary: task.configSummary,
-      status: '待受理',
-      createdAt: task.createdAt,
-      updatedAt: task.createdAt,
-      inputs: task.attachments || [],
-      outputs: task.reports || [],
+      name: storedTask.name,
+      product: storedTask.evalType,
+      model: storedTask.model,
+      requirement: storedTask.requirement || storedTask.evalSet || '按所选配置开展评测',
+      configSummary: storedTask.configSummary,
+      status: '处理中',
+      createdAt: storedTask.createdAt,
+      updatedAt: storedTask.createdAt,
+      inputs: storedTask.attachments || [],
+      outputs: storedTask.reports || [],
     });
   };
 

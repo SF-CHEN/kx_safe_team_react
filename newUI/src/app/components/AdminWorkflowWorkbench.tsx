@@ -1,150 +1,227 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Bell, CheckCircle2, Download, FileArchive, FileUp, Mail, Send,
-  UserRound, AlertTriangle, History, Power, PowerOff,
+  Activity, AlertTriangle, Ban, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
+  Download, Edit3, FileArchive, FileUp, History, KeyRound, Mail, MessageSquareWarning,
+  Power, PowerOff, Search, Send, ShieldCheck, UserRound, UsersRound, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { adminResetLocalPassword } from '../context/UserContext';
 import {
-  WORKFLOW_EVENT, addAdminOperationLog, downloadAttachment, fileToStoredAttachment,
-  getAdminOperationLogs, getPlatformUsers, getWorkflowTasks, pushTaskToUser,
-  setPlatformUserStatus, updateWorkflowTask,
+  WORKFLOW_EVENT, addAdminOperationLog, deliverTaskToUser, downloadAttachment,
+  fileToStoredAttachment, getAdminOperationLogs, getPlatformActivities, getPlatformUsers,
+  getWorkflowTasks, requestTaskSupplement, setPlatformUserStatus, terminateWorkflowTask,
+  updatePlatformUser, updateWorkflowTask,
   type AdminOperationLog, type PlatformUserRecord, type WorkflowStatus, type WorkflowTask,
 } from '../data/workflowStore';
 
-const STATUS: WorkflowStatus[] = ['待受理', '材料已接收', '处理中', '待补充材料', '待交付', '已推送', '处理异常'];
+const TERMINAL = new Set<WorkflowStatus>(['已交付', '已终止']);
 const statusStyle: Record<WorkflowStatus, string> = {
-  待受理: 'bg-amber-50 text-amber-700', 材料已接收: 'bg-cyan-50 text-cyan-700', 处理中: 'bg-blue-50 text-blue-700',
-  待补充材料: 'bg-orange-50 text-orange-700', 待交付: 'bg-violet-50 text-violet-700', 已推送: 'bg-emerald-50 text-emerald-700', 处理异常: 'bg-red-50 text-red-700',
+  处理中: 'bg-blue-50 text-blue-700', 待用户补充: 'bg-orange-50 text-orange-700',
+  已交付: 'bg-emerald-50 text-emerald-700', 已终止: 'bg-slate-100 text-slate-500',
+};
+const statusBar: Record<WorkflowStatus, string> = {
+  处理中: 'bg-blue-600', 待用户补充: 'bg-orange-500',
+  已交付: 'bg-emerald-500', 已终止: 'bg-slate-400',
 };
 
 function useWorkflowData() {
-  const [tasks, setTasks] = useState<WorkflowTask[]>(getWorkflowTasks());
-  const [users, setUsers] = useState<PlatformUserRecord[]>(getPlatformUsers());
-  const [logs, setLogs] = useState<AdminOperationLog[]>(getAdminOperationLogs());
+  const read = () => ({ tasks: getWorkflowTasks(), users: getPlatformUsers(), logs: getAdminOperationLogs(), activities: getPlatformActivities() });
+  const [data, setData] = useState(read);
   useEffect(() => {
-    const refresh = () => {
-      setTasks(getWorkflowTasks());
-      setUsers(getPlatformUsers());
-      setLogs(getAdminOperationLogs());
-    };
+    const refresh = () => setData(read());
     window.addEventListener(WORKFLOW_EVENT, refresh);
     window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener(WORKFLOW_EVENT, refresh);
-      window.removeEventListener('storage', refresh);
-    };
+    return () => { window.removeEventListener(WORKFLOW_EVENT, refresh); window.removeEventListener('storage', refresh); };
   }, []);
-  return { tasks, users, logs };
+  return data;
 }
 
-export function RegisteredUserPanel() {
-  const { tasks, users } = useWorkflowData();
+function maskContact(contact: string) {
+  if (/^1\d{10}$/.test(contact)) return `${contact.slice(0, 3)}****${contact.slice(-4)}`;
+  const [name, domain] = contact.split('@');
+  if (domain) return `${name.slice(0, 2)}***@${domain}`;
+  return contact || '—';
+}
+
+function dateValue(value: string) {
+  return new Date(value.replace(/\//g, '-')).getTime() || 0;
+}
+
+export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string }) {
+  const { tasks, users, activities } = useWorkflowData();
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState<PlatformUserRecord | null>(null);
+  const [historyUser, setHistoryUser] = useState<PlatformUserRecord | null>(null);
+  const today = new Date().toLocaleDateString('zh-CN');
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const activeUserIds = new Set(activities.filter(item => dateValue(item.createdAt) >= sevenDaysAgo && (item.type === '在线体验' || item.type === '提交任务')).map(item => item.userId));
+  const stats = [
+    { label: '总注册用户', value: users.length, icon: UsersRound, tone: 'bg-blue-50 text-blue-600' },
+    { label: '今日新增用户', value: users.filter(user => new Date(user.registeredAt).toLocaleDateString('zh-CN') === today).length, icon: UserRound, tone: 'bg-cyan-50 text-cyan-600' },
+    { label: '近 7 天活跃用户', value: activeUserIds.size, icon: Activity, tone: 'bg-emerald-50 text-emerald-600' },
+    { label: '当前禁用账号', value: users.filter(user => user.status === '已停用').length, icon: Ban, tone: 'bg-amber-50 text-amber-600' },
+  ];
+  const filtered = users.filter(user => !query.trim() || `${user.name}${user.contact}${user.id}`.toLowerCase().includes(query.trim().toLowerCase()));
+
+  useEffect(() => {
+    if (initialUserId) setHistoryUser(users.find(user => user.id === initialUserId) || null);
+  }, [initialUserId, users]);
+
   const toggleStatus = (user: PlatformUserRecord) => {
     const next = user.status === '正常' ? '已停用' : '正常';
     setPlatformUserStatus(user.id, next);
-    toast.success(`账号已${next === '正常' ? '启用' : '停用'}`);
+    toast.success(`账号已${next === '正常' ? '启用' : '禁用'}`);
   };
-  return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b px-5 py-4">
-        <div>
-          <h3 className="font-bold text-slate-900">平台注册用户</h3>
-          <p className="mt-1 text-xs text-slate-400">当前演示版读取同一网址下的浏览器联调数据；正式上线后由用户数据库提供</p>
-        </div>
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{users.length} 位</span>
-      </div>
-      {users.length === 0 ? (
-        <div className="px-6 py-10 text-center text-sm text-slate-400">
-          暂无当前环境的注册用户。外网、localhost、不同端口或不同浏览器的数据彼此不共享。
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-5 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">任务数</th><th className="px-5 py-3">账号状态</th><th className="px-5 py-3">操作</th></tr></thead>
-            <tbody>{users.map(user => (
-              <tr key={user.id} className="border-t">
-                <td className="px-5 py-3 font-semibold text-slate-800"><span className="inline-flex items-center gap-2"><UserRound className="h-4 w-4 text-blue-500" />{user.name}</span></td>
-                <td className="px-5 py-3 text-slate-600">{user.contact}</td>
-                <td className="px-5 py-3 text-xs text-slate-500">{user.registeredAt}</td>
-                <td className="px-5 py-3 text-xs text-slate-500">{user.lastLoginAt}</td>
-                <td className="px-5 py-3 font-bold text-blue-600">{tasks.filter(task => task.userId === user.id).length}</td>
-                <td className="px-5 py-3"><span className={`rounded-full px-2 py-1 text-xs ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td>
-                <td className="px-5 py-3"><button onClick={() => toggleStatus(user)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-600">{user.status === '正常' ? <PowerOff className="h-3.5 w-3.5" /> : <Power className="h-3.5 w-3.5" />}{user.status === '正常' ? '停用' : '启用'}</button></td>
-              </tr>
-            ))}</tbody>
-          </table>
-        </div>
-      )}
+
+  const resetPassword = async (user: PlatformUserRecord) => {
+    const temporary = `Xj${Math.random().toString(36).slice(2, 8)}!`;
+    if (!(await adminResetLocalPassword(user.id, temporary))) return toast.error('该用户凭证不在当前浏览器环境，需由后端重置');
+    addAdminOperationLog({ operator: 'admin', action: '重置用户密码', detail: user.id });
+    window.prompt('临时密码已生成，请通过安全渠道告知用户：', temporary);
+  };
+
+  const saveEdit = () => {
+    if (!editing?.name.trim() || !editing.contact.trim()) return toast.error('用户名和联系方式不能为空');
+    updatePlatformUser(editing.id, { name: editing.name.trim(), contact: editing.contact.trim() });
+    setEditing(null);
+    toast.success('用户资料已更新');
+  };
+
+  return <>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map((item, index) => { const Icon = item.icon; return <div key={item.label} className={`group relative overflow-hidden rounded-2xl border p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] transition hover:-translate-y-0.5 hover:shadow-lg ${index === 0 ? 'border-blue-100 bg-gradient-to-br from-white to-blue-50' : index === 1 ? 'border-cyan-100 bg-gradient-to-br from-white to-cyan-50' : index === 2 ? 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50' : 'border-amber-100 bg-gradient-to-br from-white to-amber-50'}`}><span className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/60" /><div className="relative flex items-center justify-between"><span className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${item.tone}`}><Icon className="h-5 w-5" /></span><span className="text-3xl font-black text-slate-950">{item.value}</span></div><div className="relative mt-4 text-sm font-bold text-slate-600">{item.label}</div><div className="relative mt-3 h-1 overflow-hidden rounded-full bg-white"><span className={`block h-full rounded-full ${index === 0 ? 'w-4/5 bg-blue-500' : index === 1 ? 'w-2/5 bg-cyan-500' : index === 2 ? 'w-3/5 bg-emerald-500' : 'w-1/4 bg-amber-500'}`} /></div></div>; })}</div>
+    <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,.06)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5"><div><h3 className="font-black text-slate-900">平台用户</h3><p className="mt-1 text-xs text-slate-400">账号注册后直接启用，不设人工审核流程</p></div><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索用户名、账号或 UID" className="h-10 w-72 rounded-xl border border-slate-200 pl-10 pr-4 text-sm outline-none focus:border-blue-500" /></div></div>
+      {!filtered.length ? <div className="py-16 text-center text-sm text-slate-400">暂无符合条件的用户记录</div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-6 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">进行中任务</th><th className="px-5 py-3">状态</th><th className="px-5 py-3">操作</th></tr></thead><tbody>{filtered.map(user => { const ownTasks = tasks.filter(task => task.userId === user.id); const ongoing = ownTasks.filter(task => !TERMINAL.has(task.status)).length; return <tr key={user.id} className="border-t hover:bg-slate-50/70"><td className="px-6 py-4"><div className="font-bold text-slate-800">{user.name}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{user.id}</div></td><td className="px-5 py-4 text-slate-600">{maskContact(user.contact)}</td><td className="px-5 py-4 text-xs text-slate-500">{user.registeredAt}</td><td className="px-5 py-4 text-xs text-slate-500">{user.lastLoginAt}</td><td className="px-5 py-4 font-bold text-blue-600">{ongoing || '—'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-2"><button onClick={() => setEditing({ ...user })} className="text-xs font-semibold text-blue-600">编辑</button><button onClick={() => toggleStatus(user)} className="text-xs font-semibold text-slate-600">{user.status === '正常' ? '禁用' : '启用'}</button><button onClick={() => resetPassword(user)} className="text-xs font-semibold text-amber-600">重置密码</button><button onClick={() => setHistoryUser(user)} className="text-xs font-semibold text-violet-600">历史任务</button></div></td></tr>; })}</tbody></table></div>}
     </section>
-  );
+    {editing && <Modal title="编辑用户资料" onClose={() => setEditing(null)}><label className="block text-xs font-bold text-slate-500">用户名<input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><label className="mt-4 block text-xs font-bold text-slate-500">手机号／邮箱<input value={editing.contact} onChange={e => setEditing({ ...editing, contact: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><button onClick={saveEdit} className="mt-6 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white">保存修改</button></Modal>}
+    {historyUser && <Modal title={`${historyUser.name} · 历史任务`} onClose={() => setHistoryUser(null)} wide><div className="space-y-2">{tasks.filter(task => task.userId === historyUser.id).map(task => <div key={task.id} className="flex items-center justify-between rounded-xl border p-4"><div><b className="text-sm text-slate-800">{task.name}</b><p className="mt-1 text-xs text-slate-400">{task.id} · {task.product}</p></div><span className={`rounded-full px-2 py-1 text-xs font-bold ${statusStyle[task.status]}`}>{task.status}</span></div>)}{!tasks.some(task => task.userId === historyUser.id) && <div className="py-12 text-center text-sm text-slate-400">暂无历史任务</div>}</div></Modal>}
+  </>;
 }
 
-export function AdminWorkflowWorkbench() {
+type TaskGroup = 'pending' | 'waiting' | 'closed' | 'all';
+
+export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: string }) {
   const { tasks } = useWorkflowData();
-  const [selected, setSelected] = useState<string | null>(tasks[0]?.id || null);
-  const current = useMemo(() => tasks.find(task => task.id === selected) || tasks[0], [tasks, selected]);
-  const [note, setNote] = useState(current?.adminNote || '');
+  const [selected, setSelected] = useState<string | null>(initialTaskId || tasks[0]?.id || null);
+  const [query, setQuery] = useState('');
+  const [group, setGroup] = useState<TaskGroup>('pending');
+  const [pageSize, setPageSize] = useState(5);
+  const [page, setPage] = useState(1);
+  const [publicText, setPublicText] = useState('');
+  const [category, setCategory] = useState('模型／工程文件');
+  const [dueAt, setDueAt] = useState('');
+  const [terminationReason, setTerminationReason] = useState('');
 
-  useEffect(() => {
-    if (!tasks.length) setSelected(null);
-    else if (!selected || !tasks.some(task => task.id === selected)) setSelected(tasks[0].id);
-  }, [tasks, selected]);
-  useEffect(() => setNote(current?.adminNote || ''), [current?.id, current?.adminNote]);
+  const filtered = useMemo(() => tasks.filter(task => {
+    const match = !query.trim() || `${task.id}${task.name}${task.userName}${task.contact}`.toLowerCase().includes(query.trim().toLowerCase());
+    const groupMatch = group === 'all' || (group === 'closed' ? TERMINAL.has(task.status) : group === 'waiting' ? task.status === '待用户补充' : task.status === '处理中');
+    return match && groupMatch;
+  }), [tasks, query, group]);
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const current = tasks.find(task => task.id === selected) || visible[0] || tasks[0];
 
-  const changeStatus = (task: WorkflowTask, status: WorkflowStatus) => {
-    updateWorkflowTask(task.id, { status });
-    addAdminOperationLog({ operator: 'admin', taskId: task.id, action: '修改任务状态', detail: status });
-    toast.success(`任务状态已更新为“${status}”`);
-  };
+  useEffect(() => { setPage(1); }, [query, group, pageSize]);
+  useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
+  useEffect(() => { if (initialTaskId) setSelected(initialTaskId); }, [initialTaskId]);
+  useEffect(() => { setPublicText(''); setTerminationReason(''); }, [current?.id]);
+
   const uploadOutputs = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!current || !event.target.files?.length) return;
+    if (!current || TERMINAL.has(current.status) || !event.target.files?.length) return;
     const files = await Promise.all(Array.from(event.target.files).map(file => fileToStoredAttachment(file, file.name.toLowerCase().includes('report') || file.name.endsWith('.pdf') ? 'report' : 'result')));
-    updateWorkflowTask(current.id, { outputs: [...current.outputs, ...files], status: '待交付' });
+    updateWorkflowTask(current.id, { outputs: [...current.outputs, ...files] });
     addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '上传交付文件', detail: files.map(file => file.name).join('、') });
     toast.success(`已上传 ${files.length} 个交付文件`);
     event.target.value = '';
   };
-  const saveNote = () => {
+  const requestSupplement = () => {
+    if (!current || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
+    requestTaskSupplement(current.id, publicText.trim(), category, dueAt, 'admin');
+    setGroup('waiting'); setPublicText(''); toast.success('补件要求已推送至用户资源中心');
+  };
+  const deliver = () => {
+    if (!current?.outputs.length) return toast.error('请先上传报告或结果文件');
+    if (deliverTaskToUser(current.id, '', 'admin')) { setGroup('closed'); toast.success('报告已交付，用户资源中心与消息中心已同步'); }
+  };
+  const terminate = () => {
+    if (!current || !terminationReason.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
+    if (!window.confirm('终止后将立即通知用户，并把任务归入已结束。确定继续吗？')) return;
+    terminateWorkflowTask(current.id, terminationReason.trim(), 'admin');
+    setGroup('closed'); setTerminationReason(''); toast.success('任务已终止并通知用户');
+  };
+  const download = (file: WorkflowTask['inputs'][number]) => {
     if (!current) return;
-    updateWorkflowTask(current.id, { adminNote: note });
-    addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '保存内部备注' });
-    toast.success('内部处理备注已保存');
+    if (!downloadAttachment(file)) toast.error('该大文件仅保存了元信息，正式下载需接入对象存储');
+    else addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '下载用户材料', detail: file.name });
   };
-  const push = () => {
-    if (!current) return;
-    if (!current.outputs.length) { toast.error('请先上传报告或结果文件'); return; }
-    pushTaskToUser(current.id, 'admin');
-    toast.success('已推送至用户资源中心，并生成站内通知', { description: '邮箱或短信通知仍需后端消息服务接入' });
-  };
-  const download = (task: WorkflowTask, file: WorkflowTask['inputs'][number]) => {
-    if (!downloadAttachment(file)) toast.error('该附件仅保存了文件信息，正式下载需接入后端文件存储');
-    else addAdminOperationLog({ operator: 'admin', taskId: task.id, action: '下载用户材料', detail: file.name });
-  };
+  const downloadAllInputs = () => current?.inputs.forEach(download);
 
-  if (!tasks.length) return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-8 py-16 text-center">
-      <FileArchive className="mx-auto h-10 w-10 text-slate-300" />
-      <h3 className="mt-4 font-bold text-slate-700">暂无用户提交的正式评测任务</h3>
-      <p className="mt-2 text-sm text-slate-400">同一网址下，用户从支持“创建任务”的产品页提交后会立即显示在这里。</p>
-    </div>
-  );
+  const tabs: { key: TaskGroup; label: string; count: number }[] = [
+    { key: 'pending', label: '处理中', count: tasks.filter(t => t.status === '处理中').length },
+    { key: 'waiting', label: '待用户补充', count: tasks.filter(t => t.status === '待用户补充').length },
+    { key: 'closed', label: '已结束', count: tasks.filter(t => TERMINAL.has(t.status)).length },
+    { key: 'all', label: '全部任务', count: tasks.length },
+  ];
 
-  return <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b px-5 py-4"><h3 className="font-bold text-slate-900">用户任务受理箱</h3><p className="mt-1 text-xs text-slate-400">共 {tasks.length} 个任务</p></div>
-      <div className="max-h-[680px] overflow-y-auto">{tasks.map(task => <button key={task.id} onClick={() => setSelected(task.id)} className={`w-full border-b px-5 py-4 text-left transition ${current?.id === task.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}><div className="flex items-start justify-between gap-3"><span className="line-clamp-2 text-sm font-bold text-slate-800">{task.name}</span><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${statusStyle[task.status]}`}>{task.status}</span></div><div className="mt-2 text-xs text-slate-500">{task.userName} · {task.product}</div><div className="mt-1 text-[11px] text-slate-400">{task.createdAt}</div></button>)}</div>
+  if (!tasks.length) return <div className="rounded-3xl border border-dashed border-blue-200 bg-[linear-gradient(135deg,#fff,#f4f8ff)] px-8 py-24 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50"><FileArchive className="h-7 w-7 text-blue-500" /></div><h3 className="mt-5 font-black text-slate-800">暂无待处理的用户任务</h3><p className="mt-2 text-sm text-slate-400">用户从支持“创建任务”的正式产品提交后，会实时出现在这里。</p></div>;
+
+  return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#F5F7FA] text-sm leading-6 shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5"><div><h3 className="text-base font-black text-slate-900">任务处理工作台</h3><p className="mt-1 text-sm leading-6 text-slate-500">从任务队列选择记录，在同一工作区完成核验、补件和交付</p></div><span className="text-sm text-slate-500">共 {tasks.length} 个任务</span></div>
+    <div className="grid items-stretch 2xl:grid-cols-[360px_minmax(0,1fr)]">
+    <section className="flex min-h-0 border-r border-slate-200 bg-slate-100/70 p-3">
+      <div className="flex min-h-[680px] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-[linear-gradient(145deg,#f8fbff,#eef5ff)] p-4"><div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索任务 ID、用户名" className="h-11 w-full rounded-xl border border-blue-100 bg-white/90 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><div className="mt-4 grid grid-cols-2 gap-2">{tabs.map(tab => <button key={tab.key} onClick={() => setGroup(tab.key)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${group === tab.key ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white/80 text-slate-500 hover:bg-white hover:text-blue-600'}`}>{tab.label}<span className="ml-1 opacity-70">{tab.count}</span></button>)}</div></div>
+        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden px-4 py-4 text-left transition ${current.id === task.id ? 'bg-blue-50/70 shadow-[inset_3px_0_0_#2563eb]' : 'hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${statusBar[task.status]}`} /><div className="flex items-start justify-between gap-3"><span className="line-clamp-2 pl-1 text-sm font-black text-slate-800">{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[task.status]}`}>{task.status}</span></div><div className="mt-2 pl-1 text-xs text-slate-500">{task.userName} · {task.product}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className="translate-x-2 text-[11px] font-bold text-blue-600 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100">处理 →</span></div></button>)}{!visible.length && <div className="py-16 text-center text-sm text-slate-400">该分类暂无任务</div>}</div>
+        <div className="flex h-14 shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 text-xs text-slate-500"><select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5"><option value={5}>5 条/页</option><option value={10}>10 条/页</option><option value={20}>20 条/页</option></select><div className="flex items-center gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button><span>{page}/{pages}</span><button disabled={page === pages} onClick={() => setPage(p => p + 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button></div></div>
+      </div>
     </section>
-    {current && <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-5"><div><div className="text-xs font-bold tracking-wider text-blue-600">TASK {current.id}</div><h2 className="mt-2 text-xl font-black text-slate-900">{current.name}</h2><p className="mt-1 text-sm text-slate-500">{current.product} · {current.model}</p></div><select value={current.status} onChange={event => changeStatus(current, event.target.value as WorkflowStatus)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">{STATUS.map(status => <option key={status}>{status}</option>)}</select></div>
-      <div className="grid gap-5 py-5 md:grid-cols-2"><div className="rounded-xl bg-slate-50 p-4"><div className="text-xs font-bold text-slate-400">提交用户</div><div className="mt-2 font-bold text-slate-800">{current.userName}</div><div className="mt-1 flex items-center gap-1.5 text-sm text-slate-500"><Mail className="h-3.5 w-3.5" />{current.contact}</div></div><div className="rounded-xl bg-slate-50 p-4"><div className="text-xs font-bold text-slate-400">评测诉求与配置</div><div className="mt-2 text-sm leading-6 text-slate-700">{current.requirement}</div>{current.configSummary && <div className="mt-2 text-xs text-slate-500">{current.configSummary}</div>}</div></div>
-      <div className="border-t py-5"><h3 className="text-sm font-bold text-slate-800">用户提交材料</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">{current.inputs.length ? current.inputs.map(file => <button key={file.id} onClick={() => download(current, file)} className="flex items-center gap-3 rounded-xl border p-3 text-left hover:border-blue-300 hover:bg-blue-50"><FileArchive className="h-5 w-5 text-blue-500" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-slate-700">{file.name}</span><span className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(2)} MB</span></span><Download className="h-4 w-4 text-slate-400" /></button>) : <div className="col-span-2 rounded-xl border border-dashed p-5 text-center text-sm text-slate-400">该任务使用 API 配置，无本地上传文件</div>}</div></div>
-      <div className="border-t py-5"><div className="flex items-center justify-between"><h3 className="text-sm font-bold text-slate-800">上传报告与结果</h3><label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"><FileUp className="h-4 w-4" />选择文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label></div><div className="mt-3 grid gap-2 sm:grid-cols-2">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800"><CheckCircle2 className="h-4 w-4" /><span className="truncate">{file.name}</span></div>)}</div>{current.pushedAt && <div className="mt-3 text-xs text-slate-400">最近推送：{current.pushedAt} · {current.pushedBy || 'admin'} · v{current.outputVersion || 1}</div>}</div>
-      <div className="border-t pt-5"><label className="text-sm font-bold text-slate-800">内部处理备注</label><textarea value={note} onChange={event => setNote(event.target.value)} placeholder="记录服务器运行、异常或补充材料说明（仅管理员可见）" className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 p-3 text-sm outline-none focus:border-blue-500" /><div className="mt-4 flex flex-wrap justify-end gap-3"><button onClick={saveNote} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600">保存备注</button><button onClick={push} disabled={current.status === '已推送'} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:bg-slate-300"><Send className="h-4 w-4" />{current.status === '已推送' ? '已推送' : '推送给用户'}</button></div><p className="mt-3 flex items-center justify-end gap-1 text-xs text-slate-400"><Bell className="h-3.5 w-3.5" />推送后生成站内消息；外部通知待后端接口接入</p></div>
-    </section>}
+
+    <section className="min-w-0 bg-[#F5F7FA] p-5">
+      <header className="relative overflow-hidden rounded-lg border border-slate-200 bg-white px-7 py-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="absolute right-7 top-6 font-mono text-xs tracking-wider text-slate-400">TASK {current.id}</div><div className="pr-40"><div className="text-xs font-black tracking-[.16em] text-blue-600">{current.product}</div><h2 className="mt-2 text-xl font-black leading-7 text-slate-950">{current.name}</h2><p className="mt-2 text-sm leading-6 text-slate-500">被测对象：{current.model}</p></div><div className="mt-5 flex flex-wrap items-center gap-3"><span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ${statusStyle[current.status]}`}><span className={`h-2 w-2 rounded-full ${statusBar[current.status]}`} />{current.status}</span></div>
+      </header>
+
+      <div className="mt-5 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)]">
+        <div className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="mb-5 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white"><ShieldCheck className="h-4 w-4" /></span><div><h3 className="text-base font-black text-slate-900">任务概况</h3><p className="text-sm leading-6 text-slate-500">用户、诉求与提交配置</p></div></div><div className="grid gap-4 lg:grid-cols-2"><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-5"><span className="text-sm font-bold text-slate-500">提交用户</span><b className="mt-2 block text-lg font-black leading-7 text-blue-700">{current.userName}</b><span className="mt-1 flex items-center gap-1.5 text-sm leading-6 text-slate-600"><Mail className="h-4 w-4 text-blue-500" />{current.contact}</span></div><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-5"><span className="text-sm font-bold text-slate-500">评测诉求</span><p className="mt-2 text-sm font-semibold leading-6 text-slate-700">{current.requirement}</p></div></div>{current.configSummary && <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm leading-6 text-slate-600">配置摘要：{current.configSummary}</div>}</section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-black text-slate-900">用户提交材料</h3><p className="mt-1 text-sm leading-6 text-slate-500">下载后转入内部服务器执行正式评测</p></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="text-lg font-black text-blue-600">{current.inputs.length} <small className="text-sm font-bold">个文件</small></span>{current.inputs.length > 0 && <button onClick={downloadAllInputs} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"><Download className="h-3.5 w-3.5" />{current.inputs.length > 1 ? '下载全部' : '下载文件'}</button>}</div></div><div className="mt-4 grid gap-3 sm:grid-cols-2">{current.inputs.length ? current.inputs.map(file => <div key={file.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-[#FAFAFA] p-4 transition hover:border-blue-300 hover:shadow-md"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50"><FileArchive className="h-5 w-5 text-blue-600" /></span><span className="min-w-0 flex-1"><b className="block truncate text-sm leading-6 text-slate-700">{file.name}</b><span className="mt-1 block text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span></span></div>) : <div className="col-span-2 rounded-lg border border-dashed border-slate-200 bg-[#FAFAFA] p-8 text-center text-sm leading-6 text-slate-500">该任务使用模型 API 配置，无本地上传文件</div>}</div></section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="flex items-center gap-2"><History className="h-5 w-5 text-blue-500" /><h3 className="text-base font-black text-slate-900">用户沟通记录</h3></div>{current.communications?.length ? <div className="relative mt-5 space-y-3 pl-5 before:absolute before:bottom-2 before:left-[6px] before:top-2 before:w-px before:bg-slate-200">{current.communications.slice().reverse().map(item => <div key={item.id} className="relative rounded-lg border border-slate-100 bg-[#FAFAFA] px-4 py-4 before:absolute before:-left-[18px] before:top-5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-blue-500 before:ring-4 before:ring-white"><div className="flex justify-between gap-3"><b className="text-sm leading-6 text-slate-700">{item.type} · {item.sender === 'admin' ? '管理员' : item.sender === 'user' ? '用户' : '系统'}</b><span className="text-xs leading-6 text-slate-500">{item.createdAt}</span></div><p className="mt-2 text-sm leading-6 text-slate-600">{item.content}</p></div>)}</div> : <div className="mt-4 rounded-lg bg-[#FAFAFA] py-8 text-center text-sm leading-6 text-slate-500">暂无沟通记录</div>}</section>
+        </div>
+
+        <aside className="flex h-full flex-col gap-3 rounded-lg border border-blue-200 bg-[#F8FAFF] p-4 shadow-[0_5px_18px_rgba(37,99,235,.08)]">
+          <h3 className="text-lg font-black leading-7 text-slate-950">管理员操作台</h3>
+          {TERMINAL.has(current.status) ? <div className={`rounded-2xl border p-5 ${current.status === '已交付' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}><div className="flex items-center gap-3">{current.status === '已交付' ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-slate-500" />}<div><h4 className="text-sm font-black text-slate-800">任务流程已结束</h4><p className="mt-1 text-xs leading-5 text-slate-500">当前状态为“{current.status}”，补件、上传、交付和终止操作均已锁定。</p></div></div></div> : <>
+          <section className="rounded-lg border border-orange-200 bg-white p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">请求用户补件</h4><p className="text-xs leading-5 text-orange-700">材料缺失或不符合要求时使用</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm"><option>模型／工程文件</option><option>配置文件</option><option>API 信息</option><option>需求说明</option><option>其他材料</option></select><input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm" /></div><textarea value={publicText} onChange={e => setPublicText(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-5 outline-none focus:border-orange-400" placeholder="填写用户可见的补件要求" /><button onClick={requestSupplement} className="mt-2 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600">发送补件要求</button></section>
+
+          <section className="overflow-hidden rounded-lg border border-blue-700 bg-gradient-to-br from-blue-700 to-indigo-700 text-white shadow-lg shadow-blue-200/60"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black">正常交付</h4><p className="text-xs leading-5 text-blue-100">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/35 bg-white/10 text-sm font-bold transition hover:bg-white/15"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-white/12 px-3 py-1.5 text-sm"><CheckCircle2 className="h-4 w-4 text-emerald-300" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={current.status === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-md disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70">{current.status === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-white/15 px-4 py-2 text-xs leading-5 text-blue-100">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
+
+          <section className="rounded-lg border border-red-100 bg-white p-4"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><h4 className="text-base font-black text-slate-800">终止任务</h4></div><p className="mt-0.5 text-xs leading-5 text-red-600">仅在材料长期缺失或任务无法继续时使用</p><textarea value={terminationReason} onChange={e => setTerminationReason(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-red-100 bg-white p-3 text-sm leading-5 outline-none focus:border-red-300" placeholder="填写用户可见的终止原因" /><button onClick={terminate} disabled={current.status === '已终止'} className="mt-2 w-full rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-600 hover:text-white disabled:text-slate-300">{current.status === '已终止' ? '任务已终止' : '终止并通知用户'}</button></section>
+          </>}
+        </aside>
+      </div>
+    </section>
+    </div>
   </div>;
 }
 
 export function AdminOperationLogPanel() {
   const { logs } = useWorkflowData();
-  return <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="border-b px-5 py-4"><h3 className="flex items-center gap-2 font-bold text-slate-900"><History className="h-4 w-4 text-blue-500" />操作日志</h3><p className="mt-1 text-xs text-slate-400">记录任务状态、材料下载、文件上传和推送动作</p></div>{logs.length ? <div className="divide-y">{logs.map(log => <div key={log.id} className="grid gap-2 px-5 py-4 text-sm md:grid-cols-[160px_130px_1fr_180px]"><span className="font-semibold text-slate-700">{log.action}</span><span className="text-xs text-blue-600">{log.taskId || '平台用户'}</span><span className="text-slate-500">{log.detail || '—'}</span><span className="text-xs text-slate-400">{log.operator} · {log.createdAt}</span></div>)}</div> : <div className="px-6 py-12 text-center text-sm text-slate-400"><AlertTriangle className="mx-auto mb-3 h-8 w-8 text-slate-300" />暂无管理员操作记录</div>}</section>;
+  const [query, setQuery] = useState('');
+  const filtered = logs.filter(log => !query.trim() || `${log.action}${log.taskId}${log.operator}${log.detail}`.toLowerCase().includes(query.trim().toLowerCase()));
+  const exportCsv = () => {
+    const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = ['操作,任务ID,操作人,详情,时间', ...filtered.map(log => [log.action, log.taskId || '', log.operator, log.detail || '', log.createdAt].map(escape).join(','))].join('\n');
+    const anchor = document.createElement('a'); anchor.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' })); anchor.download = `玄鉴管理员操作日志-${new Date().toISOString().slice(0, 10)}.csv`; anchor.click(); URL.revokeObjectURL(anchor.href);
+    addAdminOperationLog({ operator: 'admin', action: '导出操作日志', detail: `${filtered.length} 条` });
+  };
+  return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-5"><div><h3 className="flex items-center gap-2 font-black text-slate-900"><History className="h-4 w-4 text-blue-500" />操作日志</h3><p className="mt-1 text-xs text-slate-400">追踪任务、账号、下载、交付与通知操作</p></div><div className="flex gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索操作或任务 ID" className="h-9 w-60 rounded-lg border pl-9 pr-3 text-xs" /></div><button onClick={exportCsv} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white"><Download className="h-4 w-4" />导出 CSV</button></div></div>{filtered.length ? <div className="divide-y">{filtered.map(log => <div key={log.id} className="grid gap-2 px-6 py-4 text-sm md:grid-cols-[170px_150px_1fr_210px]"><span className="font-semibold text-slate-700">{log.action}</span><span className="font-mono text-xs text-blue-600">{log.taskId || '平台用户'}</span><span className="text-slate-500">{log.detail || '—'}</span><span className="text-xs text-slate-400">{log.operator} · {log.createdAt}</span></div>)}</div> : <div className="px-6 py-16 text-center text-sm text-slate-400"><AlertTriangle className="mx-auto mb-3 h-8 w-8 text-slate-300" />暂无匹配的操作记录</div>}</section>;
+}
+
+function InfoCard({ label, title, body, icon: Icon }: { label: string; title: string; body: string; icon: React.ElementType }) {
+  return <div className="rounded-xl bg-slate-50 p-4"><div className="flex items-center gap-2 text-xs font-bold text-slate-400"><Icon className="h-4 w-4 text-blue-500" />{label}</div><div className="mt-2 font-bold leading-6 text-slate-800">{title}</div><div className="mt-1 text-sm leading-6 text-slate-500">{body}</div></div>;
+}
+
+function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-5 backdrop-blur-sm"><div className={`max-h-[84vh] w-full overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl ${wide ? 'max-w-2xl' : 'max-w-md'}`}><div className="mb-5 flex items-center justify-between"><h3 className="text-lg font-black text-slate-900">{title}</h3><button onClick={onClose} className="text-slate-400"><XCircle className="h-5 w-5" /></button></div>{children}</div></div>;
 }

@@ -139,8 +139,6 @@ export function AboutUs() {
                 src={rongShuLogo}
                 alt="杭州榕数科技有限公司"
                 style={{ height: 72, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.92, drop_shadow: '0 0 16px rgba(255,255,255,0.2)' }}
-                fetchPriority="high"
-                decoding="async"
               />
             </div>
             {/* Divider */}
@@ -151,8 +149,6 @@ export function AboutUs() {
                 src={yjyLogo}
                 alt="浙江大学滨江研究院"
                 style={{ height: 72, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.92 }}
-                fetchPriority="high"
-                decoding="async"
               />
             </div>
           </div>
@@ -178,7 +174,7 @@ export function AboutUs() {
                 {/* Header */}
                 <div className="p-7 pb-5" style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.04))' }}>
                   <div className="mb-4">
-                    <img src={rongShuLogo} alt="杭州榕数科技有限公司" style={{ height: 56, width: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
+                    <img src={rongShuLogo} alt="杭州榕数科技有限公司" style={{ height: 56, width: 'auto', objectFit: 'contain', display: 'block' }} />
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['国家高新技术企业', '5050计划重点支持企业'].map(t => (
@@ -261,7 +257,7 @@ export function AboutUs() {
                 {/* Header */}
                 <div className="p-7 pb-5" style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(6,182,212,0.04))' }}>
                   <div className="mb-4">
-                    <img src={yjyLogo} alt="浙江大学滨江研究院" style={{ height: 56, width: 'auto', objectFit: 'contain', display: 'block' }} loading="lazy" decoding="async" />
+                    <img src={yjyLogo} alt="浙江大学滨江研究院" style={{ height: 56, width: 'auto', objectFit: 'contain', display: 'block' }} />
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['省级新型研发机构', '浙大与滨江区共建'].map(t => (
@@ -430,14 +426,14 @@ export function AboutUs() {
               ].map(c => {
                 const Icon = c.icon;
                 return (
-                  <div key={c.label} className="flex min-w-0 items-start gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                  <div key={c.label} className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: `${c.color}15` }}>
                       <Icon className="w-4 h-4" style={{ color: c.color }} />
                     </div>
-                    <div className="min-w-0 flex-1">
+                    <div>
                       <div className="text-xs text-gray-400 font-medium">{c.label}</div>
-                      <div className="mt-0.5 break-all text-xs font-semibold leading-snug text-gray-700">{c.value}</div>
+                      <div className="text-gray-700 text-xs font-semibold mt-0.5">{c.value}</div>
                     </div>
                   </div>
                 );

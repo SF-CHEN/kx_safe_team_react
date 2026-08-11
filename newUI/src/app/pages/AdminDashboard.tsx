@@ -1,39 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, Bell, ChevronRight, ClipboardList, History, LogOut,
-  Shield, User, Users, X,
+  Activity, Bell, ChartNoAxesCombined, ChevronRight, ClipboardCheck, FileCheck2,
+  History, KeyRound, LogOut, Mail, Search, User, Users, X,
 } from 'lucide-react';
+import { AuthBrandPanel } from '../components/AuthBrandPanel';
+import { AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel } from '../components/AdminWorkflowWorkbench';
 import {
-  AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,
-} from '../components/AdminWorkflowWorkbench';
-import {
-  WORKFLOW_EVENT, getAdminOperationLogs, getPlatformUsers, getWorkflowTasks,
-  type WorkflowTask,
+  WORKFLOW_EVENT, TERMINAL_WORKFLOW_STATUSES, getAdminOperationLogs, getPlatformActivities,
+  getPlatformUsers, getWorkflowTasks, type PlatformUserRecord, type WorkflowTask,
 } from '../data/workflowStore';
 
-type AdminSection = 'users' | 'tasks' | 'logs';
+type AdminSection = 'overview' | 'users' | 'tasks' | 'logs';
 const SESSION_KEY = 'xj_admin_token';
-
-// 仅用于当前无后端的演示联调环境。生产环境必须替换为后端登录接口和 RBAC 鉴权。
 const DEMO_ADMIN = { account: 'admin', password: 'admin2026' };
+const TERMINAL = new Set(TERMINAL_WORKFLOW_STATUSES);
 
-function useAdminMetrics() {
-  const read = () => ({
-    users: getPlatformUsers().length,
-    tasks: getWorkflowTasks(),
-    logs: getAdminOperationLogs().length,
-  });
-  const [metrics, setMetrics] = useState(read);
+function useAdminData() {
+  const read = () => ({ users: getPlatformUsers(), tasks: getWorkflowTasks(), logs: getAdminOperationLogs(), activities: getPlatformActivities() });
+  const [data, setData] = useState(read);
   useEffect(() => {
-    const refresh = () => setMetrics(read());
+    const refresh = () => setData(read());
     window.addEventListener(WORKFLOW_EVENT, refresh);
     window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener(WORKFLOW_EVENT, refresh);
-      window.removeEventListener('storage', refresh);
-    };
+    return () => { window.removeEventListener(WORKFLOW_EVENT, refresh); window.removeEventListener('storage', refresh); };
   }, []);
-  return metrics;
+  return data;
 }
 
 function AdminLogin({ onLogin }: { onLogin: () => void }) {
@@ -49,57 +40,83 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
     }
     setError('管理员账号或密码错误');
   };
-  return <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#0f172a,#1e3a8a)] px-5">
-    <div className="w-full max-w-[400px] rounded-2xl border border-white/10 bg-white/[0.06] p-9 text-white shadow-2xl backdrop-blur-xl">
-      <div className="mb-8 flex items-center justify-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600"><Shield className="h-5 w-5" /></div><div><h1 className="text-lg font-black">玄鉴管理后台</h1><p className="mt-1 text-xs text-white/50">仅限授权管理员访问</p></div></div>
-      <form onSubmit={submit} className="space-y-4">
-        <label className="block"><span className="mb-2 block text-xs font-semibold text-white/70">管理员账号</span><input value={account} onChange={e => { setAccount(e.target.value); setError(''); }} className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none focus:border-blue-400" placeholder="请输入管理员账号" /></label>
-        <label className="block"><span className="mb-2 block text-xs font-semibold text-white/70">登录密码</span><input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} className="w-full rounded-xl border border-white/15 bg-white/[0.07] px-4 py-3 text-sm text-white outline-none focus:border-blue-400" placeholder="请输入密码" /></label>
-        {error && <p className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs text-red-200">{error}</p>}
-        <button className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold hover:bg-blue-500">安全登录</button>
-      </form>
-      <div className="mt-6 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-xs leading-5 text-amber-100">当前为前端联调入口。后端接入后将改为服务端鉴权、角色权限和登录审计。</div>
-      <a href="/login" className="mt-6 block text-center text-xs text-white/50 hover:text-white">← 返回普通用户登录</a>
-    </div>
+  return <div className="min-h-screen bg-[radial-gradient(circle_at_18%_10%,rgba(37,99,235,.10),transparent_28rem),linear-gradient(180deg,#f8fbff,#eef3f8)]">
+    <header className="h-[72px] border-b border-slate-200 bg-white"><div className="mx-auto flex h-full max-w-[1180px] items-center justify-between px-6"><a href="/" className="flex items-center gap-4"><img src="/rongsu-logo.png" alt="榕数科技" className="h-10 w-auto" /><span className="border-l border-slate-200 pl-4 text-base font-bold text-slate-800">玄鉴管理后台</span></a><div className="flex gap-7 text-sm text-slate-500"><a href="/">返回门户首页</a><a href="/login">普通用户登录</a></div></div></header>
+    <main className="mx-auto grid max-w-[1180px] overflow-hidden border border-white/80 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)] lg:my-14 lg:grid-cols-[1.08fr_.72fr] lg:rounded-3xl"><AuthBrandPanel mode="admin" /><div className="flex min-h-[620px] items-center px-7 py-12 sm:px-12 lg:px-14"><div className="w-full"><div className="text-xs font-black tracking-[.18em] text-blue-600">XUANJIAN ADMIN</div><h1 className="mt-3 text-3xl font-black text-slate-950">管理员登录</h1><p className="mt-2 text-sm text-slate-500">仅限榕数科技内部授权人员访问</p><div className="mt-8 border-b border-slate-200 pb-3"><span className="relative text-sm font-black text-blue-700">账号密码登录<span className="absolute -bottom-[13px] left-0 right-0 h-0.5 bg-blue-600" /></span></div><form onSubmit={submit} className="mt-7 space-y-4"><div className="relative"><Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={account} onChange={e => { setAccount(e.target.value); setError(''); }} placeholder="管理员账号" className="h-12 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><div className="relative"><KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} placeholder="登录密码" className="h-12 w-full rounded-xl border border-slate-200 pl-11 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div>{error && <p className="rounded-xl bg-red-50 px-4 py-3 text-xs text-red-600">{error}</p>}<button className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700">安全登录</button></form><div className="mt-7 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-700">当前为前端联调鉴权；生产环境必须替换为后端管理员认证、角色权限与登录审计。</div></div></div></main>
   </div>;
 }
 
-function Sidebar({ active, onChange, users, pendingTasks, logs }: { active: AdminSection; onChange: (section: AdminSection) => void; users: number; pendingTasks: number; logs: number }) {
+function Sidebar({ active, onChange, users, tasks }: { active: AdminSection; onChange: (section: AdminSection) => void; users: number; tasks: WorkflowTask[] }) {
+  const pendingTasks = tasks.filter(task => !TERMINAL.has(task.status)).length;
   const items = [
+    { key: 'overview' as const, label: '运营总览', icon: ChartNoAxesCombined, badge: 0 },
     { key: 'users' as const, label: '用户管理', icon: Users, badge: users },
     { key: 'tasks' as const, label: '任务运维', icon: Activity, badge: pendingTasks },
-    { key: 'logs' as const, label: '操作日志', icon: History, badge: logs },
+    { key: 'logs' as const, label: '操作日志', icon: History, badge: 0 },
   ];
-  return <aside className="fixed inset-y-0 left-0 z-20 flex w-[240px] flex-col border-r border-slate-200 bg-white">
-    <div className="border-b px-5 py-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600"><Shield className="h-5 w-5 text-white" /></div><div><div className="font-black text-slate-900">玄鉴管理后台</div><div className="mt-0.5 text-[11px] text-slate-400">Admin Dashboard</div></div></div></div>
-    <nav className="flex-1 p-3"><div className="px-3 pb-2 pt-3 text-[11px] font-bold tracking-widest text-slate-400">核心功能</div>{items.map(item => { const Icon = item.icon; const selected = active === item.key; return <button key={item.key} onClick={() => onChange(item.key)} className={`mb-1 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${selected ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50'}`}><Icon className="h-4 w-4" /><span className="flex-1">{item.label}</span>{item.badge > 0 && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.key === 'tasks' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{item.badge}</span>}</button>; })}</nav>
-    <div className="border-t p-4"><div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600"><User className="h-4 w-4 text-white" /></div><div><div className="text-sm font-bold text-slate-800">系统管理员</div><div className="text-xs text-slate-400">admin</div></div></div></div>
+  return <aside className="fixed inset-y-0 left-0 z-20 flex w-[252px] flex-col border-r border-slate-200 bg-white">
+    <div className="border-b px-5 py-5"><div className="flex items-center gap-3"><img src="/rongsu-logo.png" alt="榕数科技" className="h-9 w-auto max-w-[118px] object-contain" /><div className="border-l pl-3"><div className="text-sm font-black text-slate-900">玄鉴管理后台</div><div className="mt-0.5 text-[10px] tracking-widest text-slate-400">ADMIN CONSOLE</div></div></div></div>
+    <nav className="p-3"><div className="px-3 pb-2 pt-3 text-[11px] font-bold tracking-widest text-slate-400">工作台</div>{items.map(item => { const Icon = item.icon; const selected = active === item.key; return <button key={item.key} onClick={() => onChange(item.key)} className={`mb-1 flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm font-semibold transition ${selected ? 'bg-[linear-gradient(90deg,#eaf3ff,#f7faff)] text-blue-700 shadow-sm ring-1 ring-blue-100' : 'text-slate-600 hover:bg-slate-50'}`}><Icon className="h-4 w-4" /><span className="flex-1">{item.label}</span>{item.badge > 0 && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.key === 'tasks' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-500'}`}>{item.badge}</span>}</button>; })}</nav>
+    <div className="mx-4 mt-3 border-t border-slate-100 pt-4">
+      <button onClick={() => onChange('tasks')} className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs text-slate-500 transition hover:bg-slate-50 hover:text-blue-700">
+        <span>进行中任务</span>
+        <b className="rounded-md bg-slate-100 px-2 py-1 text-slate-700">{pendingTasks}</b>
+      </button>
+    </div>
+    <div className="flex-1" /><div className="border-t p-4"><div className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600"><User className="h-4 w-4 text-white" /></div><div><div className="text-sm font-bold text-slate-800">超级管理员</div><div className="text-xs text-slate-400">admin</div></div></div></div>
   </aside>;
 }
 
-function AdminNoticePanel({ tasks, onClose, onOpenTasks }: { tasks: WorkflowTask[]; onClose: () => void; onOpenTasks: () => void }) {
-  const pending = tasks.filter(task => task.status !== '已推送');
-  return <div className="absolute right-0 top-11 z-50 w-[360px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl">
-    <div className="flex items-center justify-between border-b px-4 py-3"><div><h3 className="text-sm font-bold text-slate-900">待办提醒</h3><p className="mt-0.5 text-[11px] text-slate-400">来自当前任务工作台的实时数据</p></div><button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button></div>
-    {pending.length ? <div className="max-h-[360px] divide-y overflow-auto">{pending.slice(0, 8).map(task => <button key={task.id} onClick={onOpenTasks} className="block w-full px-4 py-3 text-left hover:bg-slate-50"><div className="flex items-start justify-between gap-3"><span className="line-clamp-1 text-sm font-semibold text-slate-700">{task.name}</span><span className="shrink-0 text-[10px] font-bold text-blue-600">{task.status}</span></div><div className="mt-1 text-xs text-slate-400">{task.userName} · {task.createdAt}</div></button>)}</div> : <div className="px-6 py-10 text-center"><ClipboardList className="mx-auto h-8 w-8 text-slate-300" /><p className="mt-3 text-sm text-slate-500">暂无待办任务</p></div>}
-  </div>;
+function Sparkline({ values, color }: { values: number[]; color: string }) {
+  const max = Math.max(...values, 1);
+  return <div className="flex h-8 items-end gap-1">{values.map((value, index) => <span key={index} className={`w-2 rounded-t ${color}`} style={{ height: `${Math.max(18, value / max * 100)}%`, opacity: .35 + index * .08 }} />)}</div>;
+}
+
+function AdminOverview({ users, tasks, onOpenTask }: { users: PlatformUserRecord[]; tasks: WorkflowTask[]; onOpenTask: (id?: string) => void }) {
+  const activities = getPlatformActivities();
+  const parse = (value: string) => new Date(value.replace(/\//g, '-')).getTime() || 0;
+  const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(Date.now() - (6 - index) * 86400000); return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; });
+  const key = (value: string) => { const date = new Date(value.replace(/\//g, '-')); return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; };
+  const daily = (values: string[]) => days.map(day => values.filter(value => key(value) === day).length);
+  const active = new Set(activities.filter(item => parse(item.createdAt) >= Date.now() - 7 * 86400000).map(item => item.userId)).size;
+  const pending = tasks.filter(task => !TERMINAL.has(task.status));
+  const cards = [
+    { label: '平台注册用户', value: users.length, note: `本周新增 ${daily(users.map(u => u.registeredAt)).reduce((a, b) => a + b, 0)} 位`, icon: Users, tone: 'from-blue-50 to-white', iconTone: 'bg-blue-100 text-blue-700', bars: daily(users.map(u => u.registeredAt)), bar: 'bg-blue-500' },
+    { label: '进行中任务', value: pending.length, note: `其中 ${tasks.filter(t => t.status === '处理中').length} 项处理中`, icon: ClipboardCheck, tone: 'from-violet-50 to-white', iconTone: 'bg-violet-100 text-violet-700', bars: daily(tasks.map(t => t.createdAt)), bar: 'bg-violet-500' },
+    { label: '近 7 天活跃', value: active, note: '登录、体验或提交任务', icon: Activity, tone: 'from-cyan-50 to-white', iconTone: 'bg-cyan-100 text-cyan-700', bars: daily(activities.map(a => a.createdAt)), bar: 'bg-cyan-500' },
+    { label: '累计完成交付', value: tasks.filter(task => task.status === '已交付').length, note: `本周交付 ${daily(tasks.filter(t => t.pushedAt).map(t => t.pushedAt!)).reduce((a, b) => a + b, 0)} 项`, icon: FileCheck2, tone: 'from-emerald-50 to-white', iconTone: 'bg-emerald-100 text-emerald-700', bars: daily(tasks.filter(t => t.pushedAt).map(t => t.pushedAt!)), bar: 'bg-emerald-500' },
+  ];
+  const rowColor = (task: WorkflowTask) => task.status === '待用户补充' ? 'bg-orange-500' : task.status === '已交付' ? 'bg-emerald-500' : task.status === '已终止' ? 'bg-slate-400' : 'bg-blue-500';
+  const queue = [
+    { label: '处理中', count: tasks.filter(task => task.status === '处理中').length, tone: 'text-blue-700 bg-blue-50' },
+    { label: '待用户补充', count: tasks.filter(task => task.status === '待用户补充').length, tone: 'text-orange-700 bg-orange-50' },
+    { label: '已交付', count: tasks.filter(task => task.status === '已交付').length, tone: 'text-emerald-700 bg-emerald-50' },
+    { label: '已终止', count: tasks.filter(task => task.status === '已终止').length, tone: 'text-slate-600 bg-slate-100' },
+  ];
+  return <>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(card => { const Icon = card.icon; return <div key={card.label} className={`overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm`}><div className="flex items-start justify-between"><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.iconTone}`}><Icon className="h-5 w-5" /></span><Sparkline values={card.bars} color={card.bar} /></div><div className="mt-5"><b className="text-3xl font-black text-slate-950">{card.value}</b><h3 className="mt-1 text-sm font-bold text-slate-700">{card.label}</h3></div><p className="mt-3 text-xs font-semibold text-slate-400">{card.note}</p></div>; })}</div>
+    <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5"><div><h3 className="font-black text-slate-900">任务状态概览</h3><p className="mt-1 text-xs text-slate-400">按统一任务状态快速进入运维列表</p></div><button onClick={() => onOpenTask()} className="text-xs font-bold text-blue-600">进入任务运维 →</button></div><div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">{queue.map(item => <button key={item.label} onClick={() => onOpenTask()} className="flex items-center justify-between px-6 py-4 text-left transition hover:bg-slate-50"><span className="text-sm font-semibold text-slate-700">{item.label}</span><span className={`rounded-lg px-3 py-1.5 text-sm font-black ${item.tone}`}>{item.count}</span></button>)}</div></section>
+    <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b px-6 py-5"><div><h3 className="font-black text-slate-900">最近任务</h3><p className="mt-1 text-xs text-slate-400">查看最新提交并直接进入处理工作区</p></div><button onClick={() => onOpenTask()} className="text-xs font-bold text-blue-600">全部任务 →</button></div><div>{tasks.slice(0, 8).map(task => <div key={task.id} className="group relative flex flex-wrap items-center gap-4 border-b px-6 py-4 last:border-0 hover:bg-blue-50/40"><span className={`absolute inset-y-3 left-0 w-1 rounded-r ${rowColor(task)}`} /><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${TERMINAL.has(task.status) ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}><ClipboardCheck className="h-4 w-4" /></span><div className="min-w-[180px] flex-1"><b className="block truncate text-sm text-slate-800">{task.name}</b><span className="mt-1 block text-xs text-slate-400">{task.userName} · {task.product}</span></div><span className="text-xs font-mono text-slate-400">{task.id}</span><span className="rounded-full px-2.5 py-1 text-xs font-bold text-slate-600">{task.status}</span><button onClick={() => onOpenTask(task.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-blue-600 opacity-0 transition group-hover:opacity-100">处理</button></div>)}{!tasks.length && <div className="py-16 text-center text-sm text-slate-400">暂无任务数据</div>}</div></section>
+  </>;
+}
+
+function GlobalSearch({ users, tasks, onTask, onUser }: { users: PlatformUserRecord[]; tasks: WorkflowTask[]; onTask: (id: string) => void; onUser: (id: string) => void }) {
+  const [query, setQuery] = useState('');
+  const matches = query.trim() ? { tasks: tasks.filter(t => `${t.id}${t.name}${t.userName}`.toLowerCase().includes(query.toLowerCase())).slice(0, 5), users: users.filter(u => `${u.id}${u.name}${u.contact}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4) } : { tasks: [], users: [] };
+  return <div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="全站搜索任务 ID 或用户名" className="h-11 w-[380px] rounded-xl border border-blue-100 bg-[#f3f7fc] pl-10 pr-4 text-sm shadow-inner outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-50" />{query && <div className="absolute left-0 top-13 z-50 w-[430px] overflow-hidden rounded-2xl border bg-white shadow-2xl"><div className="bg-slate-50 px-4 py-2 text-[10px] font-bold tracking-widest text-slate-400">任务</div>{matches.tasks.map(task => <button key={task.id} onClick={() => { onTask(task.id); setQuery(''); }} className="flex w-full justify-between px-4 py-3 text-left hover:bg-blue-50"><span><b className="block text-sm text-slate-700">{task.name}</b><small className="text-slate-400">{task.id} · {task.userName}</small></span><span className="text-xs font-bold text-blue-600">{task.status}</span></button>)}<div className="border-t bg-slate-50 px-4 py-2 text-[10px] font-bold tracking-widest text-slate-400">用户</div>{matches.users.map(user => <button key={user.id} onClick={() => { onUser(user.id); setQuery(''); }} className="flex w-full justify-between px-4 py-3 text-left hover:bg-blue-50"><span className="text-sm font-bold text-slate-700">{user.name}</span><small className="text-slate-400">{user.id}</small></button>)}{!matches.tasks.length && !matches.users.length && <div className="py-8 text-center text-sm text-slate-400">未找到匹配结果</div>}</div>}</div>;
 }
 
 export function AdminDashboard() {
   const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem(SESSION_KEY) === 'true');
-  const [section, setSection] = useState<AdminSection>('users');
+  const [section, setSection] = useState<AdminSection>('overview');
   const [noticeOpen, setNoticeOpen] = useState(false);
-  const metrics = useAdminMetrics();
-  const pendingTasks = useMemo(() => metrics.tasks.filter(task => task.status !== '已推送').length, [metrics.tasks]);
-
+  const [selectedTaskId, setSelectedTaskId] = useState<string>();
+  const [selectedUserId, setSelectedUserId] = useState<string>();
+  const data = useAdminData();
+  const pending = useMemo(() => data.tasks.filter(task => !TERMINAL.has(task.status)), [data.tasks]);
   if (!loggedIn) return <AdminLogin onLogin={() => setLoggedIn(true)} />;
-  const titles = { users: ['用户管理', '查看注册用户、联系方式、登录时间、任务数量与账号状态'], tasks: ['任务运维', '受理用户任务、下载材料、上传结果并推送至资源中心'], logs: ['操作日志', '追踪管理员对任务和账号执行的关键操作'] } as const;
-  const [title, subtitle] = titles[section];
-  return <div className="min-h-screen bg-slate-50">
-    <Sidebar active={section} onChange={setSection} users={metrics.users} pendingTasks={pendingTasks} logs={metrics.logs} />
-    <main className="ml-[240px] min-h-screen">
-      <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-8"><div className="flex items-center gap-2 text-sm"><span className="text-slate-400">玄鉴后台</span><ChevronRight className="h-3.5 w-3.5 text-slate-300" /><span className="font-bold text-slate-800">{title}</span></div><div className="flex items-center gap-3"><div className="relative"><button onClick={() => setNoticeOpen(open => !open)} className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600"><Bell className="h-4 w-4" />{pendingTasks > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">{pendingTasks}</span>}</button>{noticeOpen && <AdminNoticePanel tasks={metrics.tasks} onClose={() => setNoticeOpen(false)} onOpenTasks={() => { setNoticeOpen(false); setSection('tasks'); }} />}</div><button onClick={() => { localStorage.removeItem(SESSION_KEY); setLoggedIn(false); }} className="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:border-red-200 hover:text-red-600"><LogOut className="h-3.5 w-3.5" />退出登录</button></div></header>
-      <div className="p-8"><div className="mb-6"><h1 className="text-2xl font-black text-slate-900">{title}</h1><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div>{section === 'users' && <RegisteredUserPanel />}{section === 'tasks' && <AdminWorkflowWorkbench />}{section === 'logs' && <AdminOperationLogPanel />}</div>
-    </main>
-  </div>;
+  const meta = { overview: ['运营总览', '掌握用户、任务与交付的实时运行情况'], users: ['用户管理', '查看用户资料、活跃情况、账号状态与历史任务'], tasks: ['任务运维', '受理任务、请求补件、上传结果并完成交付'], logs: ['操作日志', '审计管理员执行的关键业务操作'] } as const;
+  const [title, subtitle] = meta[section];
+  const openTask = (id?: string) => { setSelectedTaskId(id); setSection('tasks'); setNoticeOpen(false); };
+  return <div className="min-h-screen bg-[radial-gradient(circle_at_85%_0%,rgba(219,234,254,.6),transparent_28rem),#f3f6fb]"><Sidebar active={section} onChange={setSection} users={data.users.length} tasks={data.tasks} /><main className="ml-[252px] min-h-screen"><header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white px-8"><GlobalSearch users={data.users} tasks={data.tasks} onTask={openTask} onUser={id => { setSelectedUserId(id); setSection('users'); }} /><div className="flex items-center gap-3"><div className="relative"><button onClick={() => setNoticeOpen(v => !v)} className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-200 hover:text-blue-600"><Bell className="h-4 w-4" />{pending.length > 0 && <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-red-500 px-1 text-center text-[9px] font-black text-white">{pending.length}</span>}</button>{noticeOpen && <div className="absolute right-0 top-12 w-[380px] overflow-hidden rounded-2xl border bg-white shadow-2xl"><div className="flex items-center justify-between border-b px-5 py-4"><div><b className="text-sm text-slate-900">待办提醒</b><p className="mt-1 text-xs text-slate-400">尚未结束的任务</p></div><button onClick={() => setNoticeOpen(false)}><X className="h-4 w-4 text-slate-400" /></button></div><div className="max-h-[360px] divide-y overflow-y-auto">{pending.slice(0, 8).map(task => <button key={task.id} onClick={() => openTask(task.id)} className="block w-full px-5 py-4 text-left hover:bg-blue-50"><div className="flex justify-between gap-3"><b className="truncate text-sm text-slate-700">{task.name}</b><span className="shrink-0 text-xs font-bold text-blue-600">{task.status}</span></div><p className="mt-1 text-xs text-slate-400">{task.userName} · {task.id}</p></button>)}</div></div>}</div><button onClick={() => { localStorage.removeItem(SESSION_KEY); setLoggedIn(false); }} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm hover:border-red-200 hover:text-red-600"><LogOut className="h-4 w-4" />退出登录</button></div></header><div className="p-8"><div className="mb-6 flex items-end justify-between"><div><div className="flex items-center gap-2 text-xs text-slate-400">玄鉴后台<ChevronRight className="h-3 w-3" />{title}</div><h1 className="mt-2 text-3xl font-black text-slate-950">{title}</h1><p className="mt-1 text-sm text-slate-500">{subtitle}</p></div></div>{section === 'overview' && <AdminOverview users={data.users} tasks={data.tasks} onOpenTask={openTask} />}{section === 'users' && <RegisteredUserPanel initialUserId={selectedUserId} />}{section === 'tasks' && <AdminWorkflowWorkbench initialTaskId={selectedTaskId} />}{section === 'logs' && <AdminOperationLogPanel />}</div></main></div>;
 }

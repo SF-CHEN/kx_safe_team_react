@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useUser } from '../context/UserContext';
 import { Button } from '../components/ui/button';
@@ -432,6 +432,7 @@ export function CompanyHome() {
     { from: 'agent', text: '请问您想了解哪方面的内容？例如：大模型评测、AIGC内容审核、大模型备案服务，或其他问题？', ts: '刚刚' },
   ]);
   const [chatInput, setChatInput] = useState('');
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
@@ -446,6 +447,15 @@ export function CompanyHome() {
     }, 5600);
     return () => window.clearInterval(timer);
   }, [isHeroPaused]);
+
+  useEffect(() => {
+    if (!showChat) return;
+    const frame = window.requestAnimationFrame(() => {
+      const container = chatMessagesRef.current;
+      if (container) container.scrollTop = container.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [chatMessages, showChat]);
 
   const selectHeroSlide = (index: number) => {
     const nextIndex = (index + HERO_SLIDES.length) % HERO_SLIDES.length;
@@ -1154,7 +1164,7 @@ export function CompanyHome() {
             </div>
 
             {/* Messages */}
-            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
+            <div ref={chatMessagesRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '18px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
               {chatMessages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexDirection: msg.from === 'user' ? 'row-reverse' : 'row' }}>
                   {msg.from === 'agent' && (

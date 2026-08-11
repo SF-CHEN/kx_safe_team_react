@@ -7,13 +7,13 @@ import {
   Search, MapPin, ChevronRight, Globe, Server, HelpCircle,
   ChevronDown, Users, Zap, BarChart3, Award, Building2,
 } from 'lucide-react';
+import { openHashRoute } from '@/utils/hashRoute';
 import { Button } from '../components/ui/button';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { StickySubNav } from '../components/StickySubNav';
 import { GuestGuard } from '../components/GuestGuard';
 import { ExpertConsultModal } from '../components/ExpertConsultModal';
 import { useUser } from '../context/UserContext';
-import { openHashRoute } from '@/utils/hashRoute';
 
 // ── 1. Hero Glassmorphism Card ─────────────────────────────────────
 const TechCard = () => {

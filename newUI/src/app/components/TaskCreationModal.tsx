@@ -207,7 +207,7 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       modelType: '自定义',
       evalSet: sceneName,
       evalType: evalTypeName,
-      status: '待受理',
+      status: '处理中',
       score: null,
       createdAt: new Date().toLocaleString('zh-CN'),
       plan: pricingPlan,
