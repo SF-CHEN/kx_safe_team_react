@@ -9,6 +9,7 @@ import {
 } from '@/utils/gateway';
 import {
   ANALYZE_TIMEOUT_MS,
+  assertAigcAnalyzeSuccess,
   getAlgorithmKey,
   type AigcModality,
 } from '@/api/aigc/keys';
@@ -60,26 +61,16 @@ export function buildAnalyzeURL(algorithmKey: string): string {
   return `${getGatewayBase()}/api/aigc/${algorithmKey}/api/analyze`;
 }
 
-async function ensureAlgorithmAvailable(algorithmKey: string): Promise<void> {
-  const { data } = await createAigcClient(10_000).get('/api/aigc/algorithms');
-  const list = unwrapGatewayData<Array<{ key: string; name?: string; running?: boolean; port_open?: boolean }>>(data);
-  const algo = Array.isArray(list) ? list.find((item) => item.key === algorithmKey) : null;
-  if (algo && (!algo.running || !algo.port_open)) {
-    throw new Error(`算法服务「${algo.name ?? algorithmKey}」未启动，请稍后重试或联系管理员`);
-  }
-}
-
 export async function analyzeText(
   algorithmKey: string,
   payload: { task_id?: string; text: string },
   timeout = ANALYZE_TIMEOUT_MS.text,
 ): Promise<Record<string, unknown>> {
-  await ensureAlgorithmAvailable(algorithmKey);
   const client = createAigcClient(timeout);
   const { data } = await client.post(`/api/aigc/${algorithmKey}/api/analyze`, payload, {
     headers: { 'Content-Type': 'application/json' },
   });
-  return data as Record<string, unknown>;
+  return assertAigcAnalyzeSuccess(data);
 }
 
 export async function analyzeFile(
@@ -89,7 +80,6 @@ export async function analyzeFile(
 ): Promise<Record<string, unknown>> {
   const { taskId, text, modality = 'image' } = options;
   const timeout = ANALYZE_TIMEOUT_MS[modality as AigcModality] ?? 1_800_000;
-  await ensureAlgorithmAvailable(algorithmKey);
   const client = createAigcClient(timeout);
 
   const formData = new FormData();
@@ -98,7 +88,7 @@ export async function analyzeFile(
   if (text) formData.append('text', text);
 
   const { data } = await client.post(`/api/aigc/${algorithmKey}/api/analyze`, formData);
-  return data as Record<string, unknown>;
+  return assertAigcAnalyzeSuccess(data);
 }
 
 export async function submitAnalyze(

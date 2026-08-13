@@ -42,6 +42,61 @@ export function mapAigcErrorMessage(status?: number, message?: string): string {
   return (status && map[status]) || '请求失败，请稍后重试';
 }
 
+/** analyze 可能 HTTP 200，但 body.status=failed；尽量抽出可读错误文案 */
+export function formatAigcAnalyzeError(error: unknown): string {
+  if (error == null || error === '') return '';
+  if (typeof error === 'string') {
+    const jsonMatch = error.match(/\{[\s\S]*\}$/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]) as {
+          error?: { message?: string };
+          message?: string;
+        };
+        const nested = parsed.error?.message || parsed.message;
+        if (nested?.trim()) return nested.trim();
+      } catch {
+        /* keep raw */
+      }
+    }
+    return error.trim();
+  }
+  if (typeof error === 'object') {
+    const obj = error as { message?: string; error?: { message?: string } | string };
+    if (typeof obj.error === 'string' && obj.error.trim()) return obj.error.trim();
+    if (obj.error && typeof obj.error === 'object' && obj.error.message?.trim()) {
+      return obj.error.message.trim();
+    }
+    if (obj.message?.trim()) return obj.message.trim();
+  }
+  return String(error);
+}
+
+/**
+ * 取出 analyze 业务体（兼容网关包裹）。
+ * 若 status 为 failed/error，抛出带可读文案的 Error，供页面 toast / 错误区展示。
+ */
+export function assertAigcAnalyzeSuccess(response: unknown): Record<string, unknown> {
+  const root = (response && typeof response === 'object'
+    ? response
+    : {}) as Record<string, unknown>;
+  const nested = root.data;
+  const payload = (
+    nested
+    && typeof nested === 'object'
+    && !Array.isArray(nested)
+    && ('status' in nested || 'error' in nested || 'task_id' in nested || 'result' in nested)
+      ? nested
+      : root
+  ) as Record<string, unknown>;
+
+  const status = String(payload.status ?? '').toLowerCase();
+  if (status === 'failed' || status === 'error') {
+    throw new Error(formatAigcAnalyzeError(payload.error) || '检测失败，请稍后重试');
+  }
+  return payload;
+}
+
 export interface ParsedAigcDisplay {
   result: Record<string, unknown>;
   reportInfo: Record<string, unknown> | null;

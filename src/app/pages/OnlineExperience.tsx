@@ -620,12 +620,17 @@ function AigcExperience({
               <span className="mt-2 text-xs text-slate-300">{functionMode === 'audit' ? '输出风险标签与处置建议' : '输出生成概率与鉴伪依据'}</span>
             </div>
           ) : (
-            <AigcLiveResult parsed={parsed} functionMode={functionMode} previewUrl={uploadedImage || uploadedMedia?.dataUrl || null} />
+            <AigcLiveResult
+              parsed={parsed}
+              functionMode={functionMode}
+              mode={mode}
+              previewUrl={uploadedImage || uploadedMedia?.dataUrl || null}
+            />
           )}
           {done && parsed && (
             <div className="mt-5 grid grid-cols-2 gap-3">
               <button onClick={() => { setDone(false); reset(); }} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 hover:border-blue-200 hover:text-blue-600"><RotateCcw className="h-4 w-4" />重新检测</button>
-              <button onClick={() => downloadDemoReport('AIGC内容安全体验报告.txt', JSON.stringify(parsed?.briefView ?? parsed?.result ?? {}, null, 2))} className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Download className="h-4 w-4" />下载体验报告</button>
+              <button onClick={() => downloadDemoReport('AIGC内容安全体验报告.txt', buildAigcReportText(parsed, mode, functionMode))} className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Download className="h-4 w-4" />下载体验报告</button>
             </div>
           )}
         </div>
@@ -641,109 +646,246 @@ function formatAigcScore(score: unknown): string | null {
   return `${Math.round(num <= 1 ? num * 100 : num)}%`;
 }
 
+function scoreToPercent(score: unknown): number {
+  const num = Number(score);
+  if (Number.isNaN(num)) return 0;
+  return Math.round(num <= 1 ? num * 100 : num);
+}
+
+function buildAigcReportText(
+  parsed: import('@/api/aigc').ParsedAigcDisplay,
+  mode: string,
+  functionMode: 'audit' | 'authenticity',
+) {
+  const brief = parsed.briefView || {};
+  const detection = parsed.detectionResult || {};
+  return [
+    `检测模态：${mode}`,
+    `检测功能：${functionMode === 'audit' ? '内容审核' : 'AI鉴伪'}`,
+    `结论：${String(brief.decision_text ?? detection.decision_text ?? brief.status ?? '检测完成')}`,
+    `风险置信度：${formatAigcScore(brief.score ?? detection.risk_score) ?? '—'}`,
+    `主要类别：${String(detection.main_category ?? brief.main_category ?? '—')}`,
+    `摘要：${String(detection.reasoning_summary ?? brief.ui_summary ?? '')}`,
+  ].join('\n');
+}
+
+function collectAigcEvidence(parsed: import('@/api/aigc').ParsedAigcDisplay): string[] {
+  const detection = parsed.detectionResult || {};
+  const panel = parsed.panel || {};
+  const items: string[] = [];
+
+  const highRisks = Array.isArray(detection.high_risks) ? detection.high_risks as Record<string, unknown>[] : [];
+  highRisks.forEach((risk) => {
+    const label = String(risk.label ?? risk.code ?? '风险项');
+    const terms = Array.isArray(risk.matched_terms) ? risk.matched_terms.map(String).filter(Boolean) : [];
+    terms.forEach((term) => items.push(`“${term}”命中${label}`));
+    const evidence = Array.isArray(risk.evidence) ? risk.evidence.map(String).filter(Boolean) : [];
+    evidence.forEach((line) => items.push(line));
+  });
+
+  const spans = Array.isArray(detection.risk_spans) ? detection.risk_spans as Record<string, unknown>[] : [];
+  spans.forEach((span) => {
+    const preview = String(span.text_preview ?? '').trim();
+    const reason = String(span.reason ?? span.label ?? '').trim();
+    if (preview && reason) items.push(`${preview} · ${reason}`);
+    else if (preview) items.push(preview);
+    else if (reason) items.push(reason);
+  });
+
+  const highlights = Array.isArray((panel as { highlight_terms?: unknown }).highlight_terms)
+    ? (panel as { highlight_terms: Record<string, unknown>[] }).highlight_terms
+    : [];
+  highlights.forEach((item) => {
+    const label = String(item.label ?? item.code ?? '');
+    const terms = Array.isArray(item.terms) ? item.terms.map(String).filter(Boolean) : [];
+    terms.forEach((term) => {
+      const line = label ? `“${term}”命中${label}` : `“${term}”`;
+      if (!items.includes(line)) items.push(line);
+    });
+  });
+
+  if (items.length > 0) return [...new Set(items)].slice(0, 6);
+
+  const ranked = (Array.isArray(parsed.rankedView) ? parsed.rankedView : []) as Record<string, unknown>[];
+  return ranked
+    .filter((row) => Number(row.risk_score ?? row.score ?? 0) > 0 || String(row.status ?? '').includes('风险'))
+    .slice(0, 5)
+    .map((row) => {
+      const label = String(row.label ?? row.name ?? '风险项');
+      const status = String(row.status ?? formatAigcScore(row.risk_score ?? row.score) ?? '');
+      return status ? `${label} · ${status}` : label;
+    });
+}
+
 function AigcLiveResult({
   parsed,
   functionMode,
+  mode,
   previewUrl,
 }: {
   parsed: import('@/api/aigc').ParsedAigcDisplay;
   functionMode: 'audit' | 'authenticity';
+  mode: 'text' | 'image' | 'audio' | 'video';
   previewUrl?: string | null;
 }) {
-  // 字段映射对齐 Vue AigcResultPanel / parseDisplayResponse
   const brief = parsed.briefView || {};
   const detection = parsed.detectionResult || {};
   const panel = parsed.panel || {};
+  const summary = (panel.summary as Record<string, unknown> | undefined) ?? {};
 
-  const title = String(
-    brief.status
-      ?? detection.risk_level_cn
-      ?? brief.decision
-      ?? brief.label
-      ?? detection.decision
-      ?? (functionMode === 'audit' ? '内容审核结果' : 'AI 鉴伪结果'),
-  );
-  const decisionText = String(
+  const riskPct = formatAigcScore(brief.score ?? brief.risk_score ?? detection.risk_score ?? detection.score);
+  const riskLevel = String(detection.risk_level ?? brief.status ?? '').toLowerCase();
+  const isHigh = riskLevel.includes('high') || String(brief.status ?? '').includes('高');
+
+  const decisionTitle = String(
     brief.decision_text
       ?? detection.decision_text
-      ?? brief.summary_text
-      ?? brief.panel_summary
+      ?? summary.decision_text
+      ?? (functionMode === 'audit' ? '建议人工复核' : '鉴伪结果'),
+  );
+  const decisionDesc = String(
+    detection.reasoning_summary
       ?? brief.ui_summary
-      ?? (panel.summary as { text?: string } | undefined)?.text
-      ?? detection.reasoning_summary
+      ?? summary.text
+      ?? detection.decision_text
       ?? '检测完成，请结合证据人工复核。',
   );
-  const riskPct = formatAigcScore(brief.score ?? brief.risk_score ?? detection.risk_score ?? detection.score);
-  const mainCategory = String(detection.main_category ?? detection.violation_category ?? '');
+  const mainCategory = String(detection.main_category ?? brief.main_category ?? '');
+
+  const highCount = Array.isArray(detection.high_risks) ? detection.high_risks.length : 0;
+  const mediumCount = Array.isArray(detection.medium_risks) ? detection.medium_risks.length : 0;
+  const tagCount = Array.isArray(detection.all_categories)
+    ? detection.all_categories.length
+    : Array.isArray(parsed.rankedView)
+      ? parsed.rankedView.length
+      : 0;
 
   const panelRows = (
     (Array.isArray(brief.top_rows) && brief.top_rows)
     || (Array.isArray(panel.rows) && panel.rows)
-    || (Array.isArray(panel.feature_bars) && panel.feature_bars)
-    || (Array.isArray(panel.display_rows) && panel.display_rows)
     || []
   ) as Record<string, unknown>[];
 
-  const ranked = (Array.isArray(parsed.rankedView) ? parsed.rankedView : []) as Record<string, unknown>[];
-  const activeRanked = ranked.filter((item) => {
-    const score = Number(item.score ?? 0);
-    const regions = item.regions as unknown[] | undefined;
-    return score > 0 || item.status === '检测到' || item.status === '疑似' || (regions?.length ?? 0) > 0;
-  });
+  const evidence = collectAigcEvidence(parsed);
+  const riskSpans = Array.isArray(detection.risk_spans) ? detection.risk_spans as Record<string, unknown>[] : [];
 
-  const evidence = (panelRows.length > 0 ? panelRows : activeRanked.length > 0 ? activeRanked : ranked)
-    .slice(0, 5)
-    .map((row, index) => {
-      const label = String(row.label ?? row.name ?? row.category ?? `维度 ${index + 1}`);
-      const value = String(
-        row.display_value
-          ?? row.display_percent
-          ?? row.status
-          ?? formatAigcScore(row.score)
-          ?? '',
-      );
-      return value ? `${label} · ${value}` : label;
-    });
+  if (functionMode === 'authenticity') {
+    const barRows = (
+      panelRows.length > 0
+        ? panelRows
+        : ((Array.isArray(parsed.rankedView) ? parsed.rankedView : []) as Record<string, unknown>[])
+    ).slice(0, 4);
+
+    return (
+      <div className="mt-5 min-h-[400px] space-y-4">
+        <div className="rounded-xl border border-violet-100 bg-violet-50 p-5">
+          <div className="flex items-center justify-between">
+            <b className="text-sm text-violet-800">{decisionTitle || '疑似 AI 生成内容'}</b>
+            {riskPct && <span className="rounded-full bg-violet-600 px-2.5 py-1 text-xs font-black text-white">概率 {riskPct}</span>}
+          </div>
+          <p className="mt-3 text-xs leading-6 text-violet-700">{decisionDesc}</p>
+        </div>
+        {barRows.map((row, index) => {
+          const label = String(row.label ?? row.name ?? `维度 ${index + 1}`);
+          const percent = scoreToPercent(row.bar_ratio ?? row.risk_score ?? row.score);
+          return (
+            <div key={`${label}-${index}`}>
+              <div className="mb-1.5 flex justify-between text-xs">
+                <span className="text-slate-600">{label}</span>
+                <b className="text-violet-700">{row.display_percent ? String(row.display_percent) : `${percent}%`}</b>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-600" style={{ width: `${percent}%` }} />
+              </div>
+            </div>
+          );
+        })}
+        {evidence.length > 0 && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <b className="text-xs text-slate-800">鉴伪依据</b>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {evidence.slice(0, 4).map((item) => (
+                <div key={item} className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{item}</div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-5 min-h-[400px] space-y-4">
-      <div className={`rounded-xl border p-5 ${functionMode === 'audit' ? 'border-red-100 bg-red-50' : 'border-violet-100 bg-violet-50'}`}>
+      <div className={`rounded-xl border p-5 ${isHigh ? 'border-red-100 bg-red-50' : 'border-amber-100 bg-amber-50'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertTriangle className={`h-4 w-4 ${functionMode === 'audit' ? 'text-red-500' : 'text-violet-500'}`} />
-            <b className={`text-sm ${functionMode === 'audit' ? 'text-red-700' : 'text-violet-800'}`}>{title}</b>
+            <AlertTriangle className={`h-4 w-4 ${isHigh ? 'text-red-500' : 'text-amber-500'}`} />
+            <b className={`text-sm ${isHigh ? 'text-red-700' : 'text-amber-700'}`}>{decisionTitle}</b>
           </div>
-          {riskPct != null && (
-            <span className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${functionMode === 'audit' ? 'bg-red-500' : 'bg-violet-600'}`}>
-              {riskPct}
+          {riskPct && (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold text-white ${isHigh ? 'bg-red-500' : 'bg-amber-500'}`}>
+              风险 {riskPct}
             </span>
           )}
         </div>
-        <p className={`mt-3 text-xs leading-6 ${functionMode === 'audit' ? 'text-red-600' : 'text-violet-700'}`}>{decisionText}</p>
+        <p className={`mt-3 text-xs leading-6 ${isHigh ? 'text-red-600' : 'text-amber-700'}`}>{decisionDesc}</p>
         {mainCategory ? (
-          <p className={`mt-2 text-xs font-semibold ${functionMode === 'audit' ? 'text-red-700' : 'text-violet-800'}`}>
-            主要违规：{mainCategory}
-          </p>
+          <p className={`mt-2 text-xs font-semibold ${isHigh ? 'text-red-700' : 'text-amber-800'}`}>主要违规：{mainCategory}</p>
         ) : null}
       </div>
-      {previewUrl && (modePreviewIsImage(previewUrl)) && (
+
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          [String(highCount), '高风险', 'text-red-500'],
+          [String(mediumCount), '疑似风险', 'text-amber-500'],
+          [String(tagCount || panelRows.length), '检测标签', 'text-blue-600'],
+        ].map(([value, label, color]) => (
+          <div key={label} className="rounded-xl border border-slate-200 bg-white p-3 text-center">
+            <b className={`text-lg ${color}`}>{value}</b>
+            <span className="mt-1 block text-[10px] text-slate-400">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {previewUrl && modePreviewIsImage(previewUrl) && (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
           <img src={previewUrl} alt="检测预览" className="mx-auto max-h-48 object-contain" />
         </div>
       )}
-      {evidence.length > 0 && (
+
+      {(mode === 'audio' || mode === 'video') && riskSpans.length > 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <b className="text-xs text-slate-800">风险时间线</b>
+          {riskSpans.slice(0, 5).map((span, index) => {
+            const level = String(span.risk_level_cn ?? span.risk_level ?? '疑似');
+            const desc = String(span.reason ?? span.label ?? span.text_preview ?? '风险片段');
+            const time = String(span.time_range ?? span.text_preview ?? `片段 ${index + 1}`);
+            return (
+              <div key={`${time}-${index}`} className="mt-3 flex w-full items-start gap-3 rounded-lg bg-slate-50 p-3 text-left">
+                <span className="min-w-20 text-xs font-semibold text-blue-600">{time}</span>
+                <span className="flex-1 text-xs text-slate-600">{desc}</span>
+                <span className={`text-[10px] ${String(level).includes('高') ? 'text-red-500' : 'text-amber-500'}`}>{level}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : evidence.length > 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <b className="text-xs text-slate-800">检测证据</b>
           {evidence.map((item, index) => (
             <div key={`${item}-${index}`} className="mt-3 flex items-center gap-3 rounded-lg bg-slate-50 p-3">
-              <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-red-500' : 'bg-amber-500'}`} />
+              <span className={`h-2 w-2 shrink-0 rounded-full ${index === 0 ? 'bg-red-500' : 'bg-amber-500'}`} />
               <span className="text-xs text-slate-600">{item}</span>
             </div>
           ))}
         </div>
-      )}
+      ) : null}
+
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-6 text-blue-700">
-        以上结果来自现网 AIGC 网关，可在资源中心「我的评测」查看历史报告。
+        {String(detection.decision ?? summary.decision ?? '').toLowerCase() === 'block'
+          || String(decisionTitle).includes('拦截')
+          ? '处置建议：拦截高风险内容并进入人工复核队列；对疑似项保留上下文和证据后再决定是否发布。'
+          : '处置建议：结合证据进行人工复核，必要时补充上下文后再决定是否发布。'}
       </div>
     </div>
   );
