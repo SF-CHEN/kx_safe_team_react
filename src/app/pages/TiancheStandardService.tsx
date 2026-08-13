@@ -106,7 +106,7 @@ export function TiancheStandardService() {
   const [activeStdTab, setActiveStdTab] = useState<'domestic' | 'international' | 'industry'>('domestic');
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen max-w-full overflow-x-clip bg-slate-50 font-sans">
 
       {/* ── 1. Hero ────────────────────────────────────────────── */}
       <section className="product-detail-hero relative overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28 min-h-[600px] flex items-center bg-[#060e1d]">

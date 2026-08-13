@@ -1,18 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { toast } from 'sonner';
 import {
   Activity, Bell, ChartNoAxesCombined, ChevronRight, ClipboardCheck, ClipboardList,
   FileCheck2, History, KeyRound, Layers, LogOut, Mail, Search, User, Users, X,
 } from 'lucide-react';
+import { fetchAuthUsers } from '@/api/auth';
+import { fetchAdminEvaluationTasks } from '@/api/evaluation';
 import {
+  ADMIN_REMOTE_EVENT,
   AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,
+  mapAuthUserToRecord, mapEvalRowToWorkflow, type TaskGroup,
 } from '../components/AdminWorkflowWorkbench';
 import { AdminFieldDictPanel } from '../components/AdminFieldDictPanel';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
 import { useUser } from '../context/UserContext';
 import {
-  WORKFLOW_EVENT, TERMINAL_WORKFLOW_STATUSES, getAdminOperationLogs, getPlatformActivities,
-  getPlatformUsers, getWorkflowTasks, type PlatformUserRecord, type WorkflowTask,
+  TERMINAL_WORKFLOW_STATUSES, getPlatformActivities,
+  type PlatformUserRecord, type WorkflowTask,
 } from '../data/workflowStore';
 
 type AdminSection = 'overview' | 'users' | 'fields' | 'tasks' | 'logs';
@@ -28,23 +33,32 @@ function parseAdminSection(value?: string): AdminSection {
 }
 
 function useAdminData() {
-  const read = () => ({
-    users: getPlatformUsers(),
-    tasks: getWorkflowTasks(),
-    logs: getAdminOperationLogs(),
-    activities: getPlatformActivities(),
-  });
-  const [data, setData] = useState(read);
-  useEffect(() => {
-    const refresh = () => setData(read());
-    window.addEventListener(WORKFLOW_EVENT, refresh);
-    window.addEventListener('storage', refresh);
-    return () => {
-      window.removeEventListener(WORKFLOW_EVENT, refresh);
-      window.removeEventListener('storage', refresh);
-    };
+  const [users, setUsers] = useState<PlatformUserRecord[]>([]);
+  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
+
+  const load = useCallback(async () => {
+    try {
+      const [userPage, evalRows] = await Promise.all([
+        fetchAuthUsers({ pageSize: 200, pageCurrent: 1, role: 'USER' }),
+        fetchAdminEvaluationTasks(),
+      ]);
+      setUsers(userPage.items.map(mapAuthUserToRecord));
+      setTasks(evalRows.map(mapEvalRowToWorkflow));
+    } catch (err) {
+      toast.error(err instanceof Error && err.message.trim() ? err.message : '管理后台数据加载失败');
+      setUsers([]);
+      setTasks([]);
+    }
   }, []);
-  return data;
+
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const refreshRemote = () => { void load(); };
+    window.addEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
+    return () => window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
+  }, [load]);
+
+  return { users, tasks };
 }
 
 function AdminLogin() {
@@ -263,7 +277,7 @@ function AdminOverview({
 }: {
   users: PlatformUserRecord[];
   tasks: WorkflowTask[];
-  onOpenTask: (id?: string) => void;
+  onOpenTask: (id?: string, group?: TaskGroup) => void;
 }) {
   const activities = getPlatformActivities();
   const parse = (value: string) => new Date(value.replace(/\//g, '-')).getTime() || 0;
@@ -329,10 +343,10 @@ function AdminOverview({
           ? 'bg-slate-400'
           : 'bg-blue-500');
   const queue = [
-    { label: '处理中', count: tasks.filter((task) => task.status === '处理中').length, tone: 'text-blue-700 bg-blue-50' },
-    { label: '待用户补充', count: tasks.filter((task) => task.status === '待用户补充').length, tone: 'text-orange-700 bg-orange-50' },
-    { label: '已交付', count: tasks.filter((task) => task.status === '已交付').length, tone: 'text-emerald-700 bg-emerald-50' },
-    { label: '已终止', count: tasks.filter((task) => task.status === '已终止').length, tone: 'text-slate-600 bg-slate-100' },
+    { label: '处理中', count: tasks.filter((task) => task.status === '处理中').length, tone: 'text-blue-700 bg-blue-50', group: 'pending' as TaskGroup },
+    { label: '待用户补充', count: tasks.filter((task) => task.status === '待用户补充').length, tone: 'text-orange-700 bg-orange-50', group: 'waiting' as TaskGroup },
+    { label: '已交付', count: tasks.filter((task) => task.status === '已交付').length, tone: 'text-emerald-700 bg-emerald-50', group: 'closed' as TaskGroup },
+    { label: '已终止', count: tasks.filter((task) => task.status === '已终止').length, tone: 'text-slate-600 bg-slate-100', group: 'closed' as TaskGroup },
   ];
 
   return (
@@ -373,7 +387,7 @@ function AdminOverview({
             <button
               key={item.label}
               type="button"
-              onClick={() => onOpenTask()}
+              onClick={() => onOpenTask(undefined, item.group)}
               className="flex items-center justify-between px-6 py-4 text-left transition hover:bg-slate-50"
             >
               <span className="text-sm font-semibold text-slate-700">{item.label}</span>
@@ -565,6 +579,7 @@ export function AdminDashboard() {
   const section = parseAdminSection(sectionParam);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>();
+  const [selectedTaskGroup, setSelectedTaskGroup] = useState<TaskGroup>();
   const [selectedUserId, setSelectedUserId] = useState<string>();
   const data = useAdminData();
   const pending = useMemo(() => data.tasks.filter((task) => !TERMINAL.has(task.status)), [data.tasks]);
@@ -573,8 +588,9 @@ export function AdminDashboard() {
     navigate(`/admin/${next}`, { replace: false });
   };
 
-  const openTask = (id?: string) => {
+  const openTask = (id?: string, group?: TaskGroup) => {
     setSelectedTaskId(id);
+    setSelectedTaskGroup(group);
     setNoticeOpen(false);
     setSection('tasks');
   };
@@ -681,7 +697,7 @@ export function AdminDashboard() {
           )}
           {section === 'users' && <RegisteredUserPanel initialUserId={selectedUserId} />}
           {section === 'fields' && <AdminFieldDictPanel />}
-          {section === 'tasks' && <AdminWorkflowWorkbench initialTaskId={selectedTaskId} />}
+          {section === 'tasks' && <AdminWorkflowWorkbench initialTaskId={selectedTaskId} initialGroup={selectedTaskGroup} />}
           {section === 'logs' && <AdminOperationLogPanel />}
         </div>
       </main>

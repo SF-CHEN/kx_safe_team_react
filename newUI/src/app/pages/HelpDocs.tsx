@@ -20,6 +20,7 @@ interface ProductDocMeta {
   workflow: string[];
   outputs: string[];
   supportsApi?: boolean;
+  previewOnly?: boolean;
 }
 
 interface ProductGroup {
@@ -60,7 +61,7 @@ const PRODUCT_GROUPS: ProductGroup[] = [
   {
     id: 'data',
     name: '数据侧',
-    tagline: '数据合规审查、训练数据评测与多模态内容治理',
+    tagline: '数据合规审查、训练数据评测、多模态内容治理与标识追溯',
     color: '#7c3aed',
     soft: '#f5f3ff',
     icon: Database,
@@ -96,6 +97,17 @@ const PRODUCT_GROUPS: ProductGroup[] = [
         workflow: ['在产品页查看四模态内容安全效果预览', '进入在线体验专区并选择内容安全', '选择模态、内容审核或AI鉴伪，并选用样本或上传文件', '登录后执行检测并查看标签、置信度和处置建议'],
         outputs: ['风险标签与置信度', 'AI生成概率与特征说明', '违规片段或关键帧定位', '审核与复核建议'],
         supportsApi: true,
+      },
+      {
+        id: 'aigc-marking',
+        name: 'AIGC内容标识与检测',
+        path: '/aigc-content-marking',
+        summary: '为文本、图像、音频和视频添加显式、隐式标识，并验证标准元数据结构与关键字段。',
+        audience: '需要在AI内容生成、发布、流转和归档过程中落实标识责任的平台运营、安全合规与内容治理团队。',
+        prepare: ['确认内容属于文本、图像、音频或视频中的哪一种模态', '了解显式标识和隐式元数据的作用与差异', '确认标识检测用于验证标识结构，而不是对无标识内容进行AI鉴伪'],
+        workflow: ['进入产品介绍页并定位到“效果预览”', '切换“标识嵌入”或“标识检测”演示模式', '选择文本、图像、音频或视频内置样例', '查看标识配置、处理后示例、字段校验和检测结论'],
+        outputs: ['显式标识效果示例', '隐式元数据字段示例', '标识结构完整性结论', '内容流转与审计归档流程说明'],
+        previewOnly: true,
       },
     ],
   },
@@ -267,7 +279,9 @@ function buildArticles(): DocArticle[] {
           {
             id: 'next-step',
             title: '下一步',
-            paragraphs: ['首次了解建议先阅读使用指南；需要正式评测、批量数据处理或专家服务时，请前往产品页面确认服务方式。'],
+            paragraphs: [product.previewOnly
+              ? '本产品当前在玄鉴网站仅提供内置样例效果预览，不提供自有文件上传、在线处理、正式任务创建或产品专属专家预约。'
+              : '首次了解建议先阅读使用指南；需要正式评测、批量数据处理或专家服务时，请前往产品页面确认服务方式。'],
           },
         ],
       };
@@ -290,7 +304,11 @@ function buildArticles(): DocArticle[] {
           {
             id: 'data-safety',
             title: '四、数据与安全注意事项',
-            bullets: [
+            bullets: product.previewOnly ? [
+              '效果预览仅使用页面内置固定样例，不接收、不上传也不保存用户自有内容。',
+              '标识检测验证的是显式标识、隐式元数据与标准字段结构，不等同于AI内容真伪鉴定。',
+              '文件编辑、压缩或平台转码可能移除元数据，内容流转环节应保留检测与复核机制。',
+            ] : [
               '仅上传已获得合法授权且与测试目标相关的数据或模型。',
               '体验环境用于能力验证，不应上传生产密钥、真实个人信息或未脱敏核心数据。',
               '正式项目中的数据保存、删除、权限和交付方式应在开始前完成确认。',
@@ -313,8 +331,10 @@ function buildArticles(): DocArticle[] {
         sections: [
           {
             id: 'experience-or-project',
-            title: '在线体验可以替代正式任务或专业服务吗？',
-            paragraphs: ['不能。产品页效果预览用于理解能力，在线体验用于少量样本即时验证；需要批量数据、模型或工程文件上传、正式报告时应创建评测任务，需要实机、渗透、备案或标准服务时应预约专家。'],
+            title: product.previewOnly ? '产品页是否可以处理自有文件？' : '在线体验可以替代正式任务或专业服务吗？',
+            paragraphs: [product.previewOnly
+              ? '不可以。本产品在玄鉴网站仅提供固定样例效果预览，不提供上传、在线执行、创建任务或产品专属专家预约入口。'
+              : '不能。产品页效果预览用于理解能力，在线体验用于少量样本即时验证；需要批量数据、模型或工程文件上传、正式报告时应创建评测任务，需要实机、渗透、备案或标准服务时应预约专家。'],
           },
           {
             id: 'prepare',
@@ -451,7 +471,7 @@ function HelpLanding() {
                       <span className="h-7 w-1" style={{ background: group.color }} />
                       <h2 className="text-2xl font-medium text-slate-900">{group.name}</h2>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))' }}>
                       {group.products.map(product => (
                         <article
                           key={product.id}

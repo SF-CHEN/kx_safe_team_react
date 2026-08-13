@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { Database, ArrowRight, User, Shield, Film, ChevronRight } from 'lucide-react';
+import { Database, ArrowRight, User, Shield, Film, ChevronRight, Tags } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { ScrollReveal } from './ScrollReveal';
@@ -15,6 +15,7 @@ const CAPS = [
     bg: 'rgba(139,92,246,0.05)',
     border: 'rgba(139,92,246,0.18)',
     grad: 'from-violet-500 to-purple-600',
+    path: '/privacy-data-audit',
   },
   {
     icon: Shield,
@@ -25,6 +26,7 @@ const CAPS = [
     bg: 'rgba(124,58,237,0.05)',
     border: 'rgba(124,58,237,0.18)',
     grad: 'from-purple-500 to-indigo-600',
+    path: '/model-safety-eval',
   },
   {
     icon: Film,
@@ -35,6 +37,18 @@ const CAPS = [
     bg: 'rgba(109,40,217,0.05)',
     border: 'rgba(109,40,217,0.18)',
     grad: 'from-indigo-500 to-violet-600',
+    path: '/aigc-content',
+  },
+  {
+    icon: Tags,
+    title: 'AIGC 内容标识',
+    desc: '为生成合成内容添加显式与隐式标识，并验证标准字段与元数据结构',
+    tags: ['显式标识', '隐式元数据', '标准检测'],
+    color: '#2563eb',
+    bg: 'rgba(37,99,235,0.05)',
+    border: 'rgba(37,99,235,0.18)',
+    grad: 'from-blue-500 to-cyan-500',
+    path: '/aigc-content-marking',
   },
 ];
 
@@ -79,7 +93,7 @@ export function TianyuanArch() {
             <div className="flex flex-col items-end gap-2.5 shrink-0">
               <Button
                 style={{ background: 'linear-gradient(135deg,#8b5cf6,#6d28d9)', color: '#fff', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}
-                onClick={() => navigate('/products/tianyuan')}
+                onClick={() => navigate('/products-overview')}
               >
                 了解数据智能 <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
@@ -87,19 +101,20 @@ export function TianyuanArch() {
                 className="text-xs px-3 py-1.5 rounded-full font-medium"
                 style={{ background: 'rgba(139,92,246,0.1)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.2)' }}
               >
-                即将上线
+                4项产品能力
               </span>
             </div>
           </div>
 
-          {/* ── 3-column capability cards ── */}
-          <div className="grid grid-cols-3 gap-5 mb-6">
+          {/* ── Data-side capability cards ── */}
+          <div className="grid gap-5 mb-6 md:grid-cols-2 xl:grid-cols-4">
             {CAPS.map((cap) => {
               const Icon = cap.icon;
               return (
                 <div
                   key={cap.title}
-                  className="rounded-2xl p-6 flex flex-col hover:-translate-y-1 transition-transform duration-300"
+                  className="rounded-2xl p-6 flex flex-col hover:-translate-y-1 transition-transform duration-300 cursor-pointer"
+                  onClick={() => navigate(cap.path)}
                   style={{
                     background: cap.bg,
                     border: `1.5px solid ${cap.border}`,

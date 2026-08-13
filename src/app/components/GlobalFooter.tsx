@@ -12,6 +12,7 @@ const FOOTER_SERVICE_COLS = [
       { name: '个人敏感信息审查', path: '/privacy-data-audit' },
       { name: '模型数据安全评测', path: '/model-safety-eval' },
       { name: 'AIGC内容审核与鉴伪', path: '/aigc-content' },
+      { name: 'AIGC内容标识与检测', path: '/aigc-content-marking' },
     ],
   },
   {

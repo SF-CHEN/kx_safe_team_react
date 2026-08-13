@@ -32,6 +32,7 @@ function SplitHeroCard() {
   ];
 
   return (
+    <div className="max-w-full overflow-x-clip">
     <div
       style={{
         position: 'relative',
@@ -109,6 +110,7 @@ function SplitHeroCard() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

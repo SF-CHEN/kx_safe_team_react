@@ -200,7 +200,7 @@ export function AboutUs() {
                     <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">业务方向</div>
                     <div className="flex flex-col gap-2">
                       {[
-                        { icon: Database,   color: '#8b5cf6', label: '数据与内容安全', desc: '个人敏感信息排查、AIGC内容审核、文本/图像审核' },
+                        { icon: Database,   color: '#8b5cf6', label: '数据与内容安全', desc: '个人敏感信息排查、AIGC内容审核、生成内容标识与追溯' },
                         { icon: BarChart2,  color: '#3b82f6', label: '模型评测',       desc: '深度模型可信测评、大模型性能评测' },
                         { icon: Code2,      color: '#06b6d4', label: '系统安全',       desc: '代码漏洞审查、网络渗透测试' },
                       ].map(b => {

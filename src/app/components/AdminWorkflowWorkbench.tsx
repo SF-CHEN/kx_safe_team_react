@@ -1,39 +1,114 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, Ban, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   Download, Edit3, FileArchive, FileUp, History, KeyRound, Mail, MessageSquareWarning,
   Power, PowerOff, Search, Send, ShieldCheck, UserRound, UsersRound, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchAuthUsers, updateAuthUserStatus, type AuthUser } from '@/api/auth';
+import { updateSysUser } from '@/api/user';
+import {
+  fetchAdminEvaluationTasks,
+  updateAdminEvaluationTaskStatus,
+  type AdminEvalTaskRow,
+} from '@/api/evaluation';
+import { downloadSysFile } from '@/api/file';
+import { DataPagination } from './DataPagination';
 import { adminResetLocalPassword } from '../context/UserContext';
 import {
-  WORKFLOW_EVENT, addAdminOperationLog, deliverTaskToUser, downloadAttachment,
-  fileToStoredAttachment, getAdminOperationLogs, getPlatformActivities, getPlatformUsers,
-  getWorkflowTasks, requestTaskSupplement, setPlatformUserStatus, terminateWorkflowTask,
-  updatePlatformUser, updateWorkflowTask,
+  WORKFLOW_EVENT, addAdminOperationLog,
+  getAdminOperationLogs, getPlatformActivities,
   type AdminOperationLog, type PlatformUserRecord, type WorkflowStatus, type WorkflowTask,
 } from '../data/workflowStore';
 
+export const ADMIN_REMOTE_EVENT = 'xuanjian-admin-remote';
+
+export function notifyAdminRemoteChanged() {
+  window.dispatchEvent(new Event(ADMIN_REMOTE_EVENT));
+}
+
 const TERMINAL = new Set<WorkflowStatus>(['已交付', '已终止']);
-const statusStyle: Record<WorkflowStatus, string> = {
+const ADMIN_STATUS_OPTIONS = ['待受理', '材料已接收', '处理中', '待补充材料', '待交付', '已推送', '处理异常'];
+const statusStyle: Record<string, string> = {
   处理中: 'bg-blue-50 text-blue-700', 待用户补充: 'bg-orange-50 text-orange-700',
   已交付: 'bg-emerald-50 text-emerald-700', 已终止: 'bg-slate-100 text-slate-500',
+  待受理: 'bg-amber-50 text-amber-700', 材料已接收: 'bg-cyan-50 text-cyan-700',
+  待补充材料: 'bg-orange-50 text-orange-700', 待交付: 'bg-violet-50 text-violet-700',
+  已推送: 'bg-emerald-50 text-emerald-700', 处理异常: 'bg-red-50 text-red-700',
 };
-const statusBar: Record<WorkflowStatus, string> = {
+const statusBar: Record<string, string> = {
   处理中: 'bg-blue-600', 待用户补充: 'bg-orange-500',
   已交付: 'bg-emerald-500', 已终止: 'bg-slate-400',
+  待受理: 'bg-amber-500', 材料已接收: 'bg-cyan-500',
+  待补充材料: 'bg-orange-500', 待交付: 'bg-violet-500',
+  已推送: 'bg-emerald-500', 处理异常: 'bg-red-500',
 };
+const fallbackStatusStyle = 'bg-slate-100 text-slate-600';
+const fallbackStatusBar = 'bg-slate-400';
 
-function useWorkflowData() {
-  const read = () => ({ tasks: getWorkflowTasks(), users: getPlatformUsers(), logs: getAdminOperationLogs(), activities: getPlatformActivities() });
-  const [data, setData] = useState(read);
+export function normalizeAdminStatus(status: string): WorkflowStatus {
+  if (status === '待补充材料' || status === '待用户补充') return '待用户补充';
+  if (status === '已推送' || status === '已交付') return '已交付';
+  if (status === '已终止') return '已终止';
+  return '处理中';
+}
+
+export function mapAuthUserToRecord(user: AuthUser): PlatformUserRecord {
+  return {
+    id: String(user.id),
+    name: user.nickname || user.username || String(user.id),
+    contact: user.username || '—',
+    registeredAt: user.created_at ? new Date(user.created_at).toLocaleString('zh-CN', { hour12: false }) : '—',
+    lastLoginAt: user.updated_at ? new Date(user.updated_at).toLocaleString('zh-CN', { hour12: false }) : '—',
+    status: user.is_active === false ? '已停用' : '正常',
+  };
+}
+
+export function mapEvalRowToWorkflow(row: AdminEvalTaskRow): WorkflowTask {
+  return {
+    id: row.id,
+    userId: row.userId,
+    userName: row.userName,
+    contact: row.contact,
+    name: row.name,
+    product: row.product,
+    model: row.model,
+    requirement: row.requirement,
+    configSummary: row.configSummary,
+    status: normalizeAdminStatus(row.status),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    inputs: row.inputs.map((file) => ({
+      id: file.id,
+      name: file.name,
+      size: file.size,
+      type: '',
+      category: 'input',
+      uploadedAt: row.createdAt,
+    })),
+    outputs: row.outputs.map((file) => ({
+      id: file.id,
+      name: file.name,
+      size: 0,
+      type: '',
+      category: 'report' as const,
+      uploadedAt: row.updatedAt,
+    })),
+  };
+}
+
+function useAdminLogs() {
+  const [logs, setLogs] = useState<AdminOperationLog[]>(() => getAdminOperationLogs());
   useEffect(() => {
-    const refresh = () => setData(read());
+    const refresh = () => setLogs(getAdminOperationLogs());
     window.addEventListener(WORKFLOW_EVENT, refresh);
     window.addEventListener('storage', refresh);
-    return () => { window.removeEventListener(WORKFLOW_EVENT, refresh); window.removeEventListener('storage', refresh); };
+    return () => {
+      window.removeEventListener(WORKFLOW_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
   }, []);
-  return data;
+  return logs;
 }
 
 function maskContact(contact: string) {
@@ -47,30 +122,124 @@ function dateValue(value: string) {
   return new Date(value.replace(/\//g, '-')).getTime() || 0;
 }
 
+function errorMessage(err: unknown, fallback: string) {
+  return err instanceof Error && err.message.trim() ? err.message : fallback;
+}
+
 export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string }) {
-  const { tasks, users, activities } = useWorkflowData();
+  const [users, setUsers] = useState<PlatformUserRecord[]>([]);
+  const [statsUsers, setStatsUsers] = useState<PlatformUserRecord[]>([]);
+  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
+  const [activities, setActivities] = useState(() => getPlatformActivities());
   const [query, setQuery] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [allTotal, setAllTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<PlatformUserRecord | null>(null);
   const [historyUser, setHistoryUser] = useState<PlatformUserRecord | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const userPage = await fetchAuthUsers({
+        pageSize,
+        pageCurrent: page,
+        role: 'USER',
+        username: keyword || undefined,
+      });
+      setUsers(userPage.items.map(mapAuthUserToRecord));
+      setTotal(Number(userPage.total) || 0);
+    } catch (err) {
+      toast.error(errorMessage(err, '用户列表加载失败'));
+      setUsers([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [keyword, page, pageSize]);
+
+  const loadStatsAndTasks = useCallback(async () => {
+    try {
+      const [statsPage, evalRows] = await Promise.all([
+        fetchAuthUsers({ pageSize: 200, pageCurrent: 1, role: 'USER' }),
+        fetchAdminEvaluationTasks(),
+      ]);
+      setStatsUsers(statsPage.items.map(mapAuthUserToRecord));
+      setAllTotal(Number(statsPage.total) || 0);
+      setTasks(evalRows.map(mapEvalRowToWorkflow));
+    } catch (err) {
+      toast.error(errorMessage(err, '用户统计加载失败'));
+      setStatsUsers([]);
+      setAllTotal(0);
+      setTasks([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setKeyword(query.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => { void loadUsers(); }, [loadUsers]);
+  useEffect(() => { void loadStatsAndTasks(); }, [loadStatsAndTasks]);
+  useEffect(() => {
+    const refreshActivities = () => setActivities(getPlatformActivities());
+    const refreshRemote = () => {
+      void loadUsers();
+      void loadStatsAndTasks();
+    };
+    window.addEventListener(WORKFLOW_EVENT, refreshActivities);
+    window.addEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
+    window.addEventListener('storage', refreshActivities);
+    return () => {
+      window.removeEventListener(WORKFLOW_EVENT, refreshActivities);
+      window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
+      window.removeEventListener('storage', refreshActivities);
+    };
+  }, [loadUsers, loadStatsAndTasks]);
+
   const today = new Date().toLocaleDateString('zh-CN');
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const activeUserIds = new Set(activities.filter(item => dateValue(item.createdAt) >= sevenDaysAgo && (item.type === '在线体验' || item.type === '提交任务')).map(item => item.userId));
   const stats = [
-    { label: '总注册用户', value: users.length, icon: UsersRound, tone: 'bg-blue-50 text-blue-600' },
-    { label: '今日新增用户', value: users.filter(user => new Date(user.registeredAt).toLocaleDateString('zh-CN') === today).length, icon: UserRound, tone: 'bg-cyan-50 text-cyan-600' },
+    { label: '总注册用户', value: allTotal || total, icon: UsersRound, tone: 'bg-blue-50 text-blue-600' },
+    { label: '今日新增用户', value: statsUsers.filter(user => new Date(user.registeredAt).toLocaleDateString('zh-CN') === today).length, icon: UserRound, tone: 'bg-cyan-50 text-cyan-600' },
     { label: '近 7 天活跃用户', value: activeUserIds.size, icon: Activity, tone: 'bg-emerald-50 text-emerald-600' },
-    { label: '当前禁用账号', value: users.filter(user => user.status === '已停用').length, icon: Ban, tone: 'bg-amber-50 text-amber-600' },
+    { label: '当前禁用账号', value: statsUsers.filter(user => user.status === '已停用').length, icon: Ban, tone: 'bg-amber-50 text-amber-600' },
   ];
-  const filtered = users.filter(user => !query.trim() || `${user.name}${user.contact}${user.id}`.toLowerCase().includes(query.trim().toLowerCase()));
 
   useEffect(() => {
-    if (initialUserId) setHistoryUser(users.find(user => user.id === initialUserId) || null);
-  }, [initialUserId, users]);
+    if (!initialUserId) return;
+    const matched = users.find(user => user.id === initialUserId) || statsUsers.find(user => user.id === initialUserId);
+    setHistoryUser(matched || {
+      id: initialUserId,
+      name: `用户 #${initialUserId}`,
+      contact: '—',
+      registeredAt: '—',
+      lastLoginAt: '—',
+      status: '正常',
+    });
+  }, [initialUserId, users, statsUsers]);
 
-  const toggleStatus = (user: PlatformUserRecord) => {
-    const next = user.status === '正常' ? '已停用' : '正常';
-    setPlatformUserStatus(user.id, next);
-    toast.success(`账号已${next === '正常' ? '启用' : '禁用'}`);
+  const toggleStatus = async (user: PlatformUserRecord) => {
+    const nextActive = user.status !== '正常';
+    try {
+      await updateAuthUserStatus(user.id, nextActive);
+      addAdminOperationLog({ operator: 'admin', action: nextActive ? '启用账号' : '禁用账号', detail: user.id });
+      notifyAdminRemoteChanged();
+      const nextStatus = nextActive ? '正常' : '已停用';
+      setUsers((prev) => prev.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item)));
+      setStatsUsers((prev) => prev.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item)));
+      toast.success(`账号已${nextActive ? '启用' : '禁用'}`);
+    } catch (err) {
+      toast.error(errorMessage(err, '账号状态更新失败'));
+    }
   };
 
   const resetPassword = async (user: PlatformUserRecord) => {
@@ -80,37 +249,96 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
     window.prompt('临时密码已生成，请通过安全渠道告知用户：', temporary);
   };
 
-  const saveEdit = () => {
-    if (!editing?.name.trim() || !editing.contact.trim()) return toast.error('用户名和联系方式不能为空');
-    updatePlatformUser(editing.id, { name: editing.name.trim(), contact: editing.contact.trim() });
-    setEditing(null);
-    toast.success('用户资料已更新');
+  const saveEdit = async () => {
+    if (!editing?.name.trim()) return toast.error('用户名不能为空');
+    const id = Number(editing.id);
+    if (!Number.isFinite(id)) return toast.error('无法保存该用户');
+    try {
+      await updateSysUser({ id, username: editing.name.trim() });
+      addAdminOperationLog({ operator: 'admin', action: '编辑用户资料', detail: editing.id });
+      notifyAdminRemoteChanged();
+      const nextUser = {
+        ...editing,
+        name: editing.name.trim(),
+        contact: editing.contact.trim() || editing.name.trim(),
+      };
+      setUsers((prev) => prev.map((item) => (item.id === editing.id ? nextUser : item)));
+      setStatsUsers((prev) => prev.map((item) => (item.id === editing.id ? nextUser : item)));
+      setEditing(null);
+      toast.success(editing.contact.trim() && editing.contact.trim() !== editing.name.trim()
+        ? '用户名已更新；联系方式暂无独立接口，未写入后端'
+        : '用户资料已更新');
+    } catch (err) {
+      toast.error(errorMessage(err, '用户资料更新失败'));
+    }
   };
 
   return <>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map((item, index) => { const Icon = item.icon; return <div key={item.label} className={`group relative overflow-hidden rounded-2xl border p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] transition hover:-translate-y-0.5 hover:shadow-lg ${index === 0 ? 'border-blue-100 bg-gradient-to-br from-white to-blue-50' : index === 1 ? 'border-cyan-100 bg-gradient-to-br from-white to-cyan-50' : index === 2 ? 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50' : 'border-amber-100 bg-gradient-to-br from-white to-amber-50'}`}><span className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/60" /><div className="relative flex items-center justify-between"><span className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${item.tone}`}><Icon className="h-5 w-5" /></span><span className="text-3xl font-black text-slate-950">{item.value}</span></div><div className="relative mt-4 text-sm font-bold text-slate-600">{item.label}</div><div className="relative mt-3 h-1 overflow-hidden rounded-full bg-white"><span className={`block h-full rounded-full ${index === 0 ? 'w-4/5 bg-blue-500' : index === 1 ? 'w-2/5 bg-cyan-500' : index === 2 ? 'w-3/5 bg-emerald-500' : 'w-1/4 bg-amber-500'}`} /></div></div>; })}</div>
     <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,.06)]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5"><div><h3 className="font-black text-slate-900">平台用户</h3><p className="mt-1 text-xs text-slate-400">账号注册后直接启用，不设人工审核流程</p></div><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索用户名、账号或 UID" className="h-10 w-72 rounded-xl border border-slate-200 pl-10 pr-4 text-sm outline-none focus:border-blue-500" /></div></div>
-      {!filtered.length ? <div className="py-16 text-center text-sm text-slate-400">暂无符合条件的用户记录</div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-6 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">进行中任务</th><th className="px-5 py-3">状态</th><th className="px-5 py-3">操作</th></tr></thead><tbody>{filtered.map(user => { const ownTasks = tasks.filter(task => task.userId === user.id); const ongoing = ownTasks.filter(task => !TERMINAL.has(task.status)).length; return <tr key={user.id} className="border-t hover:bg-slate-50/70"><td className="px-6 py-4"><div className="font-bold text-slate-800">{user.name}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{user.id}</div></td><td className="px-5 py-4 text-slate-600">{maskContact(user.contact)}</td><td className="px-5 py-4 text-xs text-slate-500">{user.registeredAt}</td><td className="px-5 py-4 text-xs text-slate-500">{user.lastLoginAt}</td><td className="px-5 py-4 font-bold text-blue-600">{ongoing || '—'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-2"><button onClick={() => setEditing({ ...user })} className="text-xs font-semibold text-blue-600">编辑</button><button onClick={() => toggleStatus(user)} className="text-xs font-semibold text-slate-600">{user.status === '正常' ? '禁用' : '启用'}</button><button onClick={() => resetPassword(user)} className="text-xs font-semibold text-amber-600">重置密码</button><button onClick={() => setHistoryUser(user)} className="text-xs font-semibold text-violet-600">历史任务</button></div></td></tr>; })}</tbody></table></div>}
+      {!users.length ? <div className="py-16 text-center text-sm text-slate-400">{loading ? '正在加载用户…' : '暂无符合条件的用户记录'}</div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-6 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">进行中任务</th><th className="px-5 py-3">状态</th><th className="px-5 py-3">操作</th></tr></thead><tbody>{users.map(user => { const ownTasks = tasks.filter(task => task.userId === user.id); const ongoing = ownTasks.filter(task => !TERMINAL.has(task.status)).length; return <tr key={user.id} className="border-t hover:bg-slate-50/70"><td className="px-6 py-4"><div className="font-bold text-slate-800">{user.name}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{user.id}</div></td><td className="px-5 py-4 text-slate-600">{maskContact(user.contact)}</td><td className="px-5 py-4 text-xs text-slate-500">{user.registeredAt}</td><td className="px-5 py-4 text-xs text-slate-500">{user.lastLoginAt}</td><td className="px-5 py-4 font-bold text-blue-600">{ongoing || '—'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-2"><button onClick={() => setEditing({ ...user })} className="text-xs font-semibold text-blue-600">编辑</button><button onClick={() => toggleStatus(user)} className="text-xs font-semibold text-slate-600">{user.status === '正常' ? '禁用' : '启用'}</button><button onClick={() => resetPassword(user)} className="text-xs font-semibold text-amber-600">重置密码</button><button onClick={() => setHistoryUser(user)} className="text-xs font-semibold text-violet-600">历史任务</button></div></td></tr>; })}</tbody></table></div>}
+      <div className="border-t">
+        <DataPagination
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          disabled={loading}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
+      </div>
     </section>
     {editing && <Modal title="编辑用户资料" onClose={() => setEditing(null)}><label className="block text-xs font-bold text-slate-500">用户名<input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><label className="mt-4 block text-xs font-bold text-slate-500">手机号／邮箱<input value={editing.contact} onChange={e => setEditing({ ...editing, contact: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><button onClick={saveEdit} className="mt-6 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white">保存修改</button></Modal>}
-    {historyUser && <Modal title={`${historyUser.name} · 历史任务`} onClose={() => setHistoryUser(null)} wide><div className="space-y-2">{tasks.filter(task => task.userId === historyUser.id).map(task => <div key={task.id} className="flex items-center justify-between rounded-xl border p-4"><div><b className="text-sm text-slate-800">{task.name}</b><p className="mt-1 text-xs text-slate-400">{task.id} · {task.product}</p></div><span className={`rounded-full px-2 py-1 text-xs font-bold ${statusStyle[task.status]}`}>{task.status}</span></div>)}{!tasks.some(task => task.userId === historyUser.id) && <div className="py-12 text-center text-sm text-slate-400">暂无历史任务</div>}</div></Modal>}
+    {historyUser && <Modal title={`${historyUser.name} · 历史任务`} onClose={() => setHistoryUser(null)} wide><div className="space-y-2">{tasks.filter(task => task.userId === historyUser.id).map(task => <div key={task.id} className="flex items-center justify-between rounded-xl border p-4"><div><b className="text-sm text-slate-800">{task.name}</b><p className="mt-1 text-xs text-slate-400">{task.id} · {task.product}</p></div><span className={`rounded-full px-2 py-1 text-xs font-bold ${statusStyle[task.status] || fallbackStatusStyle}`}>{task.status}</span></div>)}{!tasks.some(task => task.userId === historyUser.id) && <div className="py-12 text-center text-sm text-slate-400">暂无历史任务</div>}</div></Modal>}
   </>;
 }
 
-type TaskGroup = 'pending' | 'waiting' | 'closed' | 'all';
+export type TaskGroup = 'pending' | 'waiting' | 'closed' | 'all';
 
-export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: string }) {
-  const { tasks } = useWorkflowData();
-  const [selected, setSelected] = useState<string | null>(initialTaskId || tasks[0]?.id || null);
+function taskGroupForStatus(status: WorkflowStatus): TaskGroup {
+  if (status === '待用户补充') return 'waiting';
+  if (TERMINAL.has(status)) return 'closed';
+  return 'pending';
+}
+
+export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initialTaskId?: string; initialGroup?: TaskGroup }) {
+  const [rows, setRows] = useState<AdminEvalTaskRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string | null>(initialTaskId || null);
   const [query, setQuery] = useState('');
-  const [group, setGroup] = useState<TaskGroup>('pending');
+  const [group, setGroup] = useState<TaskGroup>(initialGroup || 'pending');
   const [pageSize, setPageSize] = useState(5);
   const [page, setPage] = useState(1);
   const [publicText, setPublicText] = useState('');
   const [category, setCategory] = useState('模型／工程文件');
   const [dueAt, setDueAt] = useState('');
   const [terminationReason, setTerminationReason] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      const evalRows = await fetchAdminEvaluationTasks();
+      setRows(evalRows);
+    } catch (err) {
+      toast.error(errorMessage(err, '任务列表加载失败'));
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const refresh = () => { void load(); };
+    window.addEventListener(ADMIN_REMOTE_EVENT, refresh);
+    return () => window.removeEventListener(ADMIN_REMOTE_EVENT, refresh);
+  }, [load]);
+
+  const tasks = useMemo(() => rows.map(mapEvalRowToWorkflow), [rows]);
+  const rowById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
 
   const filtered = useMemo(() => tasks.filter(task => {
     const match = !query.trim() || `${task.id}${task.name}${task.userName}${task.contact}`.toLowerCase().includes(query.trim().toLowerCase());
@@ -120,41 +348,86 @@ export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: stri
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
   const current = tasks.find(task => task.id === selected) || visible[0] || tasks[0];
+  const currentRow = current ? rowById.get(current.id) : undefined;
+  const displayStatus = currentRow?.status || current?.status || '处理中';
+  const normalizedStatus = normalizeAdminStatus(displayStatus);
+  const statusOptions = ADMIN_STATUS_OPTIONS.includes(displayStatus)
+    ? ADMIN_STATUS_OPTIONS
+    : [displayStatus, ...ADMIN_STATUS_OPTIONS];
 
   useEffect(() => { setPage(1); }, [query, group, pageSize]);
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
-  useEffect(() => { if (initialTaskId) setSelected(initialTaskId); }, [initialTaskId]);
+  useEffect(() => {
+    if (initialTaskId) {
+      const task = tasks.find(item => item.id === initialTaskId);
+      setSelected(initialTaskId);
+      if (task) setGroup(initialGroup || taskGroupForStatus(task.status));
+    } else if (initialGroup) {
+      setGroup(initialGroup);
+    }
+  }, [initialTaskId, initialGroup, tasks]);
   useEffect(() => { setPublicText(''); setTerminationReason(''); }, [current?.id]);
 
-  const uploadOutputs = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!current || TERMINAL.has(current.status) || !event.target.files?.length) return;
-    const files = await Promise.all(Array.from(event.target.files).map(file => fileToStoredAttachment(file, file.name.toLowerCase().includes('report') || file.name.endsWith('.pdf') ? 'report' : 'result')));
-    updateWorkflowTask(current.id, { outputs: [...current.outputs, ...files] });
-    addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '上传交付文件', detail: files.map(file => file.name).join('、') });
-    toast.success(`已上传 ${files.length} 个交付文件`);
-    event.target.value = '';
+  const changeStatus = async (status: string) => {
+    if (!current || !currentRow || status === currentRow.status) return;
+    try {
+      await updateAdminEvaluationTaskStatus(currentRow, status);
+      addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '更新任务状态', detail: status });
+      notifyAdminRemoteChanged();
+      await load();
+      setGroup(taskGroupForStatus(normalizeAdminStatus(status)));
+      toast.success(`状态已更新为「${status}」`);
+    } catch (err) {
+      toast.error(errorMessage(err, '状态更新失败'));
+    }
   };
-  const requestSupplement = () => {
-    if (!current || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
-    requestTaskSupplement(current.id, publicText.trim(), category, dueAt, 'admin');
-    setGroup('waiting'); setPublicText(''); toast.success('补件要求已推送至用户资源中心');
+
+  const uploadOutputs = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.target.value = '';
+    if (!current || TERMINAL.has(normalizedStatus)) return;
+    toast.error('报告独立上传接口未开放，上传会覆盖用户材料，暂未写入后端');
+  };
+  const requestSupplement = async () => {
+    if (!current || !currentRow || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
+    try {
+      await updateAdminEvaluationTaskStatus(currentRow, '待补充材料');
+      addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '请求用户补件', detail: publicText.trim() });
+      notifyAdminRemoteChanged();
+      await load();
+      setGroup('waiting');
+      setPublicText('');
+      toast.success('已将任务状态更新为「待补充材料」。补件说明暂无独立字段，未写入后端');
+    } catch (err) {
+      toast.error(errorMessage(err, '补件状态更新失败'));
+    }
   };
   const deliver = () => {
     if (!current?.outputs.length) return toast.error('请先上传报告或结果文件');
-    if (deliverTaskToUser(current.id, '', 'admin')) { setGroup('closed'); toast.success('报告已交付，用户资源中心与消息中心已同步'); }
+    toast.error('报告推送接口未开放，确认交付暂无法写入后端');
   };
   const terminate = () => {
     if (!current || !terminationReason.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
     if (!window.confirm('终止后将立即通知用户，并把任务归入已结束。确定继续吗？')) return;
-    terminateWorkflowTask(current.id, terminationReason.trim(), 'admin');
-    setGroup('closed'); setTerminationReason(''); toast.success('任务已终止并通知用户');
+    toast.error('任务终止接口未开放，暂无法写入后端');
   };
-  const download = (file: WorkflowTask['inputs'][number]) => {
+  const download = async (file: WorkflowTask['inputs'][number]) => {
     if (!current) return;
-    if (!downloadAttachment(file)) toast.error('该大文件仅保存了元信息，正式下载需接入对象存储');
-    else addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '下载用户材料', detail: file.name });
+    const fileId = Number(file.id);
+    if (!Number.isFinite(fileId) || fileId <= 0) {
+      toast.error('无法下载该文件');
+      return;
+    }
+    try {
+      await downloadSysFile(fileId, file.name);
+      addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '下载用户材料', detail: file.name });
+    } catch (err) {
+      toast.error(errorMessage(err, '下载失败'));
+    }
   };
-  const downloadAllInputs = () => current?.inputs.forEach(download);
+  const downloadAllInputs = () => {
+    if (!current?.inputs.length) return;
+    void Promise.all(current.inputs.map((file) => download(file)));
+  };
 
   const tabs: { key: TaskGroup; label: string; count: number }[] = [
     { key: 'pending', label: '处理中', count: tasks.filter(t => t.status === '处理中').length },
@@ -163,7 +436,7 @@ export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: stri
     { key: 'all', label: '全部任务', count: tasks.length },
   ];
 
-  if (!tasks.length) return <div className="rounded-3xl border border-dashed border-blue-200 bg-[linear-gradient(135deg,#fff,#f4f8ff)] px-8 py-24 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50"><FileArchive className="h-7 w-7 text-blue-500" /></div><h3 className="mt-5 font-black text-slate-800">暂无待处理的用户任务</h3><p className="mt-2 text-sm text-slate-400">用户从支持“创建任务”的正式产品提交后，会实时出现在这里。</p></div>;
+  if (loading || !tasks.length) return <div className="rounded-3xl border border-dashed border-blue-200 bg-[linear-gradient(135deg,#fff,#f4f8ff)] px-8 py-24 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50"><FileArchive className="h-7 w-7 text-blue-500" /></div><h3 className="mt-5 font-black text-slate-800">{loading ? '正在加载任务…' : '暂无待处理的用户任务'}</h3><p className="mt-2 text-sm text-slate-400">{loading ? '正在从评测任务接口拉取管理端列表' : '用户从支持“创建任务”的正式产品提交后，会实时出现在这里。'}</p></div>;
 
   return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#F5F7FA] text-sm leading-6 shadow-sm">
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5"><div><h3 className="text-base font-black text-slate-900">任务处理工作台</h3><p className="mt-1 text-sm leading-6 text-slate-500">从任务队列选择记录，在同一工作区完成核验、补件和交付</p></div><span className="text-sm text-slate-500">共 {tasks.length} 个任务</span></div>
@@ -171,13 +444,13 @@ export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: stri
     <section className="flex min-h-0 border-r border-slate-200 bg-slate-100/70 p-3">
       <div className="flex min-h-[680px] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="bg-[linear-gradient(145deg,#f8fbff,#eef5ff)] p-4"><div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索任务 ID、用户名" className="h-11 w-full rounded-xl border border-blue-100 bg-white/90 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><div className="mt-4 grid grid-cols-2 gap-2">{tabs.map(tab => <button key={tab.key} onClick={() => setGroup(tab.key)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${group === tab.key ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white/80 text-slate-500 hover:bg-white hover:text-blue-600'}`}>{tab.label}<span className="ml-1 opacity-70">{tab.count}</span></button>)}</div></div>
-        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden px-4 py-4 text-left transition ${current.id === task.id ? 'bg-blue-50/70 shadow-[inset_3px_0_0_#2563eb]' : 'hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${statusBar[task.status]}`} /><div className="flex items-start justify-between gap-3"><span className="line-clamp-2 pl-1 text-sm font-black text-slate-800">{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[task.status]}`}>{task.status}</span></div><div className="mt-2 pl-1 text-xs text-slate-500">{task.userName} · {task.product}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className="translate-x-2 text-[11px] font-bold text-blue-600 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100">处理 →</span></div></button>)}{!visible.length && <div className="py-16 text-center text-sm text-slate-400">该分类暂无任务</div>}</div>
+        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => { const rawStatus = rowById.get(task.id)?.status || task.status; return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden px-4 py-4 text-left transition ${current.id === task.id ? 'bg-blue-50/70 shadow-[inset_3px_0_0_#2563eb]' : 'hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className="line-clamp-2 pl-1 text-sm font-black text-slate-800">{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className="mt-2 pl-1 text-xs text-slate-500">{task.userName} · {task.product}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className="translate-x-2 text-[11px] font-bold text-blue-600 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100">处理 →</span></div></button>; })}{!visible.length && <div className="py-16 text-center text-sm text-slate-400">该分类暂无任务</div>}</div>
         <div className="flex h-14 shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 text-xs text-slate-500"><select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5"><option value={5}>5 条/页</option><option value={10}>10 条/页</option><option value={20}>20 条/页</option></select><div className="flex items-center gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button><span>{page}/{pages}</span><button disabled={page === pages} onClick={() => setPage(p => p + 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button></div></div>
       </div>
     </section>
 
     <section className="min-w-0 bg-[#F5F7FA] p-5">
-      <header className="relative overflow-hidden rounded-lg border border-slate-200 bg-white px-7 py-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="absolute right-7 top-6 font-mono text-xs tracking-wider text-slate-400">TASK {current.id}</div><div className="pr-40"><div className="text-xs font-black tracking-[.16em] text-blue-600">{current.product}</div><h2 className="mt-2 text-xl font-black leading-7 text-slate-950">{current.name}</h2><p className="mt-2 text-sm leading-6 text-slate-500">被测对象：{current.model}</p></div><div className="mt-5 flex flex-wrap items-center gap-3"><span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ${statusStyle[current.status]}`}><span className={`h-2 w-2 rounded-full ${statusBar[current.status]}`} />{current.status}</span></div>
+      <header className="relative overflow-hidden rounded-lg border border-slate-200 bg-white px-7 py-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="absolute right-7 top-6 font-mono text-xs tracking-wider text-slate-400">TASK {current.id}</div><div className="pr-40"><div className="text-xs font-black tracking-[.16em] text-blue-600">{current.product}</div><h2 className="mt-2 text-xl font-black leading-7 text-slate-950">{current.name}</h2><p className="mt-2 text-sm leading-6 text-slate-500">被测对象：{current.model}</p></div><div className="mt-5 flex flex-wrap items-center gap-3">{TERMINAL.has(normalizedStatus) ? <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ${statusStyle[displayStatus] || fallbackStatusStyle}`}><span className={`h-2 w-2 rounded-full ${statusBar[displayStatus] || fallbackStatusBar}`} />{displayStatus}</span> : <select value={displayStatus} onChange={(e) => { void changeStatus(e.target.value); }} className={`rounded-full px-4 py-2 text-sm font-black outline-none ${statusStyle[displayStatus] || fallbackStatusStyle}`}>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select>}</div>
       </header>
 
       <div className="mt-5 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)]">
@@ -191,12 +464,12 @@ export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: stri
 
         <aside className="flex h-full flex-col gap-3 rounded-lg border border-blue-200 bg-[#F8FAFF] p-4 shadow-[0_5px_18px_rgba(37,99,235,.08)]">
           <h3 className="text-lg font-black leading-7 text-slate-950">管理员操作台</h3>
-          {TERMINAL.has(current.status) ? <div className={`rounded-2xl border p-5 ${current.status === '已交付' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}><div className="flex items-center gap-3">{current.status === '已交付' ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-slate-500" />}<div><h4 className="text-sm font-black text-slate-800">任务流程已结束</h4><p className="mt-1 text-xs leading-5 text-slate-500">当前状态为“{current.status}”，补件、上传、交付和终止操作均已锁定。</p></div></div></div> : <>
+          {TERMINAL.has(normalizedStatus) ? <div className={`rounded-2xl border p-5 ${normalizedStatus === '已交付' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}><div className="flex items-center gap-3">{normalizedStatus === '已交付' ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-slate-500" />}<div><h4 className="text-sm font-black text-slate-800">任务流程已结束</h4><p className="mt-1 text-xs leading-5 text-slate-500">当前状态为“{displayStatus}”，补件、上传、交付和终止操作均已锁定。</p></div></div></div> : <>
           <section className="rounded-lg border border-orange-200 bg-white p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">请求用户补件</h4><p className="text-xs leading-5 text-orange-700">材料缺失或不符合要求时使用</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm"><option>模型／工程文件</option><option>配置文件</option><option>API 信息</option><option>需求说明</option><option>其他材料</option></select><input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm" /></div><textarea value={publicText} onChange={e => setPublicText(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-5 outline-none focus:border-orange-400" placeholder="填写用户可见的补件要求" /><button onClick={requestSupplement} className="mt-2 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600">发送补件要求</button></section>
 
-          <section className="overflow-hidden rounded-lg border border-blue-700 bg-gradient-to-br from-blue-700 to-indigo-700 text-white shadow-lg shadow-blue-200/60"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black">正常交付</h4><p className="text-xs leading-5 text-blue-100">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/35 bg-white/10 text-sm font-bold transition hover:bg-white/15"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-white/12 px-3 py-1.5 text-sm"><CheckCircle2 className="h-4 w-4 text-emerald-300" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={current.status === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-md disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70">{current.status === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-white/15 px-4 py-2 text-xs leading-5 text-blue-100">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
+          <section className="overflow-hidden rounded-lg border border-blue-700 bg-gradient-to-br from-blue-700 to-indigo-700 text-white shadow-lg shadow-blue-200/60"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black">正常交付</h4><p className="text-xs leading-5 text-blue-100">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/35 bg-white/10 text-sm font-bold transition hover:bg-white/15"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-white/12 px-3 py-1.5 text-sm"><CheckCircle2 className="h-4 w-4 text-emerald-300" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-md disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-white/15 px-4 py-2 text-xs leading-5 text-blue-100">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
 
-          <section className="rounded-lg border border-red-100 bg-white p-4"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><h4 className="text-base font-black text-slate-800">终止任务</h4></div><p className="mt-0.5 text-xs leading-5 text-red-600">仅在材料长期缺失或任务无法继续时使用</p><textarea value={terminationReason} onChange={e => setTerminationReason(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-red-100 bg-white p-3 text-sm leading-5 outline-none focus:border-red-300" placeholder="填写用户可见的终止原因" /><button onClick={terminate} disabled={current.status === '已终止'} className="mt-2 w-full rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-600 hover:text-white disabled:text-slate-300">{current.status === '已终止' ? '任务已终止' : '终止并通知用户'}</button></section>
+          <section className="rounded-lg border border-red-100 bg-white p-4"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><h4 className="text-base font-black text-slate-800">终止任务</h4></div><p className="mt-0.5 text-xs leading-5 text-red-600">仅在材料长期缺失或任务无法继续时使用</p><textarea value={terminationReason} onChange={e => setTerminationReason(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-red-100 bg-white p-3 text-sm leading-5 outline-none focus:border-red-300" placeholder="填写用户可见的终止原因" /><button onClick={terminate} disabled={normalizedStatus === '已终止'} className="mt-2 w-full rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-600 hover:text-white disabled:text-slate-300">{normalizedStatus === '已终止' ? '任务已终止' : '终止并通知用户'}</button></section>
           </>}
         </aside>
       </div>
@@ -206,7 +479,7 @@ export function AdminWorkflowWorkbench({ initialTaskId }: { initialTaskId?: stri
 }
 
 export function AdminOperationLogPanel() {
-  const { logs } = useWorkflowData();
+  const logs = useAdminLogs();
   const [query, setQuery] = useState('');
   const filtered = logs.filter(log => !query.trim() || `${log.action}${log.taskId}${log.operator}${log.detail}`.toLowerCase().includes(query.trim().toLowerCase()));
   const exportCsv = () => {

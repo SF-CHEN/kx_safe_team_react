@@ -28,7 +28,7 @@
 ## 硬约束（勿违背）
 
 1. **Hash 路由**：站内用 `<Link to>` / `navigate()`；外链新开页用 `@/utils/hashRoute` 的 `openHashRoute` / `hashHref`。禁止把原型里的 `<a href="/path">`、`window.open('/path')` 原样拷进主站。
-2. **双源边界**：`newUI/` 可抄视觉与结构；`src/api/`、`src/hooks/`、登录态/`UserContext` 以主站为准，禁止整文件被原型覆盖冲掉。
+2. **双源边界**：`newUI/` 可抄视觉与结构；`src/api/`、`src/hooks/`、登录态/`UserContext` 以主站为准，禁止整文件被原型覆盖冲掉。**已接通的页面接口须保留或接回**，不得为对齐原型改成 `workflowStore` / localStorage。
 3. **接口对接默认零 UI 改动**：未点名改样式 = 不改 className / 布局 / 文案风格。
 4. **前端守卫 ≠ 安全边界**：可加 `RequireAuth` / `RequireAdmin`；权限最终以服务端为准。
 5. **改动最小化**：只改任务所需文件；不顺手大重构、不擅自扩 scope、不主动写无关 markdown。
@@ -74,7 +74,7 @@ docs/           # 结构规划、优化审查、接口对接纪要
 
 1. 确认范围与接口页策略（默认：**样式对齐，保留主站 API**）。
 2. 跑 `node .agents/skills/newui-prototype-sync/scripts/diff-newui.mjs`。
-3. 按 Skill 清单同步；覆盖后核「主站必保留清单」（Hash / ScrollToTop / cursor / dialog `showCloseButton` / 换行 class）。
+3. 按 Skill 清单同步；覆盖后核「主站必保留清单」（Hash / ScrollToTop / cursor / dialog `showCloseButton` / 换行 class / **已接 API**）。
 4. `npm run build` + 关键跳转与弹窗自测。
 
 ### C. 结构 / 性能治理

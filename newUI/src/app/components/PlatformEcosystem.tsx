@@ -99,8 +99,8 @@ export function PlatformEcosystem() {
                   badgeStyle: { background: 'rgba(139,92,246,0.12)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.25)' },
                   result: '数据可用、合规、可靠',
                   resultColor: '#7c3aed',
-                  items: ['个人数据风险审查', '训练/知识库数据质检', 'AIGC 内容审核与鉴伪'],
-                  path: '/products/tianyuan',
+                  items: ['个人数据风险审查', '训练/知识库数据质检', 'AIGC 内容审核与鉴伪', 'AIGC 内容标识与检测'],
+                  path: '/products-overview',
                 },
                 {
                   icon: BarChart2,

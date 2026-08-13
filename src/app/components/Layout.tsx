@@ -42,11 +42,11 @@ interface MenuGroup {
   capabilities?: CapabilityTag[];
 }
 type MenuItem = MenuLeaf | MenuGroup;
-type CapabilityTag = '可体验' | '可创建任务';
+type CapabilityTag = '可体验' | '可创建任务' | '效果预览';
 
 function CapabilityTags({ tags }: { tags?: CapabilityTag[] }) {
   if (!tags?.length) return null;
-  return <span className="ml-2 inline-flex shrink-0 gap-1">{tags.map(tag => <span key={tag} className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none ${tag === '可体验' ? 'border-sky-200 bg-sky-50 text-sky-600' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>{tag}</span>)}</span>;
+  return <span className="ml-2 inline-flex shrink-0 gap-1">{tags.map(tag => <span key={tag} className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none ${tag === '可体验' ? 'border-sky-200 bg-sky-50 text-sky-600' : tag === '效果预览' ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>{tag}</span>)}</span>;
 }
 
 interface ProductSeries {
@@ -67,7 +67,7 @@ const PRODUCT_SERIES: ProductSeries[] = [
     id: 'tianyuan',
     name: '数据侧',
     subtitle: '数据侧',
-    desc: '数据合规审查、评测与内容治理',
+    desc: '数据审查、评测、审核与标识追溯',
     icon: Database,
     grad: 'from-violet-500 to-purple-600',
     accentColor: '#8b5cf6',
@@ -87,6 +87,7 @@ const PRODUCT_SERIES: ProductSeries[] = [
           { label: '视频内容审核与鉴伪', path: '/aigc-content?tab=video' },
         ],
       },
+      { label: 'AIGC内容标识与检测', desc: 'AI生成内容显隐标识与标准验证', path: '/aigc-content-marking', capabilities: ['效果预览'] },
     ],
   },
   {
@@ -158,6 +159,7 @@ const FORMAL_PRODUCT_PATHS = new Set([
   '/privacy-data-audit',
   '/model-safety-eval',
   '/aigc-content',
+  '/aigc-content-marking',
   '/deep-model-eval',
   '/embodied-intelligence',
   '/agent-safety',
@@ -379,9 +381,10 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbCrumb[]> = {
   '/products-overview':       [{ label: '首页', path: '/' }, { label: '产品矩阵' }],
   // 数据侧
   '/products/tianyuan':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }],
-  '/model-safety-eval':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: '模型数据安全评测' }],
-  '/aigc-content':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: 'AIGC内容审核与鉴伪' }],
-  '/privacy-data-audit':      [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧', path: '/products/tianyuan' }, { label: '个人敏感信息审查' }],
+  '/model-safety-eval':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: '模型数据安全评测' }],
+  '/aigc-content':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: 'AIGC内容审核与鉴伪' }],
+  '/aigc-content-marking':    [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: 'AIGC内容标识与检测' }],
+  '/privacy-data-audit':      [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: '个人敏感信息审查' }],
   // 模型侧
   '/products/tianheng':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧' }],
   '/deep-model-eval':         [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '深度模型可信测评' }],
@@ -623,22 +626,16 @@ function LeafItemRow({
 }
 
 function GroupItemBlock({
-  item, onNavigate, accentColor,
+  item, onNavigate, accentColor, expanded, onToggle,
 }: {
   item: MenuGroup;
   onNavigate: (path: string) => void;
   accentColor: string;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   return (
-    <div
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
-      onFocus={() => setExpanded(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setExpanded(false);
-      }}
-    >
+    <div className="relative">
       {/* Group header */}
       <button
         type="button"
@@ -648,7 +645,7 @@ function GroupItemBlock({
           transform: expanded ? 'translateX(3px)' : 'translateX(0)',
         }}
         aria-expanded={expanded}
-        onClick={() => setExpanded(value => !value)}
+        onClick={onToggle}
       >
         <div
           className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center"
@@ -666,23 +663,14 @@ function GroupItemBlock({
         />
       </button>
 
-      {/* Sub-items stay collapsed until the group receives hover or keyboard focus. */}
-      <div
-        className="ml-3 overflow-hidden transition-all duration-300"
-        style={{
-          maxHeight: expanded ? `${item.children.length * 42 + 12}px` : '0px',
-          opacity: expanded ? 1 : 0,
-          marginTop: expanded ? 4 : 0,
-          marginBottom: expanded ? 4 : 0,
-        }}
-      >
-        <div
-          className={`pl-3 ${item.children.length >= 5 ? 'grid grid-cols-2 gap-x-2 gap-y-0.5' : 'flex flex-col gap-0.5'}`}
-          style={{ borderLeft: `2px solid ${accentColor}30` }}
-        >
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ${expanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">
+          <div className="mx-2 mb-2 mt-1 flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="px-2 pb-1 text-[11px] font-black text-slate-500">选择内容模态</div>
           {item.children.map((child) => (
             <ChildRow key={child.label} child={child} accentColor={accentColor} onNavigate={onNavigate} />
           ))}
+          </div>
         </div>
       </div>
     </div>
@@ -698,8 +686,9 @@ function ChildRow({
 }) {
   const [hov, setHov] = useState(false);
   return (
-    <div
-      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-all duration-150 select-none"
+    <button
+      type="button"
+      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-all duration-150 select-none"
       style={{ background: hov ? `${accentColor}0d` : 'transparent' }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
@@ -710,7 +699,7 @@ function ChildRow({
         style={{ background: hov ? accentColor : '#cbd5e1' }}
       />
       <span className="text-[13px] leading-5" style={{ color: hov ? accentColor : '#475569' }}>{child.label}</span>
-    </div>
+    </button>
   );
 }
 
@@ -726,6 +715,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       : user.email;
 
   const [megaOpen, setMegaOpen] = useState(false);
+  const [expandedMenuGroup, setExpandedMenuGroup] = useState<string | null>(null);
   const [showExperienceGuard, setShowExperienceGuard] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountName, setAccountName] = useState(user.name);
@@ -748,6 +738,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       '/privacy-data-audit': '个人敏感信息审查｜玄鉴',
       '/model-safety-eval': '模型数据安全评测｜玄鉴',
       '/aigc-content': 'AIGC内容审核与鉴伪｜玄鉴',
+      '/aigc-content-marking': 'AIGC内容标识与检测｜玄鉴',
       '/deep-model-eval': '深度模型可信测评｜玄鉴',
       '/embodied-intelligence': '具身智能可信评测｜玄鉴',
       '/agent-safety': '智能体安全评测｜玄鉴',
@@ -769,10 +760,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setMegaOpen(true);
   };
   const scheduleMegaClose = () => {
-    closeTimer.current = setTimeout(() => setMegaOpen(false), 180);
+    closeTimer.current = setTimeout(() => {
+      setMegaOpen(false);
+      setExpandedMenuGroup(null);
+    }, 180);
   };
   const handleNavigate = (path: string) => {
     setMegaOpen(false);
+    setExpandedMenuGroup(null);
     navigate(path);
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
@@ -1010,7 +1005,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* ─── Mega Menu (修改点2：light bg + 修改点3：nested structure) ── */}
         <div
-          className="absolute left-0 right-0 top-full z-50 overflow-hidden"
+          className={`absolute left-0 right-0 top-full z-50 ${megaOpen ? 'overflow-visible' : 'overflow-hidden'}`}
           style={{
             maxHeight: megaOpen ? '720px' : '0px',
             opacity: megaOpen ? 1 : 0,
@@ -1072,6 +1067,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                               item={item}
                               accentColor={series.accentColor}
                               onNavigate={handleNavigate}
+                              expanded={expandedMenuGroup === `${series.id}-${idx}`}
+                              onToggle={() => setExpandedMenuGroup(current => current === `${series.id}-${idx}` ? null : `${series.id}-${idx}`)}
                             />
                           ) : (
                             <LeafItemRow

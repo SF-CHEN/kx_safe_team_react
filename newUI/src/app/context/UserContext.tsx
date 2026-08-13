@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  FORMAL_TASK_PRODUCTS, WORKFLOW_EVENT, createWorkflowTask, getNotifications, getWorkflowTasks,
+  FORMAL_TASK_PRODUCTS, WORKFLOW_EVENT, createWorkflowTask, getNotifications, getPlatformUsers, getWorkflowTasks,
   markAllNotificationsRead, markNotificationRead, recordPlatformActivity, upsertPlatformUser,
   type StoredAttachment, type UserNotification, type WorkflowStatus,
 } from '../data/workflowStore';
@@ -141,10 +141,14 @@ const USER_CREDENTIAL_KEY = 'xuanjian-local-credentials-v1';
 
 async function hashPassword(password: string): Promise<string> {
   // 非安全上下文（非 localhost/HTTPS）下 crypto.subtle 可能不可用，退化为简单摘要，保证原型可登录。
-  if (window.crypto?.subtle) {
-    const bytes = new TextEncoder().encode(password);
-    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
+  try {
+    if (window.crypto?.subtle) {
+      const bytes = new TextEncoder().encode(password);
+      const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
+    }
+  } catch {
+    // fall through
   }
   let hash = 0;
   for (let i = 0; i < password.length; i += 1) {
@@ -175,7 +179,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       if (window.localStorage.getItem(USER_ACTIVE_KEY) !== '1') return guestUser;
       const saved = window.localStorage.getItem(USER_SESSION_KEY);
-      return saved ? normalizeCustomerUser(JSON.parse(saved) as User) : guestUser;
+      if (!saved) return guestUser;
+      const restored = normalizeCustomerUser(JSON.parse(saved) as User);
+      return getPlatformUsers().some(item => item.id === restored.id && item.status === '已停用') ? guestUser : restored;
     } catch {
       return guestUser;
     }
@@ -187,6 +193,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setNotifications(notices);
     setUser(prev => {
       if (prev.role === 'guest') return prev;
+      if (getPlatformUsers().some(item => item.id === prev.id && item.status === '已停用')) return guestUser;
       const workflows = getWorkflowTasks().filter(item => item.userId === prev.id);
       if (!workflows.length) return prev;
       return {
@@ -258,6 +265,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           myTasks: [],
           myEvalSets: [],
         };
+    if (getPlatformUsers().some(item => (item.id === target.id || item.contact === identifier) && item.status === '已停用')) return false;
     if (!credential) {
       credentials.push({ userId: target.id, identifier, passwordHash, updatedAt: new Date().toISOString() });
       writeCredentials(credentials);
@@ -323,6 +331,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addTask = (task: EvalTask) => {
+    if (getPlatformUsers().some(item => item.id === user.id && item.status === '已停用')) return logout();
     const storedTask: EvalTask = FORMAL_TASK_PRODUCTS.has(task.evalType) ? { ...task, status: '处理中' } : task;
     setUser(prev => ({ ...prev, myTasks: [storedTask, ...prev.myTasks] }));
     createWorkflowTask({

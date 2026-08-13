@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, type ComponentType } from 'react';
-import { createHashRouter, Outlet } from 'react-router';
+import { createHashRouter, Navigate, Outlet } from 'react-router';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
 
@@ -31,6 +31,7 @@ const HelpDocs = lazyPage(() => import('./pages/HelpDocs'), 'HelpDocs');
 const ProductSeries = lazyPage(() => import('./pages/ProductSeries'), 'ProductSeries');
 const ProductsOverview = lazyPage(() => import('./pages/ProductsOverview'), 'ProductsOverview');
 const AigcContent = lazyPage(() => import('./pages/AigcContent'), 'AigcContent');
+const AigcContentMarking = lazyPage(() => import('./pages/AigcContentMarking'), 'AigcContentMarking');
 const DeveloperCenter = lazyPage(() => import('./pages/DeveloperCenter'), 'DeveloperCenter');
 const ModelSafetyEval = lazyPage(() => import('./pages/ModelSafetyEval'), 'ModelSafetyEval');
 const ModelFilingService = lazyPage(() => import('./pages/ModelFilingService'), 'ModelFilingService');
@@ -112,12 +113,14 @@ export const router = createHashRouter([
       { path: 'help-docs/:articleId', Component: withSuspense(HelpDocs) },
       { path: 'online-experience', Component: withSuspense(OnlineExperience) },
       { path: 'products-overview', Component: withSuspense(ProductsOverview) },
+      { path: 'products/tianyuan', element: <Navigate to="/products-overview" replace /> },
       { path: 'products/:seriesId', Component: withSuspense(ProductSeries) },
       { path: 'model-filing-service', Component: withSuspense(ModelFilingService) },
       { path: 'tianche-standard-service', Component: withSuspense(TiancheStandardService) },
       { path: 'ai-safety-edu', Component: withSuspense(AiSafetyEdu) },
       { path: 'deep-model-eval', Component: withSuspense(DeepModelEval) },
       { path: 'aigc-content', Component: withSuspense(AigcContent) },
+      { path: 'aigc-content-marking', Component: withSuspense(AigcContentMarking) },
       { path: 'code-vulnerability-audit', Component: withSuspense(CodeVulnerabilityAudit) },
       { path: 'penetration-test', Component: withSuspense(PenetrationTest) },
       { path: 'privacy-data-audit', Component: withSuspense(PrivacyDataAudit) },

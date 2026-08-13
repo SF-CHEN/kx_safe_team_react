@@ -19,7 +19,7 @@
 | 2026-08-07 | 初稿；用户创建任务对接 `add` |
 | 2026-08-07 | 管理端列表改读双 `page`；状态改走 `update`；上传明确暂缓 |
 | 2026-08-07 | 管理端列表额外合并 `evaluation-task/page`（详见 llm 纪要） |
-| 2026-08-07 | **重对接上传：** `POST /temp/sys-file/upload` → 任务 `fileId`；管理端材料 `getDetailById` + `download` |
+| 2026-08-13 | **回接管理端**：用户列表/任务列表曾在 newUI 工作流同步中改成 `workflowStore`；现已接回 `fetchAuthUsers` / `fetchAdminEvaluationTasks` / 改状态 / 下材料。补件说明、独立报告、终止仍无接口 |
 
 ## 已对接（可联调）
 
@@ -107,8 +107,8 @@
 
 ### Q5：用户管理「任务数」列
 
-- **现状：** 仍统计本地 `workflowStore`，与 API 列表可能不一致。
-- **状态：** 待确认（本轮未改）
+- **现状：** 已改为按 `fetchAdminEvaluationTasks` 的 `userId` 统计进行中任务，不再读 `workflowStore` 列表。
+- **状态：** 已处理（2026-08-13）
 
 ## 后端缺口
 

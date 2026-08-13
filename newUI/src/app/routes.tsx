@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { Layout } from './components/Layout';
 import { CompanyHome } from './pages/CompanyHome';
 import { Home } from './pages/Home';
@@ -8,7 +8,6 @@ import { EvaluationIntro } from './pages/EvaluationIntro';
 import { LLMEvaluation } from './pages/LLMEvaluation';
 import { SafetyEvaluation } from './pages/SafetyEvaluation';
 import { ResourceCenter } from './pages/ResourceCenter';
-import { TaskDetailNew } from './pages/TaskDetailNew';
 import { AgentSafety } from './pages/AgentSafety';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -17,6 +16,7 @@ import { HelpDocs } from './pages/HelpDocs';
 import { ProductSeries } from './pages/ProductSeries';
 import { ProductsOverview } from './pages/ProductsOverview';
 import { AigcContent } from './pages/AigcContent';
+import { AigcContentMarking } from './pages/AigcContentMarking';
 import { DeveloperCenter } from './pages/DeveloperCenter';
 import { ModelSafetyEval } from './pages/ModelSafetyEval';
 import { ModelFilingService } from './pages/ModelFilingService';
@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
       { path: 'online-experience', Component: OnlineExperience },
       // Products overview (all 4 series detail)
       { path: 'products-overview', Component: ProductsOverview },
+      { path: 'products/tianyuan', element: <Navigate to="/products-overview" replace /> },
       // Product series placeholders (天源/天巡/天策)
       { path: 'products/:seriesId', Component: ProductSeries },
       { path: 'model-filing-service', Component: ModelFilingService },
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
       { path: 'deep-model-eval', Component: DeepModelEval },
       // ─── AISafePro-LM product pages (unchanged) ───────────────
       { path: 'aigc-content', Component: AigcContent },
+      { path: 'aigc-content-marking', Component: AigcContentMarking },
       { path: 'code-vulnerability-audit', Component: CodeVulnerabilityAudit },
       { path: 'penetration-test', Component: PenetrationTest },
       { path: 'privacy-data-audit', Component: PrivacyDataAudit },
@@ -74,7 +76,6 @@ export const router = createBrowserRouter([
       { path: 'llm-evaluation', Component: LLMEvaluation },
       { path: 'safety-evaluation', Component: SafetyEvaluation },
       { path: 'resource-center', Component: ResourceCenter },
-      { path: 'task-detail/:taskId', Component: TaskDetailNew },
       { path: 'agent-safety', Component: AgentSafety },
       { path: 'embodied-intelligence', Component: EmbodiedIntelligence },
       // Legacy AISafePro home (preserved)

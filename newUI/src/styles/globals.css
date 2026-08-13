@@ -168,6 +168,30 @@ body {
   padding-bottom: var(--product-space) !important;
 }
 
+/*
+ * These five legacy product pages already provide section spacing on their
+ * immediate content containers. Remove the global duplicate padding on the
+ * first section so the core-capability heading follows the sticky navigation
+ * without a large empty band.
+ */
+.product-page-v3 #mse-features,
+.product-page-v3 #dme-features,
+.product-page-v3 #ei-capability,
+.product-page-v3 #cva-capability,
+.product-page-v3 #pt-capabilities {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.product-page-v3 #mse-features > div:first-child,
+.product-page-v3 #dme-features > div:first-child,
+.product-page-v3 #ei-capability > div:first-child,
+.product-page-v3 #cva-capability > div:first-child,
+.product-page-v3 #pt-capabilities > div:first-child {
+  padding-top: 48px !important;
+  padding-bottom: 80px !important;
+}
+
 .product-page-v3 section[id]:not(.product-detail-hero):nth-of-type(even) {
   background: #f7f9fc !important;
 }
@@ -192,6 +216,109 @@ body {
 .product-page-v3 section[id] p {
   color: #667085;
   line-height: 1.8;
+}
+
+/* AIGC 标识页：合规依据采用高对比浅色信息区，避免全局产品页规则造成白底白字。 */
+.product-page-v3 #acm-compliance {
+  background: #f5f7fa !important;
+  color: #172033 !important;
+}
+
+/* 首屏右侧在四模态标识之外，明确展示独立的检测能力。 */
+.product-page-v3 .product-detail-hero [class*="from-blue-600/92"] {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0;
+  color: #065f46 !important;
+}
+
+.product-page-v3 .product-detail-hero [class*="from-blue-600/92"]::after {
+  content: "显式标识识别 · 隐式元数据解析 · 关键字段校验";
+  display: block;
+  margin-top: 8px;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+
+.product-page-v3 .product-detail-hero [class*="from-blue-600/92"] > div:last-child {
+  display: none;
+}
+
+.product-page-v3 #acm-compliance > div > .grid > div:first-child {
+  overflow: hidden;
+  border: 1px solid #d9e2ef !important;
+  background: #fff !important;
+  box-shadow: 0 12px 34px rgba(31, 65, 114, .09);
+}
+
+.product-page-v3 #acm-compliance > div > .grid > div:first-child > div:first-child {
+  border-color: #e4eaf2 !important;
+  background: linear-gradient(135deg, #f7fbff, #eef5ff);
+}
+
+.product-page-v3 #acm-compliance > div > .grid > div:first-child > div:first-child > div:first-child {
+  color: #2563eb !important;
+}
+
+.product-page-v3 #acm-compliance > div > .grid > div:first-child > div:first-child > div:nth-child(2) {
+  color: #172033 !important;
+}
+
+.product-page-v3 #acm-compliance > div > .grid > div:first-child > div:first-child > div:last-child {
+  color: #526177 !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div {
+  border-color: #dfe7f1 !important;
+  background: #fff !important;
+  box-shadow: 0 8px 24px rgba(31, 65, 114, .06);
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div > div:first-child {
+  background: #eaf4ff !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div > div:first-child svg {
+  color: #1683eb !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div div.font-black {
+  color: #172033 !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div:nth-child(1) div.font-black::before { content: '第5章 · '; color: #0877e8; }
+.product-page-v3 #acm-compliance .space-y-4 > div:nth-child(2) div.font-black::before { content: '第6章 · '; color: #0877e8; }
+.product-page-v3 #acm-compliance .space-y-4 > div:nth-child(3) div.font-black::before { content: '附录E、F · '; color: #0877e8; }
+
+.product-page-v3 #acm-compliance .space-y-4 > div p {
+  color: #526177 !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div:last-child {
+  border-color: #f1d79a !important;
+  background: #fff9e9 !important;
+}
+
+.product-page-v3 #acm-compliance .space-y-4 > div:last-child svg {
+  color: #d99612 !important;
+}
+
+.product-page-v3 #acm-compliance iframe + div a:first-child {
+  border: 1px solid #0877e8 !important;
+  background: #0877e8 !important;
+  color: #fff !important;
+}
+
+.product-page-v3 #acm-compliance iframe + div a:last-child {
+  border: 1px solid #9bc9f5 !important;
+  background: #fff !important;
+  color: #086acb !important;
+}
+
+/* 产品页底部不再展示旧系列页和重复帮助入口。 */
+.product-page-v3 #acm-faq > div > .mt-10 {
+  display: none !important;
 }
 
 .product-page-v3 section[id] [class*="max-w-7xl"],
@@ -916,4 +1043,41 @@ body {
   .rongsu-hero__stage { animation: none; }
   .rongsu-hero__dots button,
   .rongsu-hero__arrow { transition: none; }
+}
+@media (max-width: 1023px) {
+  aside.fixed.inset-y-0.left-0.w-\[252px\] {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  aside.fixed.inset-y-0.left-0.w-\[252px\] + main {
+    margin-left: 0 !important;
+  }
+
+  aside.fixed.inset-y-0.left-0.w-\[252px\] + main > header {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    gap: 8px;
+  }
+
+  aside.fixed.inset-y-0.left-0.w-\[252px\] + main > div {
+    padding: 16px !important;
+  }
+
+  aside.fixed.inset-y-0.left-0.w-\[252px\] + main > header input {
+    max-width: 55vw;
+  }
+
+  aside.fixed.inset-y-0.left-0.w-\[252px\] + main > header .absolute {
+    max-width: calc(100vw - 24px);
+  }
+}
+
+@media (max-width: 760px) {
+  html, body, #root {
+    max-width: 100%;
+    overflow-x: clip;
+  }
 }

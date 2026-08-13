@@ -69,8 +69,8 @@ const PORTAL_PRODUCTS = [
   {
     id: 'data',
     name: '数据侧',
-    tagline: '数据合规审查、评测与内容治理',
-    desc: '覆盖敏感信息、模型数据与AIGC内容的全流程安全治理',
+    tagline: '数据审查、评测、审核与标识治理',
+    desc: '覆盖敏感信息、模型数据、AIGC审核与内容标识追溯',
     icon: Database,
     grad: 'from-violet-500 to-purple-600',
     accentColor: '#8b5cf6',
@@ -78,6 +78,7 @@ const PORTAL_PRODUCTS = [
       { name: '个人敏感信息审查', path: '/privacy-data-audit' },
       { name: '模型数据安全评测', path: '/model-safety-eval' },
       { name: 'AIGC内容审核与鉴伪', path: '/aigc-content' },
+      { name: 'AIGC内容标识与检测', path: '/aigc-content-marking' },
     ],
     helpSection: 'section-data',
     primaryPath: '/products-overview',
@@ -232,7 +233,7 @@ const HERO_SLIDES = [
     eyebrow: 'XUANJIAN · DATA SECURITY',
     title: '数据侧',
     highlight: '让数据可信、合规、可用',
-    desc: '覆盖个人敏感信息审查、AIGC 内容审核与多模态数据治理，从数据识别、风险检测到合规处置，为模型训练和业务应用筑牢可信数据基础。',
+    desc: '覆盖个人敏感信息审查、模型数据安全评测、AIGC内容审核与标识追溯，从数据识别、风险检测到合规处置，为模型训练和业务应用筑牢可信数据基础。',
     background: '/hero-data-side.png',
     accent: '#2563eb',
     glow: 'rgba(37,99,235,0.22)',
@@ -429,7 +430,7 @@ export function CompanyHome() {
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<{from:'agent'|'user';text:string;ts:string}[]>([
     { from: 'agent', text: '您好！我是玄鉴智能助手，很高兴为您服务 😊', ts: '刚刚' },
-    { from: 'agent', text: '请问您想了解哪方面的内容？例如：大模型评测、AIGC内容审核、大模型备案服务，或其他问题？', ts: '刚刚' },
+    { from: 'agent', text: '请问您想了解哪方面的内容？例如：大模型评测、AIGC内容审核、AIGC内容标识、大模型备案服务，或其他问题？', ts: '刚刚' },
   ]);
   const [chatInput, setChatInput] = useState('');
   const chatMessagesRef = useRef<HTMLDivElement>(null);
@@ -558,7 +559,7 @@ export function CompanyHome() {
               {activeHeroSlide === 0 && (
                 <aside className="rongsu-hero__overview" aria-label="玄鉴平台四大产品体系">
                   {[
-                    { name: '数据侧', count: 3, note: '审查 · 评测 · 治理', icon: Database, color: '#7c3aed' },
+                    { name: '数据侧', count: 4, note: '审查 · 评测 · 审核 · 标识', icon: Database, color: '#7c3aed' },
                     { name: '模型侧', count: 4, note: '性能 · 安全 · 可信', icon: Brain, color: '#2563eb' },
                     { name: '系统侧', count: 2, note: '代码 · 渗透 · 防护', icon: Shield, color: '#0891b2' },
                     { name: '合规治理侧', count: 3, note: '备案 · 标准 · 教学', icon: FileText, color: '#059669' },

@@ -42,7 +42,7 @@ export function Login() {
         toast.success('登录成功');
         navigate(returnTo, { replace: true });
       } else {
-        const msg = '账号未注册或密码不正确';
+        const msg = '账号已停用，请联系管理员';
         setFormError(msg);
         toast.error(msg);
       }
