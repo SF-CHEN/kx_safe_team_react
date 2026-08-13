@@ -16,6 +16,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-13 | **列表改走总表** `evaluation-task-master/page`（见 [20260813-evaluation-task-master.md](./20260813-evaluation-task-master.md)） |
 | 2026-08-07 | 初稿；用户创建任务对接 `add` |
 | 2026-08-07 | 管理端列表改读双 `page`；状态改走 `update`；上传明确暂缓 |
 | 2026-08-07 | 管理端列表额外合并 `evaluation-task/page`（详见 llm 纪要） |

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, Ban, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
   Download, Edit3, FileArchive, FileUp, History, KeyRound, Mail, MessageSquareWarning,
-  Power, PowerOff, Search, Send, ShieldCheck, UserRound, UsersRound, XCircle,
+  Power, PowerOff, RefreshCw, Search, Send, ShieldCheck, Trash2, UserRound, UsersRound, XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchAuthUsers, updateAuthUserStatus, type AuthUser } from '@/api/auth';
@@ -28,7 +28,6 @@ export function notifyAdminRemoteChanged() {
 }
 
 const TERMINAL = new Set<WorkflowStatus>(['已交付', '已终止']);
-const ADMIN_STATUS_OPTIONS = ['待受理', '材料已接收', '处理中', '待补充材料', '待交付', '已推送', '处理异常'];
 const statusStyle: Record<string, string> = {
   处理中: 'bg-blue-50 text-blue-700', 待用户补充: 'bg-orange-50 text-orange-700',
   已交付: 'bg-emerald-50 text-emerald-700', 已终止: 'bg-slate-100 text-slate-500',
@@ -47,10 +46,29 @@ const fallbackStatusStyle = 'bg-slate-100 text-slate-600';
 const fallbackStatusBar = 'bg-slate-400';
 
 export function normalizeAdminStatus(status: string): WorkflowStatus {
-  if (status === '待补充材料' || status === '待用户补充') return '待用户补充';
-  if (status === '已推送' || status === '已交付') return '已交付';
-  if (status === '已终止') return '已终止';
+  const upper = status.trim().toUpperCase();
+  if (
+    status === '待补充材料' ||
+    status === '待用户补充' ||
+    upper === 'AWAIT_SUPPLEMENT'
+  ) {
+    return '待用户补充';
+  }
+  if (status === '已推送' || status === '已交付' || upper === 'COMPLETED') {
+    return '已交付';
+  }
+  if (status === '已终止' || status === '处理异常' || upper === 'FAILED') {
+    return '已终止';
+  }
   return '处理中';
+}
+
+const ADMIN_PRODUCT_OPTIONS = ['全部产品', '模型数据安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
+
+function canonicalProduct(product: string) {
+  if (product === '大模型评测') return '大模型性能评测';
+  if (product === '多模态大模型安全评测') return '大模型安全评测';
+  return product;
 }
 
 export function mapAuthUserToRecord(user: AuthUser): PlatformUserRecord {
@@ -310,13 +328,12 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(initialTaskId || null);
   const [query, setQuery] = useState('');
+  const [product, setProduct] = useState('全部产品');
   const [group, setGroup] = useState<TaskGroup>(initialGroup || 'pending');
   const [pageSize, setPageSize] = useState(5);
   const [page, setPage] = useState(1);
   const [publicText, setPublicText] = useState('');
-  const [category, setCategory] = useState('模型／工程文件');
-  const [dueAt, setDueAt] = useState('');
-  const [terminationReason, setTerminationReason] = useState('');
+  const [feedbackMode, setFeedbackMode] = useState<'supplement' | 'terminate'>('supplement');
 
   const load = useCallback(async () => {
     try {
@@ -339,53 +356,66 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
 
   const tasks = useMemo(() => rows.map(mapEvalRowToWorkflow), [rows]);
   const rowById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
-
-  const filtered = useMemo(() => tasks.filter(task => {
+  const productTasks = useMemo(
+    () => tasks.filter((task) => product === '全部产品' || canonicalProduct(task.product) === product),
+    [tasks, product],
+  );
+  const filtered = useMemo(() => productTasks.filter((task) => {
     const match = !query.trim() || `${task.id}${task.name}${task.userName}${task.contact}`.toLowerCase().includes(query.trim().toLowerCase());
     const groupMatch = group === 'all' || (group === 'closed' ? TERMINAL.has(task.status) : group === 'waiting' ? task.status === '待用户补充' : task.status === '处理中');
     return match && groupMatch;
-  }), [tasks, query, group]);
+  }), [productTasks, query, group]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const current = tasks.find(task => task.id === selected) || visible[0] || tasks[0];
+  const current = filtered.find((task) => task.id === selected) || filtered[0] || tasks[0];
+  const hasMatches = filtered.length > 0;
   const currentRow = current ? rowById.get(current.id) : undefined;
   const displayStatus = currentRow?.status || current?.status || '处理中';
   const normalizedStatus = normalizeAdminStatus(displayStatus);
-  const statusOptions = ADMIN_STATUS_OPTIONS.includes(displayStatus)
-    ? ADMIN_STATUS_OPTIONS
-    : [displayStatus, ...ADMIN_STATUS_OPTIONS];
 
-  useEffect(() => { setPage(1); }, [query, group, pageSize]);
+  useEffect(() => { setPage(1); }, [query, product, group, pageSize]);
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
   useEffect(() => {
+    if (initialTaskId?.startsWith('group:')) {
+      setQuery('');
+      setProduct('全部产品');
+      setGroup(initialTaskId.slice(6) as TaskGroup);
+      setSelected(null);
+      return;
+    }
     if (initialTaskId) {
-      const task = tasks.find(item => item.id === initialTaskId);
-      setSelected(initialTaskId);
-      if (task) setGroup(initialGroup || taskGroupForStatus(task.status));
+      const task = tasks.find((item) => item.id === initialTaskId);
+      if (!task) return;
+      setQuery('');
+      setProduct('全部产品');
+      setGroup(initialGroup || taskGroupForStatus(task.status));
+      setSelected(task.id);
     } else if (initialGroup) {
+      setQuery('');
+      setProduct('全部产品');
       setGroup(initialGroup);
+      setSelected(null);
     }
   }, [initialTaskId, initialGroup, tasks]);
-  useEffect(() => { setPublicText(''); setTerminationReason(''); }, [current?.id]);
-
-  const changeStatus = async (status: string) => {
-    if (!current || !currentRow || status === currentRow.status) return;
-    try {
-      await updateAdminEvaluationTaskStatus(currentRow, status);
-      addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '更新任务状态', detail: status });
-      notifyAdminRemoteChanged();
-      await load();
-      setGroup(taskGroupForStatus(normalizeAdminStatus(status)));
-      toast.success(`状态已更新为「${status}」`);
-    } catch (err) {
-      toast.error(errorMessage(err, '状态更新失败'));
-    }
-  };
+  useEffect(() => {
+    if (filtered.length && !filtered.some((task) => task.id === selected)) setSelected(filtered[0].id);
+  }, [filtered, selected]);
+  useEffect(() => {
+    setPublicText('');
+    setFeedbackMode('supplement');
+  }, [current?.id]);
 
   const uploadOutputs = (event: React.ChangeEvent<HTMLInputElement>) => {
     event.target.value = '';
     if (!current || TERMINAL.has(normalizedStatus)) return;
     toast.error('报告独立上传接口未开放，上传会覆盖用户材料，暂未写入后端');
+  };
+  const removeOutput = () => {
+    toast.error('报告文件删除接口未开放，暂未写入后端');
+  };
+  const replaceOutput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.target.value = '';
+    toast.error('报告文件替换接口未开放，暂未写入后端');
   };
   const requestSupplement = async () => {
     if (!current || !currentRow || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
@@ -406,9 +436,15 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
     toast.error('报告推送接口未开放，确认交付暂无法写入后端');
   };
   const terminate = () => {
-    if (!current || !terminationReason.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
-    if (!window.confirm('终止后将立即通知用户，并把任务归入已结束。确定继续吗？')) return;
+    if (!current || !publicText.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
     toast.error('任务终止接口未开放，暂无法写入后端');
+  };
+  const submitFeedback = () => {
+    if (feedbackMode === 'terminate') {
+      terminate();
+      return;
+    }
+    void requestSupplement();
   };
   const download = async (file: WorkflowTask['inputs'][number]) => {
     if (!current) return;
@@ -424,16 +460,32 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
       toast.error(errorMessage(err, '下载失败'));
     }
   };
-  const downloadAllInputs = () => {
-    if (!current?.inputs.length) return;
-    void Promise.all(current.inputs.map((file) => download(file)));
-  };
+  const downloadAllInputs = () => current?.inputs.forEach((file) => { void download(file); });
+  const renderOutputFile = (file: WorkflowTask['outputs'][number]) => (
+    <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700">
+      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+      <span className="min-w-0 flex-1 truncate">{file.name}</span>
+      <label title="替换文件" className="cursor-pointer rounded p-1 text-blue-600 hover:bg-white">
+        <RefreshCw className="h-3.5 w-3.5" />
+        <input type="file" className="hidden" onChange={replaceOutput} />
+      </label>
+      <button type="button" title="删除文件" onClick={removeOutput} className="rounded p-1 text-red-500 hover:bg-white">
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+  const outputManager = current && !TERMINAL.has(normalizedStatus) && current.outputs.length ? (
+    <section className="rounded-lg border border-blue-200 bg-white p-3">
+      <div className="mb-2 text-xs font-bold text-slate-500">已上传交付文件（可替换或删除）</div>
+      <div className="space-y-1.5">{current.outputs.map(renderOutputFile)}</div>
+    </section>
+  ) : null;
 
   const tabs: { key: TaskGroup; label: string; count: number }[] = [
-    { key: 'pending', label: '处理中', count: tasks.filter(t => t.status === '处理中').length },
-    { key: 'waiting', label: '待用户补充', count: tasks.filter(t => t.status === '待用户补充').length },
-    { key: 'closed', label: '已结束', count: tasks.filter(t => TERMINAL.has(t.status)).length },
-    { key: 'all', label: '全部任务', count: tasks.length },
+    { key: 'pending', label: '处理中', count: productTasks.filter((t) => t.status === '处理中').length },
+    { key: 'waiting', label: '待用户补充', count: productTasks.filter((t) => t.status === '待用户补充').length },
+    { key: 'closed', label: '已结束', count: productTasks.filter((t) => TERMINAL.has(t.status)).length },
+    { key: 'all', label: '全部任务', count: productTasks.length },
   ];
 
   if (loading || !tasks.length) return <div className="rounded-3xl border border-dashed border-blue-200 bg-[linear-gradient(135deg,#fff,#f4f8ff)] px-8 py-24 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50"><FileArchive className="h-7 w-7 text-blue-500" /></div><h3 className="mt-5 font-black text-slate-800">{loading ? '正在加载任务…' : '暂无待处理的用户任务'}</h3><p className="mt-2 text-sm text-slate-400">{loading ? '正在从评测任务接口拉取管理端列表' : '用户从支持“创建任务”的正式产品提交后，会实时出现在这里。'}</p></div>;
@@ -443,36 +495,76 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
     <div className="grid items-stretch 2xl:grid-cols-[360px_minmax(0,1fr)]">
     <section className="flex min-h-0 border-r border-slate-200 bg-slate-100/70 p-3">
       <div className="flex min-h-[680px] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-[linear-gradient(145deg,#f8fbff,#eef5ff)] p-4"><div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索任务 ID、用户名" className="h-11 w-full rounded-xl border border-blue-100 bg-white/90 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><div className="mt-4 grid grid-cols-2 gap-2">{tabs.map(tab => <button key={tab.key} onClick={() => setGroup(tab.key)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${group === tab.key ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white/80 text-slate-500 hover:bg-white hover:text-blue-600'}`}>{tab.label}<span className="ml-1 opacity-70">{tab.count}</span></button>)}</div></div>
-        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => { const rawStatus = rowById.get(task.id)?.status || task.status; return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden px-4 py-4 text-left transition ${current.id === task.id ? 'bg-blue-50/70 shadow-[inset_3px_0_0_#2563eb]' : 'hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className="line-clamp-2 pl-1 text-sm font-black text-slate-800">{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className="mt-2 pl-1 text-xs text-slate-500">{task.userName} · {task.product}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className="translate-x-2 text-[11px] font-bold text-blue-600 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100">处理 →</span></div></button>; })}{!visible.length && <div className="py-16 text-center text-sm text-slate-400">该分类暂无任务</div>}</div>
+        <div className="bg-[linear-gradient(145deg,#f8fbff,#eef5ff)] p-4"><div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索任务 ID、用户名" className="h-11 w-full rounded-xl border border-blue-100 bg-white/90 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><label className="mt-3 block"><span className="mb-1.5 block text-[11px] font-bold text-slate-500">产品类型</span><select value={product} onChange={e => setProduct(e.target.value)} className="h-10 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">{ADMIN_PRODUCT_OPTIONS.map(item => <option key={item}>{item}</option>)}</select></label><div className="mt-3 grid grid-cols-2 gap-2">{tabs.map(tab => <button key={tab.key} onClick={() => setGroup(tab.key)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${group === tab.key ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white/80 text-slate-500 hover:bg-white hover:text-blue-600'}`}>{tab.label}<span className="ml-1 opacity-70">{tab.count}</span></button>)}</div></div>
+        <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => {
+              const rawStatus = rowById.get(task.id)?.status || task.status;
+              const active = current?.id === task.id;
+              return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden border-l-4 px-4 py-4 text-left transition ${active ? 'border-blue-600 bg-[#E6F7FF] shadow-[inset_0_0_0_1px_rgba(37,99,235,.16)]' : 'border-transparent hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${active ? 'bg-blue-600' : statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className={`line-clamp-2 pl-1 text-sm font-black ${active ? 'text-blue-950' : 'text-slate-800'}`}>{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className={`mt-2 pl-1 text-xs ${active ? 'font-semibold text-blue-700' : 'text-slate-500'}`}>{task.userName} · {canonicalProduct(task.product)}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className={`text-[11px] font-bold text-blue-600 transition ${active ? 'opacity-100' : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>{active ? '当前任务' : '处理 →'}</span></div></button>;
+            })}{!visible.length && <div className="px-6 py-16 text-center"><FileArchive className="mx-auto h-8 w-8 text-slate-300" /><div className="mt-3 text-sm font-bold text-slate-500">没有符合条件的任务</div><div className="mt-1 text-xs text-slate-400">请调整产品、状态或搜索条件</div></div>}</div>
         <div className="flex h-14 shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 text-xs text-slate-500"><select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5"><option value={5}>5 条/页</option><option value={10}>10 条/页</option><option value={20}>20 条/页</option></select><div className="flex items-center gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button><span>{page}/{pages}</span><button disabled={page === pages} onClick={() => setPage(p => p + 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button></div></div>
       </div>
     </section>
 
     <section className="min-w-0 bg-[#F5F7FA] p-5">
-      <header className="relative overflow-hidden rounded-lg border border-slate-200 bg-white px-7 py-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="absolute right-7 top-6 font-mono text-xs tracking-wider text-slate-400">TASK {current.id}</div><div className="pr-40"><div className="text-xs font-black tracking-[.16em] text-blue-600">{current.product}</div><h2 className="mt-2 text-xl font-black leading-7 text-slate-950">{current.name}</h2><p className="mt-2 text-sm leading-6 text-slate-500">被测对象：{current.model}</p></div><div className="mt-5 flex flex-wrap items-center gap-3">{TERMINAL.has(normalizedStatus) ? <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ${statusStyle[displayStatus] || fallbackStatusStyle}`}><span className={`h-2 w-2 rounded-full ${statusBar[displayStatus] || fallbackStatusBar}`} />{displayStatus}</span> : <select value={displayStatus} onChange={(e) => { void changeStatus(e.target.value); }} className={`rounded-full px-4 py-2 text-sm font-black outline-none ${statusStyle[displayStatus] || fallbackStatusStyle}`}>{statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select>}</div>
+      {hasMatches && current ? <>
+      <header className="relative overflow-hidden rounded-lg border border-blue-200 bg-[#E6F7FF] px-5 py-6 shadow-[0_5px_16px_rgba(37,99,235,.09)] sm:px-7"><span className="absolute inset-y-0 left-0 w-1.5 bg-blue-600" /><div className="break-all font-mono text-[10px] tracking-wider text-blue-400 sm:absolute sm:right-7 sm:top-6 sm:text-xs">TASK {current.id}</div><div className="sm:pr-40"><div className="text-xs font-black tracking-[.16em] text-blue-700">{canonicalProduct(current.product)}</div><h2 className="mt-2 text-xl font-black leading-7 text-blue-950">{current.name}</h2><p className="mt-2 text-sm leading-6 text-blue-700/70">被测对象：{current.model}</p></div><div className="mt-5 flex flex-wrap items-center gap-3"><span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black ${statusStyle[displayStatus] || fallbackStatusStyle}`}><span className={`h-2 w-2 rounded-full ${statusBar[displayStatus] || fallbackStatusBar}`} />{displayStatus}</span></div>
       </header>
 
       <div className="mt-5 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,.7fr)]">
-        <div className="space-y-5">
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="mb-5 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white"><ShieldCheck className="h-4 w-4" /></span><div><h3 className="text-base font-black text-slate-900">任务概况</h3><p className="text-sm leading-6 text-slate-500">用户、诉求与提交配置</p></div></div><div className="grid gap-4 lg:grid-cols-2"><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-5"><span className="text-sm font-bold text-slate-500">提交用户</span><b className="mt-2 block text-lg font-black leading-7 text-blue-700">{current.userName}</b><span className="mt-1 flex items-center gap-1.5 text-sm leading-6 text-slate-600"><Mail className="h-4 w-4 text-blue-500" />{current.contact}</span></div><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-5"><span className="text-sm font-bold text-slate-500">评测诉求</span><p className="mt-2 text-sm font-semibold leading-6 text-slate-700">{current.requirement}</p></div></div>{current.configSummary && <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm leading-6 text-slate-600">配置摘要：{current.configSummary}</div>}</section>
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_5px_18px_rgba(15,23,42,.05)]">
+          <section className="border-b border-slate-200 p-5"><div className="mb-4 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white"><ShieldCheck className="h-4 w-4" /></span><div><h3 className="text-base font-black text-slate-900">任务概况</h3><p className="text-sm leading-6 text-slate-500">用户、诉求与提交配置</p></div></div><div className="grid gap-3 lg:grid-cols-2"><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-4"><span className="text-sm font-bold text-slate-500">提交用户</span><b className="mt-2 block text-lg font-black leading-7 text-blue-700">{current.userName}</b><span className="mt-1 flex items-center gap-1.5 text-sm leading-6 text-slate-600"><Mail className="h-4 w-4 text-blue-500" />{current.contact}</span></div><div className="rounded-lg border border-slate-100 bg-[#FAFAFA] p-4"><span className="text-sm font-bold text-slate-500">评测诉求</span><p className="mt-2 text-sm font-semibold leading-6 text-slate-700">{current.requirement}</p></div></div>{current.configSummary && <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm leading-6 text-slate-600">配置摘要：{current.configSummary}</div>}</section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-black text-slate-900">用户提交材料</h3><p className="mt-1 text-sm leading-6 text-slate-500">下载后转入内部服务器执行正式评测</p></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="text-lg font-black text-blue-600">{current.inputs.length} <small className="text-sm font-bold">个文件</small></span>{current.inputs.length > 0 && <button onClick={downloadAllInputs} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"><Download className="h-3.5 w-3.5" />{current.inputs.length > 1 ? '下载全部' : '下载文件'}</button>}</div></div><div className="mt-4 grid gap-3 sm:grid-cols-2">{current.inputs.length ? current.inputs.map(file => <div key={file.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-[#FAFAFA] p-4 transition hover:border-blue-300 hover:shadow-md"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50"><FileArchive className="h-5 w-5 text-blue-600" /></span><span className="min-w-0 flex-1"><b className="block truncate text-sm leading-6 text-slate-700">{file.name}</b><span className="mt-1 block text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span></span></div>) : <div className="col-span-2 rounded-lg border border-dashed border-slate-200 bg-[#FAFAFA] p-8 text-center text-sm leading-6 text-slate-500">该任务使用模型 API 配置，无本地上传文件</div>}</div></section>
+          <section className="border-b border-slate-200 p-5"><div className="flex items-start justify-between gap-4"><div><h3 className="text-base font-black text-slate-900">用户提交材料</h3><p className="mt-1 text-sm leading-6 text-slate-500">下载后转入内部服务器执行正式评测</p></div><span className="shrink-0 text-lg font-black text-blue-600">{current.inputs.length} <small className="text-sm font-bold">个文件</small></span></div>{current.inputs.length ? <div className="mt-3 flex items-center gap-4"><div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">{current.inputs.map(file => <div key={file.id} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-[#FAFAFA] p-4 transition hover:border-blue-300"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50"><FileArchive className="h-5 w-5 text-blue-600" /></span><span className="min-w-0 flex-1"><b className="block truncate text-sm leading-6 text-slate-700">{file.name}</b><span className="mt-1 block text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span></span></div>)}</div><button onClick={downloadAllInputs} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"><Download className="h-3.5 w-3.5" />{current.inputs.length > 1 ? '下载全部' : '下载文件'}</button></div> : <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-[#FAFAFA] p-7 text-center text-sm leading-6 text-slate-500">该任务使用模型 API 配置，无本地上传文件</div>}</section>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_3px_12px_rgba(15,23,42,.05)]"><div className="flex items-center gap-2"><History className="h-5 w-5 text-blue-500" /><h3 className="text-base font-black text-slate-900">用户沟通记录</h3></div>{current.communications?.length ? <div className="relative mt-5 space-y-3 pl-5 before:absolute before:bottom-2 before:left-[6px] before:top-2 before:w-px before:bg-slate-200">{current.communications.slice().reverse().map(item => <div key={item.id} className="relative rounded-lg border border-slate-100 bg-[#FAFAFA] px-4 py-4 before:absolute before:-left-[18px] before:top-5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-blue-500 before:ring-4 before:ring-white"><div className="flex justify-between gap-3"><b className="text-sm leading-6 text-slate-700">{item.type} · {item.sender === 'admin' ? '管理员' : item.sender === 'user' ? '用户' : '系统'}</b><span className="text-xs leading-6 text-slate-500">{item.createdAt}</span></div><p className="mt-2 text-sm leading-6 text-slate-600">{item.content}</p></div>)}</div> : <div className="mt-4 rounded-lg bg-[#FAFAFA] py-8 text-center text-sm leading-6 text-slate-500">暂无沟通记录</div>}</section>
+          <section className="p-5"><div className="flex items-center gap-2"><History className="h-5 w-5 text-blue-500" /><h3 className="text-base font-black text-slate-900">用户沟通记录</h3></div>{current.communications?.length ? <div className="relative mt-4 space-y-3 pl-5 before:absolute before:bottom-2 before:left-[6px] before:top-2 before:w-px before:bg-slate-200">{current.communications.slice().reverse().map(item => <div key={item.id} className="relative rounded-lg border border-slate-100 bg-[#FAFAFA] px-4 py-3 before:absolute before:-left-[18px] before:top-5 before:h-2.5 before:w-2.5 before:rounded-full before:bg-blue-500 before:ring-4 before:ring-white"><div className="flex justify-between gap-3"><b className="text-sm leading-6 text-slate-700">{item.type} · {item.sender === 'admin' ? '管理员' : item.sender === 'user' ? '用户' : '系统'}</b><span className="text-xs leading-6 text-slate-500">{item.createdAt}</span></div><p className="mt-1.5 text-sm leading-6 text-slate-600">{item.content}</p></div>)}</div> : <div className="mt-4 rounded-lg bg-[#FAFAFA] py-8 text-center text-sm leading-6 text-slate-500">暂无沟通记录</div>}</section>
         </div>
 
-        <aside className="flex h-full flex-col gap-3 rounded-lg border border-blue-200 bg-[#F8FAFF] p-4 shadow-[0_5px_18px_rgba(37,99,235,.08)]">
-          <h3 className="text-lg font-black leading-7 text-slate-950">管理员操作台</h3>
+        <aside className="flex h-full flex-col gap-3 rounded-xl border border-blue-300 bg-[#EEF6FF] p-4 shadow-[0_10px_28px_rgba(37,99,235,.13)] xl:sticky xl:top-[88px] xl:self-start">
+          <h3 className="text-lg font-black leading-7 text-slate-950">管理员操作台</h3>{outputManager}
           {TERMINAL.has(normalizedStatus) ? <div className={`rounded-2xl border p-5 ${normalizedStatus === '已交付' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}><div className="flex items-center gap-3">{normalizedStatus === '已交付' ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-slate-500" />}<div><h4 className="text-sm font-black text-slate-800">任务流程已结束</h4><p className="mt-1 text-xs leading-5 text-slate-500">当前状态为“{displayStatus}”，补件、上传、交付和终止操作均已锁定。</p></div></div></div> : <>
-          <section className="rounded-lg border border-orange-200 bg-white p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">请求用户补件</h4><p className="text-xs leading-5 text-orange-700">材料缺失或不符合要求时使用</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm"><option>模型／工程文件</option><option>配置文件</option><option>API 信息</option><option>需求说明</option><option>其他材料</option></select><input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm" /></div><textarea value={publicText} onChange={e => setPublicText(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-5 outline-none focus:border-orange-400" placeholder="填写用户可见的补件要求" /><button onClick={requestSupplement} className="mt-2 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600">发送补件要求</button></section>
+          <section className="rounded-lg border border-orange-200 bg-white p-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span>
+              <div>
+                <h4 className="text-base font-black text-slate-900">返回意见</h4>
+                <p className="text-xs leading-5 text-orange-700">先选择处理结果，再填写用户可见说明</p>
+              </div>
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-xs font-bold text-slate-500">处理结果</span>
+              <select
+                value={feedbackMode}
+                onChange={(e) => setFeedbackMode(e.target.value as 'supplement' | 'terminate')}
+                className="h-9 w-full rounded-lg border border-orange-100 bg-white px-2 text-sm"
+              >
+                <option value="supplement">请求用户补件</option>
+                <option value="terminate">终止任务</option>
+              </select>
+            </label>
+            <label className="mt-3 block">
+              <span className="mb-1.5 block text-xs font-bold text-slate-500">意见说明</span>
+              <textarea
+                value={publicText}
+                onChange={e => setPublicText(e.target.value)}
+                className="min-h-20 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-5 outline-none focus:border-orange-400"
+                placeholder={feedbackMode === 'terminate' ? '填写终止原因，例如：材料长期缺失，任务无法继续' : '例如：请重新提交 XXXX 文件'}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={submitFeedback}
+              disabled={feedbackMode === 'terminate' && normalizedStatus === '已终止'}
+              className="mt-3 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            >
+              {feedbackMode === 'terminate' ? (normalizedStatus === '已终止' ? '任务已终止' : '确认终止并通知用户') : '发送补件要求'}
+            </button>
+          </section>
 
-          <section className="overflow-hidden rounded-lg border border-blue-700 bg-gradient-to-br from-blue-700 to-indigo-700 text-white shadow-lg shadow-blue-200/60"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black">正常交付</h4><p className="text-xs leading-5 text-blue-100">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-white/35 bg-white/10 text-sm font-bold transition hover:bg-white/15"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-white/12 px-3 py-1.5 text-sm"><CheckCircle2 className="h-4 w-4 text-emerald-300" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-white px-4 py-2.5 text-sm font-black text-blue-700 shadow-md disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-white/15 px-4 py-2 text-xs leading-5 text-blue-100">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
-
-          <section className="rounded-lg border border-red-100 bg-white p-4"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><h4 className="text-base font-black text-slate-800">终止任务</h4></div><p className="mt-0.5 text-xs leading-5 text-red-600">仅在材料长期缺失或任务无法继续时使用</p><textarea value={terminationReason} onChange={e => setTerminationReason(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-red-100 bg-white p-3 text-sm leading-5 outline-none focus:border-red-300" placeholder="填写用户可见的终止原因" /><button onClick={terminate} disabled={normalizedStatus === '已终止'} className="mt-2 w-full rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-600 hover:text-white disabled:text-slate-300">{normalizedStatus === '已终止' ? '任务已终止' : '终止并通知用户'}</button></section>
+          <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
           </>}
         </aside>
       </div>
+      </> : <div className="flex min-h-[680px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/70 px-8 text-center"><div><FileArchive className="mx-auto h-12 w-12 text-slate-300" /><h3 className="mt-4 text-base font-black text-slate-700">没有符合条件的任务</h3><p className="mt-2 text-sm text-slate-500">请在左侧调整产品类型、任务状态或搜索关键词。</p></div></div>}
     </section>
     </div>
   </div>;

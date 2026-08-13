@@ -16,6 +16,7 @@
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-13 | **列表改走总表**（见 [20260813-evaluation-task-master.md](./20260813-evaluation-task-master.md)）；创建仍走 `evaluation-task/add` |
 | 2026-08-07 | **重对接创建任务：** `type`→`PERFORMANCE`/`SAFETY`；补充需求→`demandSupplement`；场景走 `preset-scene` |
 | 2026-08-07 | 迁场景/维度：`presetScene`→`/temp/preset-scene/presetScene`（必传 `evaluationTaskType`） |
 | 2026-08-07 | 初稿；创建任务对接 `add`；管理端 `page` 合并；无 update |

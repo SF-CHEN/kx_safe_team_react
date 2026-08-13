@@ -198,3 +198,35 @@ export interface SysFile {
   createdAt?: string;
   updatedAt?: string;
 }
+
+/** 评测任务总表（统一管理四种评测任务） */
+export type EvaluationTaskMasterProductType =
+  | 'PERFORMANCE'
+  | 'SAFETY'
+  | 'DATA_SAFETY'
+  | 'TRUST';
+
+export type EvaluationTaskMasterSubmitType = 'LOCAL_PROJECT_FILE' | 'USER_MODEL';
+
+export type EvaluationTaskMasterStatus =
+  | 'PROCESSING'
+  | 'AWAIT_SUPPLEMENT'
+  | 'WAITING'
+  | 'COMPLETED'
+  | 'FAILED';
+
+export interface EvaluationTaskMaster {
+  id?: number;
+  name?: string;
+  productType?: EvaluationTaskMasterProductType;
+  /** 被测对象 */
+  targetObject?: string;
+  submitType?: EvaluationTaskMasterSubmitType;
+  status?: EvaluationTaskMasterStatus | string;
+  /** 关联具体任务表记录的主键 */
+  taskRefId?: number;
+  userId?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  deleted?: boolean;
+}

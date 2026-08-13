@@ -5,7 +5,7 @@
 - **相关路径：**
   - `src/app/pages/ResourceCenter.tsx`
   - `src/api/evaluation/myList.ts`
-- **OpenAPI：** `src/api/docs/api.json`（复用三类评测 `page`，无独立「资源中心」资源）
+- **OpenAPI：** `src/api/docs/api.json` → `/temp/evaluation-task-master/page`（见 [20260813-evaluation-task-master.md](./20260813-evaluation-task-master.md)）
 - **UI 改动：** 否（仅 loading / 空态说明文案）
 - **关联：**
   - `[20260807-eval-tasks.md](./20260807-eval-tasks.md)`
@@ -16,6 +16,7 @@
 
 | 日期         | 说明                                            |
 | ---------- | --------------------------------------------- |
+| 2026-08-13 | **列表改走总表**：见 [20260813-evaluation-task-master.md](./20260813-evaluation-task-master.md)；不再并行三类 `page` |
 | 2026-08-07 | 大模型任务映射：`type` 枚举 PERFORMANCE/SAFETY；诉求读 `demandSupplement` |
 | 2026-08-07 | 初稿；列表改读三类 `page` + `entity.userId`；附件/报告/消息未接 |
 

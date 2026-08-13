@@ -175,13 +175,44 @@
         }
       }
     },
+    "/temp/evaluation-task-master/update": {
+      "put": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "修改评测任务总表（统一管理四种评测任务）",
+        "operationId": "update_5",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationTaskMaster"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/evaluation-dimension/update": {
       "put": {
         "tags": [
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "修改评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "update_5",
+        "operationId": "update_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -212,7 +243,7 @@
           ""
         ],
         "summary": "修改",
-        "operationId": "update_6",
+        "operationId": "update_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -366,7 +397,7 @@
         "tags": [
           "文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录"
         ],
-        "summary": "文件上传，支持pdf/office/图片/txt，最大50MB",
+        "summary": "文件上传，支持zip/rar/7z/tar/csv/json/jsonl，最大50MB",
         "operationId": "upload",
         "requestBody": {
           "content": {
@@ -741,13 +772,44 @@
         }
       }
     },
+    "/temp/evaluation-task-master/page": {
+      "post": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "分页查询评测任务总表（统一管理四种评测任务）",
+        "operationId": "findPage_7",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageEvaluationTaskMaster"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/evaluation-dimension/page": {
       "post": {
         "tags": [
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "分页查询评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "findPage_7",
+        "operationId": "findPage_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -809,7 +871,7 @@
           ""
         ],
         "summary": "分页查询",
-        "operationId": "findPage_8",
+        "operationId": "findPage_9",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1164,7 +1226,7 @@
         "tags": [
           "评测任务"
         ],
-        "summary": "获取评测任务",
+        "summary": "获���评测任务",
         "operationId": "getDetailById_6",
         "parameters": [
           {
@@ -1191,13 +1253,45 @@
         }
       }
     },
+    "/temp/evaluation-task-master/getDetailById": {
+      "get": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "获取评测任务总表（统一管理四种评测任务）",
+        "operationId": "getDetailById_7",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultEvaluationTaskMaster"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/evaluation-dimension/getDetailById": {
       "get": {
         "tags": [
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "获取评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "getDetailById_7",
+        "operationId": "getDetailById_8",
         "parameters": [
           {
             "name": "id",
@@ -1264,7 +1358,7 @@
           ""
         ],
         "summary": "获取",
-        "operationId": "getDetailById_8",
+        "operationId": "getDetailById_9",
         "parameters": [
           {
             "name": "id",
@@ -1794,13 +1888,80 @@
         }
       }
     },
+    "/temp/evaluation-task-master/deleteOne": {
+      "delete": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "删除评测任务总表（统一管理四种评测任务）",
+        "operationId": "deleteOne_7",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/evaluation-task-master/batchDel": {
+      "delete": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "批量删除评测任务总表（统一管理四种评测任务）",
+        "operationId": "batchDel_7",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/evaluation-dimension/deleteOne": {
       "delete": {
         "tags": [
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "删除评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "deleteOne_7",
+        "operationId": "deleteOne_8",
         "parameters": [
           {
             "name": "id",
@@ -1832,7 +1993,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "批量删除评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "batchDel_7",
+        "operationId": "batchDel_8",
         "parameters": [
           {
             "name": "ids",
@@ -1867,7 +2028,7 @@
           ""
         ],
         "summary": "删除",
-        "operationId": "deleteOne_8",
+        "operationId": "deleteOne_9",
         "parameters": [
           {
             "name": "id",
@@ -1899,7 +2060,7 @@
           ""
         ],
         "summary": "批量删除",
-        "operationId": "batchDel_8",
+        "operationId": "batchDel_9",
         "parameters": [
           {
             "name": "ids",
@@ -2172,6 +2333,78 @@
             "type": "integer",
             "format": "int32",
             "description": "id"
+          }
+        }
+      },
+      "EvaluationTaskMaster": {
+        "type": "object",
+        "description": "评测任务总表（统一管理四种评测任务）",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "主键id"
+          },
+          "name": {
+            "type": "string",
+            "description": "任务名称"
+          },
+          "productType": {
+            "type": "string",
+            "description": "所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测",
+            "enum": [
+              "PERFORMANCE",
+              "SAFETY",
+              "DATA_SAFETY",
+              "TRUST"
+            ]
+          },
+          "targetObject": {
+            "type": "string",
+            "description": "被测对象"
+          },
+          "submitType": {
+            "type": "string",
+            "description": "提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型",
+            "enum": [
+              "LOCAL_PROJECT_FILE",
+              "USER_MODEL"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待用户补充、WAITING-等待处理、COMPLETED-处理完成、FAILED-处理失败",
+            "enum": [
+              "PROCESSING",
+              "AWAIT_SUPPLEMENT",
+              "WAITING",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "taskRefId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "关联具体任务表记录的主键"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "创建用户的id"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "修改时间"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "逻辑删除标记"
           }
         }
       },
@@ -3120,6 +3353,77 @@
           }
         }
       },
+      "PageEvaluationTaskMaster": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationTaskMaster"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageEvaluationTaskMaster",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageEvaluationTaskMaster",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageEvaluationTaskMaster": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageEvaluationTaskMaster"
+          }
+        }
+      },
       "PageEvaluationDimension": {
         "type": "object",
         "properties": {
@@ -3344,6 +3648,21 @@
           },
           "data": {
             "type": "string"
+          }
+        }
+      },
+      "ResultEvaluationTaskMaster": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/EvaluationTaskMaster"
           }
         }
       },

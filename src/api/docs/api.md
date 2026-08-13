@@ -73,6 +73,20 @@ interface ModelDataSafetyEvaluationTask { // 模型数据安全评测任务表
   id?: number; // id
 }
 
+interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评测任务）
+  id?: number; // 主键id
+  name?: string; // 任务名称
+  productType?: 'PERFORMANCE' | 'SAFETY' | 'DATA_SAFETY' | 'TRUST'; // 所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测
+  targetObject?: string; // 被测对象
+  submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
+  status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'WAITING' | 'COMPLETED' | 'FAILED'; // 当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待用户补充、WAITING-等待处理、COMPLETED-处理完成、FAILED-处理失败
+  taskRefId?: number; // 关联具体任务表记录的主键
+  userId?: number; // 创建用户的id
+  createdAt?: string; // 创建时间
+  updatedAt?: string; // 修改时间
+  deleted?: boolean; // 逻辑删除标记
+}
+
 interface EvaluationDimension { // 评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
   id?: number; // 维度id
   name?: string; // 维度名称
@@ -341,6 +355,26 @@ interface ResultEvaluationTask {
   data?: EvaluationTask;
 }
 
+interface PageEvaluationTaskMaster {
+  records?: EvaluationTaskMaster[];
+  total?: number;
+  size?: number;
+  current?: number;
+  orders?: OrderItem[];
+  optimizeCountSql?: PageEvaluationTaskMaster;
+  searchCount?: PageEvaluationTaskMaster;
+  optimizeJoinOfCountSql?: boolean;
+  maxLimit?: number;
+  countId?: string;
+  pages?: number;
+}
+
+interface ResultPageEvaluationTaskMaster {
+  message?: string;
+  code?: number;
+  data?: PageEvaluationTaskMaster;
+}
+
 interface PageEvaluationDimension {
   records?: EvaluationDimension[];
   total?: number;
@@ -409,6 +443,12 @@ interface ResultString {
   message?: string;
   code?: number;
   data?: string;
+}
+
+interface ResultEvaluationTaskMaster {
+  message?: string;
+  code?: number;
+  data?: EvaluationTaskMaster;
 }
 
 interface ResultListTreeDropEvaluationDimension {
@@ -838,6 +878,56 @@ interface ResultListBaseDropDepthModel {
 
 ---
 
+### 📂 评测任务总表（统一管理四种评测任务）
+
+### 修改评测任务总表（统一管理四种评测任务）
+
+- **Method**: `PUT`
+- **URL**: `/temp/evaluation-task-master/update`
+- **Request Body**: `EvaluationTaskMaster`
+- **Response**: `ResultBoolean`
+
+---
+
+### 分页查询评测任务总表（统一管理四种评测任务）
+
+- **Method**: `POST`
+- **URL**: `/temp/evaluation-task-master/page`
+- **Request Body**: `PageQuerySo`
+- **Response**: `ResultPageEvaluationTaskMaster`
+
+---
+
+### 获取评测任务总表（统一管理四种评测任务）
+
+- **Method**: `GET`
+- **URL**: `/temp/evaluation-task-master/getDetailById`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultEvaluationTaskMaster`
+
+---
+
+### 删除评测任务总表（统一管理四种评测任务）
+
+- **Method**: `DELETE`
+- **URL**: `/temp/evaluation-task-master/deleteOne`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 批量删除评测任务总表（统一管理四种评测任务）
+
+- **Method**: `DELETE`
+- **URL**: `/temp/evaluation-task-master/batchDel`
+- **Query / Path Parameters**:
+  - `ids` (query): number[] (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
 ### 📂 评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
 
 ### 修改评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
@@ -909,7 +999,7 @@ interface ResultListBaseDropDepthModel {
 
 ### 📂 文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录
 
-### 文件上传，支持pdf/office/图片/txt，最大50MB
+### 文件上传，支持zip/rar/7z/tar/csv/json/jsonl，最大50MB
 
 - **Method**: `POST`
 - **URL**: `/temp/sys-file/upload`
@@ -987,7 +1077,7 @@ interface ResultListBaseDropDepthModel {
 
 ---
 
-### 获取评测任务
+### 获���评测任务
 
 - **Method**: `GET`
 - **URL**: `/temp/evaluation-task/getDetailById`
