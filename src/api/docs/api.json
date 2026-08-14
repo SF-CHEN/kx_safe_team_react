@@ -175,44 +175,13 @@
         }
       }
     },
-    "/temp/evaluation-task-master/update": {
-      "put": {
-        "tags": [
-          "评测任务总表（统一管理四种评测任务）"
-        ],
-        "summary": "修改评测任务总表（统一管理四种评测任务）",
-        "operationId": "update_5",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EvaluationTaskMaster"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResultBoolean"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/temp/evaluation-dimension/update": {
       "put": {
         "tags": [
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "修改评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "update_6",
+        "operationId": "update_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -243,7 +212,7 @@
           ""
         ],
         "summary": "修改",
-        "operationId": "update_7",
+        "operationId": "update_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -772,6 +741,37 @@
         }
       }
     },
+    "/temp/evaluation-task-master/supplementMaterial": {
+      "post": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "用户补充评测材料",
+        "operationId": "supplementMaterial",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplementMaterialSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/evaluation-task-master/page": {
       "post": {
         "tags": [
@@ -796,6 +796,68 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultPageEvaluationTaskMaster"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/evaluation-task-master/deliver": {
+      "post": {
+        "tags": [
+          "评测任务总表（统一管理四种评测任务）"
+        ],
+        "summary": "管理员交付评测任务",
+        "operationId": "deliver",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliverTaskSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/evaluation-task-master-communication/adminReply": {
+      "post": {
+        "tags": [
+          "评测任务沟通记录表（管理员与任务所属用户围绕评测任务总表的沟通记录）"
+        ],
+        "summary": "管理员返回意见",
+        "operationId": "adminReply",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReplySo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
                 }
               }
             }
@@ -1136,6 +1198,69 @@
         }
       }
     },
+    "/temp/overview/taskOverview": {
+      "get": {
+        "tags": [
+          "运营总览"
+        ],
+        "summary": "任务概览查看",
+        "operationId": "taskOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultTaskOverviewVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/overview/operationalOverview": {
+      "get": {
+        "tags": [
+          "运营总览"
+        ],
+        "summary": "运营总览查看",
+        "operationId": "operationalOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultOverviewVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/overview/myTaskOverview": {
+      "get": {
+        "tags": [
+          "运营总览"
+        ],
+        "summary": "我的任务概览查看",
+        "operationId": "myTaskOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultTaskOverviewVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/model-trust-evaluation-task/getDetailById": {
       "get": {
         "tags": [
@@ -1226,7 +1351,7 @@
         "tags": [
           "评测任务"
         ],
-        "summary": "获���评测任务",
+        "summary": "获取评测任务",
         "operationId": "getDetailById_6",
         "parameters": [
           {
@@ -1277,7 +1402,39 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResultEvaluationTaskMaster"
+                  "$ref": "#/components/schemas/ResultEvaluationTaskMasterDetailVo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/evaluation-task-master-communication/listByMasterId": {
+      "get": {
+        "tags": [
+          "评测任务沟通记录表（管理员与任务所属用户围绕评测任务总表的沟通记录）"
+        ],
+        "summary": "查询用户沟通记录",
+        "operationId": "listByMasterId",
+        "parameters": [
+          {
+            "name": "evaluationTaskMasterId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListEvaluationTaskMasterCommunication"
                 }
               }
             }
@@ -2336,78 +2493,6 @@
           }
         }
       },
-      "EvaluationTaskMaster": {
-        "type": "object",
-        "description": "评测任务总表（统一管理四种评测任务）",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64",
-            "description": "主键id"
-          },
-          "name": {
-            "type": "string",
-            "description": "任务名称"
-          },
-          "productType": {
-            "type": "string",
-            "description": "所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测",
-            "enum": [
-              "PERFORMANCE",
-              "SAFETY",
-              "DATA_SAFETY",
-              "TRUST"
-            ]
-          },
-          "targetObject": {
-            "type": "string",
-            "description": "被测对象"
-          },
-          "submitType": {
-            "type": "string",
-            "description": "提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型",
-            "enum": [
-              "LOCAL_PROJECT_FILE",
-              "USER_MODEL"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "description": "当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待用户补充、WAITING-等待处理、COMPLETED-处理完成、FAILED-处理失败",
-            "enum": [
-              "PROCESSING",
-              "AWAIT_SUPPLEMENT",
-              "WAITING",
-              "COMPLETED",
-              "FAILED"
-            ]
-          },
-          "taskRefId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "关联具体任务表记录的主键"
-          },
-          "userId": {
-            "type": "integer",
-            "format": "int32",
-            "description": "创建用户的id"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "创建时间"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "description": "修改时间"
-          },
-          "deleted": {
-            "type": "boolean",
-            "description": "逻辑删除标记"
-          }
-        }
-      },
       "EvaluationDimension": {
         "type": "object",
         "description": "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
@@ -3353,6 +3438,111 @@
           }
         }
       },
+      "SupplementMaterialSo": {
+        "type": "object",
+        "description": "用户补充评测材料请求参数",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "评测任务总表id"
+          },
+          "supplementFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "补充材料文件id，关联sys_file.id"
+          }
+        },
+        "required": [
+          "id",
+          "supplementFileId"
+        ]
+      },
+      "EvaluationTaskMaster": {
+        "type": "object",
+        "description": "评测任务总表（统一管理四种评测任务）",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "主键id"
+          },
+          "name": {
+            "type": "string",
+            "description": "任务名称"
+          },
+          "productType": {
+            "type": "string",
+            "description": "所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测",
+            "enum": [
+              "PERFORMANCE",
+              "SAFETY",
+              "DATA_SAFETY",
+              "TRUST"
+            ]
+          },
+          "targetObject": {
+            "type": "string",
+            "description": "被测对象"
+          },
+          "configSummary": {
+            "type": "string",
+            "description": "配置摘要"
+          },
+          "submitType": {
+            "type": "string",
+            "description": "提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型",
+            "enum": [
+              "LOCAL_PROJECT_FILE",
+              "USER_MODEL"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待补充、DELIVERED-已交付、TERMINATED-已终止",
+            "enum": [
+              "PROCESSING",
+              "AWAIT_SUPPLEMENT",
+              "DELIVERED",
+              "TERMINATED"
+            ]
+          },
+          "taskRefId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "关联具体任务表记录的主键"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "创建用户的id"
+          },
+          "supplementFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "补充材料文件id，关联sys_file.id"
+          },
+          "deliverFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "交付文件id，关联sys_file.id"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "修改时间"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "逻辑删除标记"
+          }
+        }
+      },
       "PageEvaluationTaskMaster": {
         "type": "object",
         "properties": {
@@ -3423,6 +3613,55 @@
             "$ref": "#/components/schemas/PageEvaluationTaskMaster"
           }
         }
+      },
+      "DeliverTaskSo": {
+        "type": "object",
+        "description": "管理员交付评测任务请求参数",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "评测任务总表id"
+          },
+          "deliverFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "交付文件id，关联sys_file.id"
+          }
+        },
+        "required": [
+          "deliverFileId",
+          "id"
+        ]
+      },
+      "AdminReplySo": {
+        "type": "object",
+        "description": "管理员返回意见请求参数",
+        "properties": {
+          "evaluationTaskMasterId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "评测任务总表id"
+          },
+          "handleResult": {
+            "type": "string",
+            "description": "处理结果：REQUEST_SUPPLEMENT-请求用户补件、TERMINATE-终止任务",
+            "enum": [
+              "REQUEST_SUPPLEMENT",
+              "TERMINATE"
+            ]
+          },
+          "adminComment": {
+            "type": "string",
+            "description": "管理员意见说明",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "adminComment",
+          "evaluationTaskMasterId",
+          "handleResult"
+        ]
       },
       "PageEvaluationDimension": {
         "type": "object",
@@ -3636,6 +3875,103 @@
           }
         }
       },
+      "ResultTaskOverviewVo": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TaskOverviewVo"
+          }
+        }
+      },
+      "TaskOverviewVo": {
+        "type": "object",
+        "description": "任务概览VO",
+        "properties": {
+          "processingCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "处理中任务数量"
+          },
+          "awaitSupplementCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "待补充任务数量"
+          },
+          "deliveredCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "已交付任务数量"
+          },
+          "terminatedCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "已终止任务数量"
+          }
+        }
+      },
+      "OverviewVo": {
+        "type": "object",
+        "description": "运营总览VO",
+        "properties": {
+          "totalUserCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "平台注册用户总数"
+          },
+          "weeklyNewUserCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "本周新增注册用户数量"
+          },
+          "processingTaskCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "进行中任务数量（处理中+待补充）"
+          },
+          "inProcessingTaskCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "处于处理中的任务数量"
+          },
+          "recent7DaysNewTaskCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "近7天新增的任务数量"
+          },
+          "totalDeliveredCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "累计完成交付数量（已交付+已终止）"
+          },
+          "weeklyDeliveredCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "本周交付数量"
+          }
+        }
+      },
+      "ResultOverviewVo": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OverviewVo"
+          }
+        }
+      },
       "ResultString": {
         "type": "object",
         "properties": {
@@ -3651,7 +3987,76 @@
           }
         }
       },
-      "ResultEvaluationTaskMaster": {
+      "EvaluationTaskMasterDetailVo": {
+        "type": "object",
+        "description": "评测任务总表详情VO",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "任务id"
+          },
+          "evaluationRequirement": {
+            "type": "string",
+            "description": "评测诉求"
+          },
+          "username": {
+            "type": "string",
+            "description": "提交用户的username"
+          },
+          "email": {
+            "type": "string",
+            "description": "邮箱"
+          },
+          "configSummary": {
+            "type": "string",
+            "description": "配置摘要"
+          },
+          "materialName": {
+            "type": "string",
+            "description": "用户提交的材料名称"
+          },
+          "supplementFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "提交的补充材料id"
+          },
+          "evaluationMaterialFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户提交的评测材料id"
+          },
+          "evaluationMaterialName": {
+            "type": "string",
+            "description": "评测材料名称"
+          },
+          "deliverFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "交付文件id"
+          },
+          "deliverFileName": {
+            "type": "string",
+            "description": "交付文件名称"
+          },
+          "status": {
+            "type": "string",
+            "description": "任务状态",
+            "enum": [
+              "PROCESSING",
+              "AWAIT_SUPPLEMENT",
+              "DELIVERED",
+              "TERMINATED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          }
+        }
+      },
+      "ResultEvaluationTaskMasterDetailVo": {
         "type": "object",
         "properties": {
           "message": {
@@ -3662,7 +4067,80 @@
             "format": "int32"
           },
           "data": {
-            "$ref": "#/components/schemas/EvaluationTaskMaster"
+            "$ref": "#/components/schemas/EvaluationTaskMasterDetailVo"
+          }
+        }
+      },
+      "EvaluationTaskMasterCommunication": {
+        "type": "object",
+        "description": "评测任务沟通记录表（管理员与任务所属用户围绕评测任务总表的沟通记录）",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "主键id"
+          },
+          "evaluationTaskMasterId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "关联的评测任务总表id"
+          },
+          "handleResult": {
+            "type": "string",
+            "description": "处理结果：REQUEST_SUPPLEMENT-请求用户补件、TERMINATE-终止任务",
+            "enum": [
+              "REQUEST_SUPPLEMENT",
+              "TERMINATE"
+            ]
+          },
+          "adminComment": {
+            "type": "string",
+            "description": "管理员意见说明"
+          },
+          "supplementFileName": {
+            "type": "string",
+            "description": "用户补充文件名称"
+          },
+          "supplementFileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户补充文件id，关联sys_file.id"
+          },
+          "userReplied": {
+            "type": "boolean",
+            "description": "用户是否回复，false未回复，true已回复"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "修改时间"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "软删除标记"
+          }
+        }
+      },
+      "ResultListEvaluationTaskMasterCommunication": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvaluationTaskMasterCommunication"
+            }
           }
         }
       },

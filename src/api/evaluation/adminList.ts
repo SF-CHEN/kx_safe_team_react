@@ -1,26 +1,42 @@
-import { getModelDataSafetyEvaluationTaskById } from '@/api/evaluation/modelDataSafety';
-import { getModelTrustEvaluationTaskById } from '@/api/evaluation/modelTrust';
 import {
   formatMasterDateTime,
+  getEvaluationTaskMasterById,
   isMasterProductType,
   isMasterSubmitType,
   mapMasterProductLabel,
   mapMasterStatusToWorkflow,
   mapMasterSubmitTypeLabel,
-  mapWorkflowStatusToMaster,
   masterRowId,
   pageEvaluationTaskMasters,
-  updateEvaluationTaskMaster,
+  deliverEvaluationTaskMaster,
 } from '@/api/evaluation/evaluationTaskMaster';
-import { fetchSysFilesByIds } from '@/api/file';
+import {
+  adminReplyEvaluationTask,
+  listCommunicationsByMasterId,
+} from '@/api/evaluation/evaluationTaskMasterCommunication';
+import { uploadSysFile } from '@/api/file';
 import type {
   EvaluationTaskMaster,
+  EvaluationTaskMasterCommunication,
   EvaluationTaskMasterProductType,
   EvaluationTaskMasterSubmitType,
-  SysFile,
 } from '@/api/types';
 
 export type AdminEvalSource = 'trust' | 'data-safety' | 'evaluation';
+
+export interface AdminEvalFileRef {
+  id: string;
+  name: string;
+  size: number;
+}
+
+export interface AdminEvalCommunication {
+  id: string;
+  sender: 'admin' | 'user' | 'system';
+  type: '补充材料请求' | '补充材料提交' | '交付说明' | '终止通知' | '状态更新';
+  content: string;
+  createdAt: string;
+}
 
 /** 管理端列表行：对齐现有 WorkflowTask 展示字段，缺省用 — */
 export interface AdminEvalTaskRow {
@@ -41,44 +57,80 @@ export interface AdminEvalTaskRow {
   status: string;
   createdAt: string;
   updatedAt: string;
-  fileId?: number;
-  inputs: Array<{ id: string; name: string; size: number }>;
-  outputs: Array<{ id: string; name: string }>;
+  /** 列表态可能为空；选中后由详情补齐 */
+  inputs: AdminEvalFileRef[];
+  outputs: AdminEvalFileRef[];
+  communications: AdminEvalCommunication[];
+  pushedAt?: string;
+}
+
+export interface AdminEvalTaskDetail {
+  requirement: string;
+  userName: string;
+  contact: string;
+  configSummary?: string;
+  status: string;
+  inputs: AdminEvalFileRef[];
+  outputs: AdminEvalFileRef[];
+  communications: AdminEvalCommunication[];
+  pushedAt?: string;
 }
 
 const LIST_PAGE_SIZE = 200;
 
-function sourceFromProduct(
-  productType?: string,
-): AdminEvalSource {
+function sourceFromProduct(productType?: string): AdminEvalSource {
   if (productType === 'TRUST') return 'trust';
   if (productType === 'DATA_SAFETY') return 'data-safety';
   return 'evaluation';
 }
 
-function inputsFromFile(fileId: number | undefined, fileMap: Map<number, SysFile>) {
-  if (fileId == null) return [];
-  const file = fileMap.get(fileId);
-  if (!file) {
-    return [{ id: String(fileId), name: `文件 #${fileId}`, size: 0 }];
-  }
-  return [
-    {
-      id: String(file.id ?? fileId),
-      name: file.originalName?.trim() || `文件 #${fileId}`,
-      size: typeof file.size === 'number' ? file.size : 0,
-    },
-  ];
+function fileRef(id?: number, name?: string, size = 0): AdminEvalFileRef | null {
+  if (id == null || !Number.isFinite(id) || id <= 0) return null;
+  return {
+    id: String(id),
+    name: name?.trim() || `文件 #${id}`,
+    size,
+  };
 }
 
-function mapMaster(
-  row: EvaluationTaskMaster,
-  fileId: number | undefined,
-  fileMap: Map<number, SysFile>,
-): AdminEvalTaskRow | null {
+function mapCommunications(
+  rows: EvaluationTaskMasterCommunication[],
+): AdminEvalCommunication[] {
+  const items: AdminEvalCommunication[] = [];
+  for (const row of rows) {
+    const createdAt = formatMasterDateTime(row.createdAt);
+    const baseId = row.id != null ? String(row.id) : `comm-${createdAt}`;
+    if (row.adminComment?.trim()) {
+      const isTerminate = row.handleResult === 'TERMINATE';
+      items.push({
+        id: `${baseId}-admin`,
+        sender: 'admin',
+        type: isTerminate ? '终止通知' : '补充材料请求',
+        content: row.adminComment.trim(),
+        createdAt,
+      });
+    }
+    if (row.userReplied) {
+      const fileHint = row.supplementFileName?.trim()
+        || (row.supplementFileId != null ? `文件 #${row.supplementFileId}` : '');
+      items.push({
+        id: `${baseId}-user`,
+        sender: 'user',
+        type: '补充材料提交',
+        content: fileHint ? `已补充材料：${fileHint}` : '用户已回复补充材料',
+        createdAt: formatMasterDateTime(row.updatedAt) || createdAt,
+      });
+    }
+  }
+  return items;
+}
+
+function mapMaster(row: EvaluationTaskMaster): AdminEvalTaskRow | null {
   if (row.id == null) return null;
   const name = row.name?.trim() || `任务 #${row.id}`;
   const target = row.targetObject?.trim() || '—';
+  const deliver = fileRef(row.deliverFileId);
+  const supplement = fileRef(row.supplementFileId);
   return {
     id: masterRowId(row.id),
     source: sourceFromProduct(row.productType),
@@ -94,6 +146,7 @@ function mapMaster(
     model: target,
     requirement: name,
     configSummary: [
+      row.configSummary?.trim() || '',
       row.submitType ? `提交方式：${mapMasterSubmitTypeLabel(row.submitType)}` : '',
       row.taskRefId != null ? `关联任务 #${row.taskRefId}` : '',
     ]
@@ -102,9 +155,13 @@ function mapMaster(
     status: mapMasterStatusToWorkflow(row.status),
     createdAt: formatMasterDateTime(row.createdAt),
     updatedAt: formatMasterDateTime(row.updatedAt),
-    fileId,
-    inputs: inputsFromFile(fileId, fileMap),
-    outputs: [],
+    inputs: supplement ? [supplement] : [],
+    outputs: deliver ? [deliver] : [],
+    communications: [],
+    pushedAt:
+      mapMasterStatusToWorkflow(row.status) === '已交付'
+        ? formatMasterDateTime(row.updatedAt)
+        : undefined,
   };
 }
 
@@ -112,26 +169,7 @@ function sortByCreatedDesc(a: AdminEvalTaskRow, b: AdminEvalTaskRow) {
   return String(b.createdAt).localeCompare(String(a.createdAt), 'zh-CN');
 }
 
-async function resolveFileId(
-  row: EvaluationTaskMaster,
-): Promise<number | undefined> {
-  if (row.taskRefId == null) return undefined;
-  try {
-    if (row.productType === 'TRUST') {
-      const detail = await getModelTrustEvaluationTaskById(row.taskRefId);
-      return detail.fileId;
-    }
-    if (row.productType === 'DATA_SAFETY') {
-      const detail = await getModelDataSafetyEvaluationTaskById(row.taskRefId);
-      return detail.fileId;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
-/** 拉取评测任务总表（单页上限 LIST_PAGE_SIZE，超出写入对接纪要） */
+/** 拉取评测任务总表（单页上限 LIST_PAGE_SIZE） */
 export async function fetchAdminEvaluationTasks(): Promise<AdminEvalTaskRow[]> {
   const page = await pageEvaluationTaskMasters({
     pageSize: LIST_PAGE_SIZE,
@@ -140,40 +178,82 @@ export async function fetchAdminEvaluationTasks(): Promise<AdminEvalTaskRow[]> {
     orderType: 'desc',
   });
   const records = page.records || [];
-
-  const fileIdsByMasterId = new Map<number, number | undefined>();
-  await Promise.all(
-    records.map(async (row) => {
-      if (row.id == null) return;
-      fileIdsByMasterId.set(row.id, await resolveFileId(row));
-    }),
-  );
-
-  const fileIds = [...fileIdsByMasterId.values()].filter(
-    (id): id is number => id != null,
-  );
-  const fileMap = await fetchSysFilesByIds(fileIds);
-
   return records
-    .map((row) => mapMaster(row, fileIdsByMasterId.get(row.id ?? -1), fileMap))
+    .map(mapMaster)
     .filter((row): row is AdminEvalTaskRow => row != null)
     .sort(sortByCreatedDesc);
 }
 
-export async function updateAdminEvaluationTaskStatus(
-  task: AdminEvalTaskRow,
-  status: string,
+/** 选中任务后补齐详情、材料与沟通记录 */
+export async function fetchAdminEvaluationTaskDetail(
+  masterId: number,
+): Promise<AdminEvalTaskDetail> {
+  const [detail, communications] = await Promise.all([
+    getEvaluationTaskMasterById(masterId),
+    listCommunicationsByMasterId(masterId),
+  ]);
+
+  const inputs: AdminEvalFileRef[] = [];
+  const evalMaterial = fileRef(
+    detail.evaluationMaterialFileId,
+    detail.evaluationMaterialName || detail.materialName,
+  );
+  if (evalMaterial) inputs.push(evalMaterial);
+  const supplement = fileRef(detail.supplementFileId, detail.materialName);
+  if (
+    supplement &&
+    !inputs.some((item) => item.id === supplement.id)
+  ) {
+    inputs.push(supplement);
+  }
+
+  const deliver = fileRef(detail.deliverFileId, detail.deliverFileName);
+  const status = mapMasterStatusToWorkflow(detail.status);
+
+  return {
+    requirement: detail.evaluationRequirement?.trim() || '—',
+    userName: detail.username?.trim() || '—',
+    contact: detail.email?.trim() || '—',
+    configSummary: detail.configSummary?.trim() || undefined,
+    status,
+    inputs,
+    outputs: deliver ? [deliver] : [],
+    communications: mapCommunications(communications),
+    pushedAt: status === '已交付' ? formatMasterDateTime(detail.createdAt) : undefined,
+  };
+}
+
+export async function adminRequestSupplement(
+  masterId: number,
+  adminComment: string,
 ): Promise<void> {
-  await updateEvaluationTaskMaster({
-    id: task.numericId,
-    name: task.name === '—' ? undefined : task.name,
-    productType: task.productType,
-    targetObject: task.model === '—' ? undefined : task.model,
-    submitType: task.submitType,
-    status: mapWorkflowStatusToMaster(status),
-    taskRefId: task.taskRefId,
-    ...(task.userId !== '—' && Number.isFinite(Number(task.userId))
-      ? { userId: Number(task.userId) }
-      : {}),
+  await adminReplyEvaluationTask({
+    evaluationTaskMasterId: masterId,
+    handleResult: 'REQUEST_SUPPLEMENT',
+    adminComment: adminComment.trim(),
   });
+}
+
+export async function adminTerminateTask(
+  masterId: number,
+  adminComment: string,
+): Promise<void> {
+  await adminReplyEvaluationTask({
+    evaluationTaskMasterId: masterId,
+    handleResult: 'TERMINATE',
+    adminComment: adminComment.trim(),
+  });
+}
+
+/** 上传交付文件并确认交付（接口仅支持单个 deliverFileId） */
+export async function adminDeliverTask(
+  masterId: number,
+  file: File,
+): Promise<void> {
+  const uploaded = await uploadSysFile(file);
+  const deliverFileId = uploaded.id;
+  if (deliverFileId == null) {
+    throw new Error('交付文件上传成功但未返回文件 id');
+  }
+  await deliverEvaluationTaskMaster({ id: masterId, deliverFileId });
 }

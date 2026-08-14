@@ -14,10 +14,13 @@
   - [20260807-eval-tasks.md](./20260807-eval-tasks.md)
   - [20260807-llm-eval-tasks.md](./20260807-llm-eval-tasks.md)
 
+> **后续：** 管理端任务运维已按新 OpenAPI 重接，见 [20260814-admin-task-ops.md](./20260814-admin-task-ops.md)（`update` 已废弃，改 `adminReply` / `deliver`）。
+
 ## 变更记录
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-14 | 链到任务运维 v2 纪要；本文件中「改状态走 update」描述已过时 |
 | 2026-08-13 | 资源中心、管理端任务列表不再并行打三个 `page`，改走 `evaluation-task-master/page`；改状态走总表 `update` |
 
 ## 已对接（可联调）
@@ -112,7 +115,7 @@
 | 报告推送 | 无 | toast |
 | 任务终止专用语义 | 仅有 `FAILED` | 终止按钮仍 toast，未写 `FAILED` |
 | 智能体任务 | 枚举无 AGENT | 列表不展示 |
-| 列表分页 UI | 单次 200 | 未加分页条 |
+| 列表分页 UI | 资源中心已接 `pageCurrent` / `pageSize` | 管理端任务运维仍一次拉 200 再前端切片 |
 
 ## 过时文案清理
 

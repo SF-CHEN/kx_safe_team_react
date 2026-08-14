@@ -73,20 +73,6 @@ interface ModelDataSafetyEvaluationTask { // 模型数据安全评测任务表
   id?: number; // id
 }
 
-interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评测任务）
-  id?: number; // 主键id
-  name?: string; // 任务名称
-  productType?: 'PERFORMANCE' | 'SAFETY' | 'DATA_SAFETY' | 'TRUST'; // 所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测
-  targetObject?: string; // 被测对象
-  submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
-  status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'WAITING' | 'COMPLETED' | 'FAILED'; // 当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待用户补充、WAITING-等待处理、COMPLETED-处理完成、FAILED-处理失败
-  taskRefId?: number; // 关联具体任务表记录的主键
-  userId?: number; // 创建用户的id
-  createdAt?: string; // 创建时间
-  updatedAt?: string; // 修改时间
-  deleted?: boolean; // 逻辑删除标记
-}
-
 interface EvaluationDimension { // 评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
   id?: number; // 维度id
   name?: string; // 维度名称
@@ -355,6 +341,28 @@ interface ResultEvaluationTask {
   data?: EvaluationTask;
 }
 
+interface SupplementMaterialSo { // 用户补充评测材料请求参数
+  id?: number; // 评测任务总表id
+  supplementFileId?: number; // 补充材料文件id，关联sys_file.id
+}
+
+interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评测任务）
+  id?: number; // 主键id
+  name?: string; // 任务名称
+  productType?: 'PERFORMANCE' | 'SAFETY' | 'DATA_SAFETY' | 'TRUST'; // 所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测
+  targetObject?: string; // 被测对象
+  configSummary?: string; // 配置摘要
+  submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
+  status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'DELIVERED' | 'TERMINATED'; // 当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待补充、DELIVERED-已交付、TERMINATED-已终止
+  taskRefId?: number; // 关联具体任务表记录的主键
+  userId?: number; // 创建用户的id
+  supplementFileId?: number; // 补充材料文件id，关联sys_file.id
+  deliverFileId?: number; // 交付文件id，关联sys_file.id
+  createdAt?: string; // 创建时间
+  updatedAt?: string; // 修改时间
+  deleted?: boolean; // 逻辑删除标记
+}
+
 interface PageEvaluationTaskMaster {
   records?: EvaluationTaskMaster[];
   total?: number;
@@ -373,6 +381,17 @@ interface ResultPageEvaluationTaskMaster {
   message?: string;
   code?: number;
   data?: PageEvaluationTaskMaster;
+}
+
+interface DeliverTaskSo { // 管理员交付评测任务请求参数
+  id?: number; // 评测任务总表id
+  deliverFileId?: number; // 交付文件id，关联sys_file.id
+}
+
+interface AdminReplySo { // 管理员返回意见请求参数
+  evaluationTaskMasterId?: number; // 评测任务总表id
+  handleResult?: 'REQUEST_SUPPLEMENT' | 'TERMINATE'; // 处理结果：REQUEST_SUPPLEMENT-请求用户补件、TERMINATE-终止任务
+  adminComment?: string; // 管理员意见说明
 }
 
 interface PageEvaluationDimension {
@@ -439,16 +458,80 @@ interface ResultListPresetSceneVo {
   data?: PresetSceneVo[];
 }
 
+interface ResultTaskOverviewVo {
+  message?: string;
+  code?: number;
+  data?: TaskOverviewVo;
+}
+
+interface TaskOverviewVo { // 任务概览VO
+  processingCount?: number; // 处理中任务数量
+  awaitSupplementCount?: number; // 待补充任务数量
+  deliveredCount?: number; // 已交付任务数量
+  terminatedCount?: number; // 已终止任务数量
+}
+
+interface OverviewVo { // 运营总览VO
+  totalUserCount?: number; // 平台注册用户总数
+  weeklyNewUserCount?: number; // 本周新增注册用户数量
+  processingTaskCount?: number; // 进行中任务数量（处理中+待补充）
+  inProcessingTaskCount?: number; // 处于处理中的任务数量
+  recent7DaysNewTaskCount?: number; // 近7天新增的任务数量
+  totalDeliveredCount?: number; // 累计完成交付数量（已交付+已终止）
+  weeklyDeliveredCount?: number; // 本周交付数量
+}
+
+interface ResultOverviewVo {
+  message?: string;
+  code?: number;
+  data?: OverviewVo;
+}
+
 interface ResultString {
   message?: string;
   code?: number;
   data?: string;
 }
 
-interface ResultEvaluationTaskMaster {
+interface EvaluationTaskMasterDetailVo { // 评测任务总表详情VO
+  id?: number; // 任务id
+  evaluationRequirement?: string; // 评测诉求
+  username?: string; // 提交用户的username
+  email?: string; // 邮箱
+  configSummary?: string; // 配置摘要
+  materialName?: string; // 用户提交的材料名称
+  supplementFileId?: number; // 提交的补充材料id
+  evaluationMaterialFileId?: number; // 用户提交的评测材料id
+  evaluationMaterialName?: string; // 评测材料名称
+  deliverFileId?: number; // 交付文件id
+  deliverFileName?: string; // 交付文件名称
+  status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'DELIVERED' | 'TERMINATED'; // 任务状态
+  createdAt?: string; // 创建时间
+}
+
+interface ResultEvaluationTaskMasterDetailVo {
   message?: string;
   code?: number;
-  data?: EvaluationTaskMaster;
+  data?: EvaluationTaskMasterDetailVo;
+}
+
+interface EvaluationTaskMasterCommunication { // 评测任务沟通记录表（管理员与任务所属用户围绕评测任务总表的沟通记录）
+  id?: number; // 主键id
+  evaluationTaskMasterId?: number; // 关联的评测任务总表id
+  handleResult?: 'REQUEST_SUPPLEMENT' | 'TERMINATE'; // 处理结果：REQUEST_SUPPLEMENT-请求用户补件、TERMINATE-终止任务
+  adminComment?: string; // 管理员意见说明
+  supplementFileName?: string; // 用户补充文件名称
+  supplementFileId?: number; // 用户补充文件id，关联sys_file.id
+  userReplied?: boolean; // 用户是否回复，false未回复，true已回复
+  createdAt?: string; // 创建时间
+  updatedAt?: string; // 修改时间
+  deleted?: boolean; // 软删除标记
+}
+
+interface ResultListEvaluationTaskMasterCommunication {
+  message?: string;
+  code?: number;
+  data?: EvaluationTaskMasterCommunication[];
 }
 
 interface ResultListTreeDropEvaluationDimension {
@@ -878,56 +961,6 @@ interface ResultListBaseDropDepthModel {
 
 ---
 
-### 📂 评测任务总表（统一管理四种评测任务）
-
-### 修改评测任务总表（统一管理四种评测任务）
-
-- **Method**: `PUT`
-- **URL**: `/temp/evaluation-task-master/update`
-- **Request Body**: `EvaluationTaskMaster`
-- **Response**: `ResultBoolean`
-
----
-
-### 分页查询评测任务总表（统一管理四种评测任务）
-
-- **Method**: `POST`
-- **URL**: `/temp/evaluation-task-master/page`
-- **Request Body**: `PageQuerySo`
-- **Response**: `ResultPageEvaluationTaskMaster`
-
----
-
-### 获取评测任务总表（统一管理四种评测任务）
-
-- **Method**: `GET`
-- **URL**: `/temp/evaluation-task-master/getDetailById`
-- **Query / Path Parameters**:
-  - `id` (query): number (Required) 
-- **Response**: `ResultEvaluationTaskMaster`
-
----
-
-### 删除评测任务总表（统一管理四种评测任务）
-
-- **Method**: `DELETE`
-- **URL**: `/temp/evaluation-task-master/deleteOne`
-- **Query / Path Parameters**:
-  - `id` (query): number (Required) 
-- **Response**: `ResultBoolean`
-
----
-
-### 批量删除评测任务总表（统一管理四种评测任务）
-
-- **Method**: `DELETE`
-- **URL**: `/temp/evaluation-task-master/batchDel`
-- **Query / Path Parameters**:
-  - `ids` (query): number[] (Required) 
-- **Response**: `ResultBoolean`
-
----
-
 ### 📂 评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
 
 ### 修改评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此
@@ -1077,7 +1110,7 @@ interface ResultListBaseDropDepthModel {
 
 ---
 
-### 获���评测任务
+### 获取评测任务
 
 - **Method**: `GET`
 - **URL**: `/temp/evaluation-task/getDetailById`
@@ -1104,6 +1137,112 @@ interface ResultListBaseDropDepthModel {
 - **Query / Path Parameters**:
   - `ids` (query): number[] (Required) 
 - **Response**: `ResultBoolean`
+
+---
+
+### 📂 评测任务总表（统一管理四种评测任务）
+
+### 用户补充评测材料
+
+- **Method**: `POST`
+- **URL**: `/temp/evaluation-task-master/supplementMaterial`
+- **Request Body**: `SupplementMaterialSo`
+- **Response**: `ResultBoolean`
+
+---
+
+### 分页查询评测任务总表（统一管理四种评测任务）
+
+- **Method**: `POST`
+- **URL**: `/temp/evaluation-task-master/page`
+- **Request Body**: `PageQuerySo`
+- **Response**: `ResultPageEvaluationTaskMaster`
+
+---
+
+### 管理员交付评测任务
+
+- **Method**: `POST`
+- **URL**: `/temp/evaluation-task-master/deliver`
+- **Request Body**: `DeliverTaskSo`
+- **Response**: `ResultBoolean`
+
+---
+
+### 获取评测任务总表（统一管理四种评测任务）
+
+- **Method**: `GET`
+- **URL**: `/temp/evaluation-task-master/getDetailById`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultEvaluationTaskMasterDetailVo`
+
+---
+
+### 删除评测任务总表（统一管理四种评测任务）
+
+- **Method**: `DELETE`
+- **URL**: `/temp/evaluation-task-master/deleteOne`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 批量删除评测任务总表（统一管理四种评测任务）
+
+- **Method**: `DELETE`
+- **URL**: `/temp/evaluation-task-master/batchDel`
+- **Query / Path Parameters**:
+  - `ids` (query): number[] (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 📂 评测任务沟通记录表（管理员与任务所属用户围绕评测任务总表的沟通记录）
+
+### 管理员返回意见
+
+- **Method**: `POST`
+- **URL**: `/temp/evaluation-task-master-communication/adminReply`
+- **Request Body**: `AdminReplySo`
+- **Response**: `ResultBoolean`
+
+---
+
+### 查询用户沟通记录
+
+- **Method**: `GET`
+- **URL**: `/temp/evaluation-task-master-communication/listByMasterId`
+- **Query / Path Parameters**:
+  - `evaluationTaskMasterId` (query): number (Required) 
+- **Response**: `ResultListEvaluationTaskMasterCommunication`
+
+---
+
+### 📂 运营总览
+
+### 任务概览查看
+
+- **Method**: `GET`
+- **URL**: `/temp/overview/taskOverview`
+- **Response**: `ResultTaskOverviewVo`
+
+---
+
+### 运营总览查看
+
+- **Method**: `GET`
+- **URL**: `/temp/overview/operationalOverview`
+- **Response**: `ResultOverviewVo`
+
+---
+
+### 我的任务概览查看
+
+- **Method**: `GET`
+- **URL**: `/temp/overview/myTaskOverview`
+- **Response**: `ResultTaskOverviewVo`
 
 ---
 

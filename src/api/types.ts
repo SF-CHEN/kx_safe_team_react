@@ -208,12 +208,19 @@ export type EvaluationTaskMasterProductType =
 
 export type EvaluationTaskMasterSubmitType = 'LOCAL_PROJECT_FILE' | 'USER_MODEL';
 
+/** 总表正式状态；旧值 COMPLETED/FAILED/WAITING 仅兼容历史数据 */
 export type EvaluationTaskMasterStatus =
   | 'PROCESSING'
   | 'AWAIT_SUPPLEMENT'
+  | 'DELIVERED'
+  | 'TERMINATED'
   | 'WAITING'
   | 'COMPLETED'
   | 'FAILED';
+
+export type EvaluationTaskMasterHandleResult =
+  | 'REQUEST_SUPPLEMENT'
+  | 'TERMINATE';
 
 export interface EvaluationTaskMaster {
   id?: number;
@@ -221,12 +228,84 @@ export interface EvaluationTaskMaster {
   productType?: EvaluationTaskMasterProductType;
   /** 被测对象 */
   targetObject?: string;
+  configSummary?: string;
   submitType?: EvaluationTaskMasterSubmitType;
   status?: EvaluationTaskMasterStatus | string;
   /** 关联具体任务表记录的主键 */
   taskRefId?: number;
   userId?: number;
+  supplementFileId?: number;
+  deliverFileId?: number;
   createdAt?: string;
   updatedAt?: string;
   deleted?: boolean;
+}
+
+/** 管理员交付评测任务 */
+export interface DeliverTaskSo {
+  id: number;
+  deliverFileId: number;
+}
+
+/** 管理员返回意见（补件 / 终止） */
+export interface AdminReplySo {
+  evaluationTaskMasterId: number;
+  handleResult: EvaluationTaskMasterHandleResult;
+  adminComment: string;
+}
+
+/** 用户补充评测材料 */
+export interface SupplementMaterialSo {
+  id: number;
+  supplementFileId: number;
+}
+
+/** 评测任务总表详情 VO */
+export interface EvaluationTaskMasterDetailVo {
+  id?: number;
+  evaluationRequirement?: string;
+  username?: string;
+  email?: string;
+  configSummary?: string;
+  materialName?: string;
+  supplementFileId?: number;
+  evaluationMaterialFileId?: number;
+  evaluationMaterialName?: string;
+  deliverFileId?: number;
+  deliverFileName?: string;
+  status?: EvaluationTaskMasterStatus | string;
+  createdAt?: string;
+}
+
+/** 评测任务沟通记录 */
+export interface EvaluationTaskMasterCommunication {
+  id?: number;
+  evaluationTaskMasterId?: number;
+  handleResult?: EvaluationTaskMasterHandleResult;
+  adminComment?: string;
+  supplementFileName?: string;
+  supplementFileId?: number;
+  userReplied?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deleted?: boolean;
+}
+
+/** 任务概览（我的 / 全站任务状态计数） */
+export interface TaskOverviewVo {
+  processingCount?: number;
+  awaitSupplementCount?: number;
+  deliveredCount?: number;
+  terminatedCount?: number;
+}
+
+/** 运营总览 */
+export interface OverviewVo {
+  totalUserCount?: number;
+  weeklyNewUserCount?: number;
+  processingTaskCount?: number;
+  inProcessingTaskCount?: number;
+  recent7DaysNewTaskCount?: number;
+  totalDeliveredCount?: number;
+  weeklyDeliveredCount?: number;
 }

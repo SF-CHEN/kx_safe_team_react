@@ -8,5 +8,6 @@ export * as evaluation from './evaluation';
 export * as evaluationDimension from './evaluationDimension';
 export * as file from './file';
 export * as model from './model';
+export * as overview from './overview';
 export * as presetScene from './presetScene';
 export * as user from './user';

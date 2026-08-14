@@ -1,42 +1,90 @@
 import { createTempClient } from '@/api/client';
 import type {
+  DeliverTaskSo,
   EvaluationTaskMaster,
+  EvaluationTaskMasterDetailVo,
   EvaluationTaskMasterProductType,
   EvaluationTaskMasterStatus,
   EvaluationTaskMasterSubmitType,
   PageQuery,
   PageResult,
+  SupplementMaterialSo,
 } from '@/api/types';
 import { unwrapGatewayData } from '@/utils/gateway';
 
-export async function updateEvaluationTaskMaster(
-  payload: EvaluationTaskMaster,
-): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.put('/temp/evaluation-task-master/update', payload, {
-    headers: { 'Content-Type': 'application/json' },
+const pageInflight = new Map<string, Promise<PageResult<EvaluationTaskMaster>>>();
+const pageFailAt = new Map<string, number>();
+const PAGE_FAIL_COOLDOWN_MS = 4000;
+
+function masterPageKey(query: PageQuery<EvaluationTaskMaster>) {
+  const entity = query.entity;
+  return JSON.stringify({
+    pageSize: query.pageSize ?? null,
+    pageCurrent: query.pageCurrent ?? null,
+    orderColumn: query.orderColumn ?? null,
+    orderType: query.orderType ?? null,
+    id: entity?.id ?? null,
+    name: entity?.name ?? null,
+    productType: entity?.productType ?? null,
+    status: entity?.status ?? null,
+    targetObject: entity?.targetObject ?? null,
+    userId: entity?.userId ?? null,
   });
-  return unwrapGatewayData<boolean>(data);
 }
 
 export async function pageEvaluationTaskMasters(
   query: PageQuery<EvaluationTaskMaster>,
 ): Promise<PageResult<EvaluationTaskMaster>> {
-  const client = createTempClient();
-  const { data } = await client.post('/temp/evaluation-task-master/page', query, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<PageResult<EvaluationTaskMaster>>(data);
+  const key = masterPageKey(query);
+  const pending = pageInflight.get(key);
+  if (pending) return pending;
+
+  const failedAt = pageFailAt.get(key);
+  if (failedAt && Date.now() - failedAt < PAGE_FAIL_COOLDOWN_MS) {
+    throw new Error('评测任务列表暂时不可用，请稍后重试');
+  }
+
+  const request = (async () => {
+    const client = createTempClient();
+    const { data } = await client.post('/temp/evaluation-task-master/page', query, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return unwrapGatewayData<PageResult<EvaluationTaskMaster>>(data);
+  })();
+
+  pageInflight.set(key, request);
+  try {
+    const result = await request;
+    pageFailAt.delete(key);
+    return result;
+  } catch (err) {
+    pageFailAt.set(key, Date.now());
+    throw err;
+  } finally {
+    pageInflight.delete(key);
+  }
 }
 
+/** 详情返回 DetailVo（含用户名、材料、交付文件等） */
 export async function getEvaluationTaskMasterById(
   id: number,
-): Promise<EvaluationTaskMaster> {
+): Promise<EvaluationTaskMasterDetailVo> {
   const client = createTempClient();
   const { data } = await client.get('/temp/evaluation-task-master/getDetailById', {
     params: { id },
   });
-  return unwrapGatewayData<EvaluationTaskMaster>(data);
+  return unwrapGatewayData<EvaluationTaskMasterDetailVo>(data);
+}
+
+/** 管理员交付：需先 uploadSysFile 得到 deliverFileId */
+export async function deliverEvaluationTaskMaster(
+  payload: DeliverTaskSo,
+): Promise<boolean> {
+  const client = createTempClient();
+  const { data } = await client.post('/temp/evaluation-task-master/deliver', payload, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return unwrapGatewayData<boolean>(data);
 }
 
 export async function deleteEvaluationTaskMaster(id: number): Promise<boolean> {
@@ -58,6 +106,19 @@ export async function batchDeleteEvaluationTaskMasters(
   return unwrapGatewayData<boolean>(data);
 }
 
+/** 用户补充材料（资源中心） */
+export async function supplementEvaluationTaskMaterial(
+  payload: SupplementMaterialSo,
+): Promise<boolean> {
+  const client = createTempClient();
+  const { data } = await client.post(
+    '/temp/evaluation-task-master/supplementMaterial',
+    payload,
+    { headers: { 'Content-Type': 'application/json' } },
+  );
+  return unwrapGatewayData<boolean>(data);
+}
+
 export function formatMasterDateTime(value?: string) {
   if (!value) return '—';
   const date = new Date(value);
@@ -72,8 +133,8 @@ export function mapMasterStatusToWorkflow(status?: string): string {
 
   const upper = value.toUpperCase();
   if (upper === 'AWAIT_SUPPLEMENT') return '待用户补充';
-  if (upper === 'COMPLETED') return '已交付';
-  if (upper === 'FAILED') return '已终止';
+  if (upper === 'DELIVERED' || upper === 'COMPLETED') return '已交付';
+  if (upper === 'TERMINATED' || upper === 'FAILED') return '已终止';
   if (upper === 'PROCESSING' || upper === 'WAITING') return '处理中';
 
   if (value === '待补充材料') return '待用户补充';
@@ -89,6 +150,7 @@ export function mapMasterStatusToWorkflow(status?: string): string {
   return value;
 }
 
+/** 中文工作流态 → 总表正式枚举（筛选 / 展示用；改状态请走 adminReply / deliver） */
 export function mapWorkflowStatusToMaster(
   status: string,
 ): EvaluationTaskMasterStatus {
@@ -101,13 +163,22 @@ export function mapWorkflowStatusToMaster(
   ) {
     return 'AWAIT_SUPPLEMENT';
   }
-  if (upper === 'COMPLETED' || value === '已交付' || value === '已推送') {
-    return 'COMPLETED';
+  if (
+    upper === 'DELIVERED' ||
+    upper === 'COMPLETED' ||
+    value === '已交付' ||
+    value === '已推送'
+  ) {
+    return 'DELIVERED';
   }
-  if (upper === 'FAILED' || value === '已终止' || value === '处理异常') {
-    return 'FAILED';
+  if (
+    upper === 'TERMINATED' ||
+    upper === 'FAILED' ||
+    value === '已终止' ||
+    value === '处理异常'
+  ) {
+    return 'TERMINATED';
   }
-  if (upper === 'WAITING') return 'WAITING';
   return 'PROCESSING';
 }
 
@@ -139,6 +210,13 @@ export function mapMasterSubmitTypeLabel(submitType?: string) {
 
 export function masterRowId(id: number) {
   return `master:${id}`;
+}
+
+export function parseMasterRowId(id: string): number | null {
+  const matched = /^master:(\d+)$/i.exec(id.trim());
+  if (matched) return Number(matched[1]);
+  const numeric = Number(id);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }
 
 export function isMasterProductType(

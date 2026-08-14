@@ -6,13 +6,15 @@ import {
   masterRowId,
   pageEvaluationTaskMasters,
 } from '@/api/evaluation/evaluationTaskMaster';
-import type { EvaluationTaskMaster } from '@/api/types';
-
-const LIST_PAGE_SIZE = 200;
+import type {
+  EvaluationTaskMaster,
+  EvaluationTaskMasterProductType,
+} from '@/api/types';
 
 /** 资源中心列表行（对齐门户 EvalTask 展示字段，不含附件二进制） */
 export interface MyResourceTask {
   id: string;
+  numericId: number;
   name: string;
   model: string;
   modelType: string;
@@ -27,14 +29,41 @@ export interface MyResourceTask {
   createdAt: string;
   requirement?: string;
   configSummary?: string;
+  supplementFileId?: number;
+  deliverFileId?: number;
+}
+
+export interface FetchMyResourceTasksQuery {
+  userId: number;
+  pageCurrent: number;
+  pageSize: number;
+  name?: string;
+  id?: number;
+  productType?: EvaluationTaskMasterProductType;
+  status?: string;
+}
+
+export interface MyResourceTaskPage {
+  items: MyResourceTask[];
+  total: number;
+}
+
+function fileIdOrUndef(id?: number) {
+  return id != null && Number.isFinite(id) && id > 0 ? id : undefined;
 }
 
 function mapMaster(row: EvaluationTaskMaster): MyResourceTask | null {
   if (row.id == null) return null;
   const name = row.name?.trim() || `任务 #${row.id}`;
   const target = row.targetObject?.trim() || '—';
+  const summaryBits = [
+    row.configSummary?.trim() || '',
+    row.submitType ? `提交方式：${mapMasterSubmitTypeLabel(row.submitType)}` : '',
+    row.taskRefId != null ? `关联任务 #${row.taskRefId}` : '',
+  ].filter(Boolean);
   return {
     id: masterRowId(row.id),
+    numericId: row.id,
     name,
     model: target,
     modelType: mapMasterSubmitTypeLabel(row.submitType),
@@ -43,36 +72,48 @@ function mapMaster(row: EvaluationTaskMaster): MyResourceTask | null {
     status: mapMasterStatusToWorkflow(row.status),
     createdAt: formatMasterDateTime(row.createdAt),
     requirement: name,
-    configSummary: [
-      row.submitType ? `提交方式：${mapMasterSubmitTypeLabel(row.submitType)}` : '',
-      row.taskRefId != null ? `关联任务 #${row.taskRefId}` : '',
-    ]
-      .filter(Boolean)
-      .join(' · ') || undefined,
+    configSummary: summaryBits.join(' · ') || undefined,
+    supplementFileId: fileIdOrUndef(row.supplementFileId),
+    deliverFileId: fileIdOrUndef(row.deliverFileId),
   };
 }
 
-function sortByCreatedDesc(a: MyResourceTask, b: MyResourceTask) {
-  return String(b.createdAt).localeCompare(String(a.createdAt), 'zh-CN');
+function compactEntity(
+  entity: EvaluationTaskMaster,
+): EvaluationTaskMaster {
+  const next: EvaluationTaskMaster = { userId: entity.userId };
+  if (entity.id != null) next.id = entity.id;
+  if (entity.name) next.name = entity.name;
+  if (entity.productType) next.productType = entity.productType;
+  if (entity.status) next.status = entity.status;
+  return next;
 }
 
 /**
- * 资源中心：按当前用户拉取评测任务总表。
+ * 资源中心：按当前用户分页拉取评测任务总表。
  * 智能体安全等尚无专用产品类型，本接口不包含。
  */
 export async function fetchMyResourceTasks(
-  userId: number,
-): Promise<MyResourceTask[]> {
+  query: FetchMyResourceTasksQuery,
+): Promise<MyResourceTaskPage> {
   const page = await pageEvaluationTaskMasters({
-    pageSize: LIST_PAGE_SIZE,
-    pageCurrent: 1,
+    pageSize: query.pageSize,
+    pageCurrent: query.pageCurrent,
     orderColumn: 'createdAt',
     orderType: 'desc',
-    entity: { userId },
+    entity: compactEntity({
+      userId: query.userId,
+      id: query.id,
+      name: query.name,
+      productType: query.productType,
+      status: query.status,
+    }),
   });
 
-  return (page.records || [])
-    .map(mapMaster)
-    .filter((row): row is MyResourceTask => row != null)
-    .sort(sortByCreatedDesc);
+  return {
+    items: (page.records || [])
+      .map(mapMaster)
+      .filter((row): row is MyResourceTask => row != null),
+    total: Number(page.total) || 0,
+  };
 }

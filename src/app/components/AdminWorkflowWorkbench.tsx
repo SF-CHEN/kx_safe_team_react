@@ -8,8 +8,12 @@ import { toast } from 'sonner';
 import { fetchAuthUsers, updateAuthUserStatus, type AuthUser } from '@/api/auth';
 import { updateSysUser } from '@/api/user';
 import {
+  adminDeliverTask,
+  adminRequestSupplement,
+  adminTerminateTask,
+  fetchAdminEvaluationTaskDetail,
   fetchAdminEvaluationTasks,
-  updateAdminEvaluationTaskStatus,
+  type AdminEvalTaskDetail,
   type AdminEvalTaskRow,
 } from '@/api/evaluation';
 import { downloadSysFile } from '@/api/file';
@@ -54,10 +58,20 @@ export function normalizeAdminStatus(status: string): WorkflowStatus {
   ) {
     return '待用户补充';
   }
-  if (status === '已推送' || status === '已交付' || upper === 'COMPLETED') {
+  if (
+    status === '已推送' ||
+    status === '已交付' ||
+    upper === 'COMPLETED' ||
+    upper === 'DELIVERED'
+  ) {
     return '已交付';
   }
-  if (status === '已终止' || status === '处理异常' || upper === 'FAILED') {
+  if (
+    status === '已终止' ||
+    status === '处理异常' ||
+    upper === 'FAILED' ||
+    upper === 'TERMINATED'
+  ) {
     return '已终止';
   }
   return '处理中';
@@ -107,11 +121,64 @@ export function mapEvalRowToWorkflow(row: AdminEvalTaskRow): WorkflowTask {
     outputs: row.outputs.map((file) => ({
       id: file.id,
       name: file.name,
-      size: 0,
+      size: file.size,
       type: '',
       category: 'report' as const,
       uploadedAt: row.updatedAt,
     })),
+    communications: row.communications || [],
+    pushedAt: row.pushedAt,
+  };
+}
+
+function mergeTaskWithDetail(
+  task: WorkflowTask,
+  detail?: AdminEvalTaskDetail | null,
+  pendingDeliver?: { id: string; name: string; size: number } | null,
+): WorkflowTask {
+  if (!detail && !pendingDeliver) return task;
+  const inputs = detail
+    ? detail.inputs.map((file) => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+        type: '',
+        category: 'input' as const,
+        uploadedAt: task.createdAt,
+      }))
+    : task.inputs;
+  const remoteOutputs = detail
+    ? detail.outputs.map((file) => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+        type: '',
+        category: 'report' as const,
+        uploadedAt: task.updatedAt,
+      }))
+    : task.outputs;
+  const outputs = pendingDeliver
+    ? [{
+        id: pendingDeliver.id,
+        name: pendingDeliver.name,
+        size: pendingDeliver.size,
+        type: '',
+        category: 'report' as const,
+        uploadedAt: task.updatedAt,
+      }]
+    : remoteOutputs;
+  return {
+    ...task,
+    userName: detail && detail.userName !== '—' ? detail.userName : task.userName,
+    contact: detail && detail.contact !== '—' ? detail.contact : task.contact,
+    requirement:
+      detail && detail.requirement !== '—' ? detail.requirement : task.requirement,
+    configSummary: detail?.configSummary || task.configSummary,
+    status: detail ? normalizeAdminStatus(detail.status) : task.status,
+    inputs,
+    outputs,
+    communications: detail?.communications ?? task.communications,
+    pushedAt: detail?.pushedAt || task.pushedAt,
   };
 }
 
@@ -334,6 +401,14 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   const [page, setPage] = useState(1);
   const [publicText, setPublicText] = useState('');
   const [feedbackMode, setFeedbackMode] = useState<'supplement' | 'terminate'>('supplement');
+  const [selectedDetail, setSelectedDetail] = useState<AdminEvalTaskDetail | null>(null);
+  const [pendingDeliver, setPendingDeliver] = useState<{
+    id: string;
+    name: string;
+    size: number;
+    file: File;
+  } | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -367,10 +442,13 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   }), [productTasks, query, group]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const current = filtered.find((task) => task.id === selected) || filtered[0] || tasks[0];
+  const baseCurrent = filtered.find((task) => task.id === selected) || filtered[0] || tasks[0];
   const hasMatches = filtered.length > 0;
-  const currentRow = current ? rowById.get(current.id) : undefined;
-  const displayStatus = currentRow?.status || current?.status || '处理中';
+  const currentRow = baseCurrent ? rowById.get(baseCurrent.id) : undefined;
+  const current = baseCurrent
+    ? mergeTaskWithDetail(baseCurrent, selectedDetail, pendingDeliver)
+    : undefined;
+  const displayStatus = current?.status || currentRow?.status || '处理中';
   const normalizedStatus = normalizeAdminStatus(displayStatus);
 
   useEffect(() => { setPage(1); }, [query, product, group, pageSize]);
@@ -403,45 +481,129 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   useEffect(() => {
     setPublicText('');
     setFeedbackMode('supplement');
-  }, [current?.id]);
+    setPendingDeliver(null);
+    setSelectedDetail(null);
+  }, [baseCurrent?.id]);
+
+  useEffect(() => {
+    if (!currentRow?.numericId) return;
+    let cancelled = false;
+    const masterId = currentRow.numericId;
+    void (async () => {
+      try {
+        const detail = await fetchAdminEvaluationTaskDetail(masterId);
+        if (!cancelled) setSelectedDetail(detail);
+      } catch (err) {
+        if (!cancelled) {
+          setSelectedDetail(null);
+          toast.error(errorMessage(err, '任务详情加载失败'));
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentRow?.numericId]);
 
   const uploadOutputs = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     event.target.value = '';
     if (!current || TERMINAL.has(normalizedStatus)) return;
-    toast.error('报告独立上传接口未开放，上传会覆盖用户材料，暂未写入后端');
+    if (!files.length) return;
+    if (files.length > 1) {
+      toast.message('当前交付接口仅支持单个文件，已取第一个');
+    }
+    const file = files[0];
+    setPendingDeliver({
+      id: `pending-${Date.now()}`,
+      name: file.name,
+      size: file.size,
+      file,
+    });
   };
   const removeOutput = () => {
-    toast.error('报告文件删除接口未开放，暂未写入后端');
+    setPendingDeliver(null);
   };
   const replaceOutput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     event.target.value = '';
-    toast.error('报告文件替换接口未开放，暂未写入后端');
+    if (!files.length) return;
+    const file = files[0];
+    setPendingDeliver({
+      id: `pending-${Date.now()}`,
+      name: file.name,
+      size: file.size,
+      file,
+    });
   };
   const requestSupplement = async () => {
     if (!current || !currentRow || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
+    if (actionBusy) return;
+    setActionBusy(true);
     try {
-      await updateAdminEvaluationTaskStatus(currentRow, '待补充材料');
+      await adminRequestSupplement(currentRow.numericId, publicText.trim());
       addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '请求用户补件', detail: publicText.trim() });
       notifyAdminRemoteChanged();
       await load();
+      const detail = await fetchAdminEvaluationTaskDetail(currentRow.numericId);
+      setSelectedDetail(detail);
       setGroup('waiting');
       setPublicText('');
-      toast.success('已将任务状态更新为「待补充材料」。补件说明暂无独立字段，未写入后端');
+      toast.success('已发送补件要求');
     } catch (err) {
       toast.error(errorMessage(err, '补件状态更新失败'));
+    } finally {
+      setActionBusy(false);
     }
   };
-  const deliver = () => {
-    if (!current?.outputs.length) return toast.error('请先上传报告或结果文件');
-    toast.error('报告推送接口未开放，确认交付暂无法写入后端');
+  const deliver = async () => {
+    if (!current || !currentRow) return;
+    if (!pendingDeliver) return toast.error('请先上传报告或结果文件');
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await adminDeliverTask(currentRow.numericId, pendingDeliver.file);
+      addAdminOperationLog({
+        operator: 'admin',
+        taskId: current.id,
+        action: '确认交付',
+        detail: pendingDeliver.name,
+      });
+      setPendingDeliver(null);
+      notifyAdminRemoteChanged();
+      await load();
+      const detail = await fetchAdminEvaluationTaskDetail(currentRow.numericId);
+      setSelectedDetail(detail);
+      setGroup('closed');
+      toast.success('已确认交付并推送用户');
+    } catch (err) {
+      toast.error(errorMessage(err, '交付失败'));
+    } finally {
+      setActionBusy(false);
+    }
   };
-  const terminate = () => {
-    if (!current || !publicText.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
-    toast.error('任务终止接口未开放，暂无法写入后端');
+  const terminate = async () => {
+    if (!current || !currentRow) return;
+    if (!publicText.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
+    if (actionBusy) return;
+    setActionBusy(true);
+    try {
+      await adminTerminateTask(currentRow.numericId, publicText.trim());
+      addAdminOperationLog({ operator: 'admin', taskId: current.id, action: '终止任务', detail: publicText.trim() });
+      notifyAdminRemoteChanged();
+      await load();
+      const detail = await fetchAdminEvaluationTaskDetail(currentRow.numericId);
+      setSelectedDetail(detail);
+      setGroup('closed');
+      setPublicText('');
+      toast.success('任务已终止');
+    } catch (err) {
+      toast.error(errorMessage(err, '终止任务失败'));
+    } finally {
+      setActionBusy(false);
+    }
   };
   const submitFeedback = () => {
     if (feedbackMode === 'terminate') {
-      terminate();
+      void terminate();
       return;
     }
     void requestSupplement();
@@ -497,7 +659,11 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
       <div className="flex min-h-[680px] w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="bg-[linear-gradient(145deg,#f8fbff,#eef5ff)] p-4"><div className="relative"><Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-500" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索任务 ID、用户名" className="h-11 w-full rounded-xl border border-blue-100 bg-white/90 pl-10 pr-3 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" /></div><label className="mt-3 block"><span className="mb-1.5 block text-[11px] font-bold text-slate-500">产品类型</span><select value={product} onChange={e => setProduct(e.target.value)} className="h-10 w-full rounded-xl border border-blue-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100">{ADMIN_PRODUCT_OPTIONS.map(item => <option key={item}>{item}</option>)}</select></label><div className="mt-3 grid grid-cols-2 gap-2">{tabs.map(tab => <button key={tab.key} onClick={() => setGroup(tab.key)} className={`rounded-xl px-3 py-2.5 text-xs font-bold transition ${group === tab.key ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white/80 text-slate-500 hover:bg-white hover:text-blue-600'}`}>{tab.label}<span className="ml-1 opacity-70">{tab.count}</span></button>)}</div></div>
         <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => {
-              const rawStatus = rowById.get(task.id)?.status || task.status;
+              const detailStatus =
+                selectedDetail && task.id === current?.id
+                  ? normalizeAdminStatus(selectedDetail.status)
+                  : undefined;
+              const rawStatus = detailStatus || rowById.get(task.id)?.status || task.status;
               const active = current?.id === task.id;
               return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden border-l-4 px-4 py-4 text-left transition ${active ? 'border-blue-600 bg-[#E6F7FF] shadow-[inset_0_0_0_1px_rgba(37,99,235,.16)]' : 'border-transparent hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${active ? 'bg-blue-600' : statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className={`line-clamp-2 pl-1 text-sm font-black ${active ? 'text-blue-950' : 'text-slate-800'}`}>{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className={`mt-2 pl-1 text-xs ${active ? 'font-semibold text-blue-700' : 'text-slate-500'}`}>{task.userName} · {canonicalProduct(task.product)}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className={`text-[11px] font-bold text-blue-600 transition ${active ? 'opacity-100' : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>{active ? '当前任务' : '处理 →'}</span></div></button>;
             })}{!visible.length && <div className="px-6 py-16 text-center"><FileArchive className="mx-auto h-8 w-8 text-slate-300" /><div className="mt-3 text-sm font-bold text-slate-500">没有符合条件的任务</div><div className="mt-1 text-xs text-slate-400">请调整产品、状态或搜索条件</div></div>}</div>
@@ -553,14 +719,14 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
             <button
               type="button"
               onClick={submitFeedback}
-              disabled={feedbackMode === 'terminate' && normalizedStatus === '已终止'}
+              disabled={actionBusy || (feedbackMode === 'terminate' && normalizedStatus === '已终止')}
               className="mt-3 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
             >
               {feedbackMode === 'terminate' ? (normalizedStatus === '已终止' ? '任务已终止' : '确认终止并通知用户') : '发送补件要求'}
             </button>
           </section>
 
-          <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
+          <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={() => { void deliver(); }} disabled={actionBusy || normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
           </>}
         </aside>
       </div>

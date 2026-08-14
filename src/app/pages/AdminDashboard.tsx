@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { fetchAuthUsers } from '@/api/auth';
 import { fetchAdminEvaluationTasks } from '@/api/evaluation';
+import { fetchOperationalOverview } from '@/api/overview';
+import type { OverviewVo } from '@/api/types';
 import {
   ADMIN_REMOTE_EVENT,
   AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,
@@ -16,7 +18,7 @@ import { AdminFieldDictPanel } from '../components/AdminFieldDictPanel';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
 import { useUser } from '../context/UserContext';
 import {
-  TERMINAL_WORKFLOW_STATUSES, getPlatformActivities,
+  TERMINAL_WORKFLOW_STATUSES,
   type PlatformUserRecord, type WorkflowTask,
 } from '../data/workflowStore';
 
@@ -32,24 +34,29 @@ function parseAdminSection(value?: string): AdminSection {
   return 'overview';
 }
 
-function useAdminData() {
+function useAdminData(enabled: boolean) {
   const [users, setUsers] = useState<PlatformUserRecord[]>([]);
   const [tasks, setTasks] = useState<WorkflowTask[]>([]);
+  const [overview, setOverview] = useState<OverviewVo | null>(null);
 
   const load = useCallback(async () => {
+    if (!enabled) return;
     try {
-      const [userPage, evalRows] = await Promise.all([
+      const [userPage, evalRows, overviewData] = await Promise.all([
         fetchAuthUsers({ pageSize: 200, pageCurrent: 1, role: 'USER' }),
         fetchAdminEvaluationTasks(),
+        fetchOperationalOverview(),
       ]);
       setUsers(userPage.items.map(mapAuthUserToRecord));
       setTasks(evalRows.map(mapEvalRowToWorkflow));
+      setOverview(overviewData);
     } catch (err) {
       toast.error(err instanceof Error && err.message.trim() ? err.message : '管理后台数据加载失败');
       setUsers([]);
       setTasks([]);
+      setOverview(null);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -58,7 +65,7 @@ function useAdminData() {
     return () => window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
   }, [load]);
 
-  return { users, tasks };
+  return { users, tasks, overview };
 }
 
 function AdminLogin() {
@@ -273,14 +280,14 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 function AdminOverview({
   users,
   tasks,
+  overview,
   onOpenTask,
 }: {
   users: PlatformUserRecord[];
   tasks: WorkflowTask[];
+  overview: OverviewVo | null;
   onOpenTask: (id?: string, group?: TaskGroup) => void;
 }) {
-  const activities = getPlatformActivities();
-  const parse = (value: string) => new Date(value.replace(/\//g, '-')).getTime() || 0;
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(Date.now() - (6 - index) * 86400000);
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
@@ -290,17 +297,28 @@ function AdminOverview({
     return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
   };
   const daily = (values: string[]) => days.map((day) => values.filter((value) => key(value) === day).length);
-  const active = new Set(
-    activities
-      .filter((item) => parse(item.createdAt) >= Date.now() - 7 * 86400000)
-      .map((item) => item.userId),
-  ).size;
   const pending = tasks.filter((task) => !TERMINAL.has(task.status));
+  const processingFromList = tasks.filter((t) => t.status === '处理中').length;
+  const deliveredFromList = tasks.filter((task) => task.status === '已交付').length;
+  const weeklyDeliveredFromList = daily(
+    tasks.filter((t) => t.pushedAt).map((t) => t.pushedAt!),
+  ).reduce((a, b) => a + b, 0);
+  const weeklyNewUsersFromList = daily(users.map((u) => u.registeredAt)).reduce((a, b) => a + b, 0);
+
+  const totalUsers = overview?.totalUserCount ?? users.length;
+  const weeklyNewUsers = overview?.weeklyNewUserCount ?? weeklyNewUsersFromList;
+  const processingTasks = overview?.processingTaskCount ?? pending.length;
+  const inProcessingTasks = overview?.inProcessingTaskCount ?? processingFromList;
+  // 无「活跃用户」字段：用近 7 天新增任务数展示（见对接纪要 Q1）
+  const recent7DaysNewTasks = overview?.recent7DaysNewTaskCount;
+  const totalDelivered = overview?.totalDeliveredCount ?? deliveredFromList;
+  const weeklyDelivered = overview?.weeklyDeliveredCount ?? weeklyDeliveredFromList;
+
   const cards = [
     {
       label: '平台注册用户',
-      value: users.length,
-      note: `本周新增 ${daily(users.map((u) => u.registeredAt)).reduce((a, b) => a + b, 0)} 位`,
+      value: totalUsers,
+      note: `本周新增 ${weeklyNewUsers} 位`,
       icon: Users,
       iconTone: 'bg-blue-100 text-blue-700',
       bars: daily(users.map((u) => u.registeredAt)),
@@ -308,26 +326,26 @@ function AdminOverview({
     },
     {
       label: '进行中任务',
-      value: pending.length,
-      note: `其中 ${tasks.filter((t) => t.status === '处理中').length} 项处理中`,
+      value: processingTasks,
+      note: `其中 ${inProcessingTasks} 项处理中`,
       icon: ClipboardCheck,
       iconTone: 'bg-violet-100 text-violet-700',
       bars: daily(tasks.map((t) => t.createdAt)),
       bar: 'bg-violet-500',
     },
     {
-      label: '近 7 天活跃',
-      value: active,
-      note: '登录、体验或提交任务',
+      label: '近 7 天新增任务',
+      value: recent7DaysNewTasks ?? daily(tasks.map((t) => t.createdAt)).reduce((a, b) => a + b, 0),
+      note: '评测任务总表近 7 日新增',
       icon: Activity,
       iconTone: 'bg-cyan-100 text-cyan-700',
-      bars: daily(activities.map((a) => a.createdAt)),
+      bars: daily(tasks.map((t) => t.createdAt)),
       bar: 'bg-cyan-500',
     },
     {
       label: '累计完成交付',
-      value: tasks.filter((task) => task.status === '已交付').length,
-      note: `本周交付 ${daily(tasks.filter((t) => t.pushedAt).map((t) => t.pushedAt!)).reduce((a, b) => a + b, 0)} 项`,
+      value: totalDelivered,
+      note: `本周交付 ${weeklyDelivered} 项`,
       icon: FileCheck2,
       iconTone: 'bg-emerald-100 text-emerald-700',
       bars: daily(tasks.filter((t) => t.pushedAt).map((t) => t.pushedAt!)),
@@ -342,11 +360,37 @@ function AdminOverview({
         : task.status === '已终止'
           ? 'bg-slate-400'
           : 'bg-blue-500');
+  const awaitSupplementFromOverview =
+    overview?.processingTaskCount != null && overview?.inProcessingTaskCount != null
+      ? Math.max(0, overview.processingTaskCount - overview.inProcessingTaskCount)
+      : null;
   const queue = [
-    { label: '处理中', count: tasks.filter((task) => task.status === '处理中').length, tone: 'text-blue-700 bg-blue-50', group: 'pending' as TaskGroup },
-    { label: '待用户补充', count: tasks.filter((task) => task.status === '待用户补充').length, tone: 'text-orange-700 bg-orange-50', group: 'waiting' as TaskGroup },
-    { label: '已交付', count: tasks.filter((task) => task.status === '已交付').length, tone: 'text-emerald-700 bg-emerald-50', group: 'closed' as TaskGroup },
-    { label: '已终止', count: tasks.filter((task) => task.status === '已终止').length, tone: 'text-slate-600 bg-slate-100', group: 'closed' as TaskGroup },
+    {
+      label: '处理中',
+      count: overview?.inProcessingTaskCount ?? tasks.filter((task) => task.status === '处理中').length,
+      tone: 'text-blue-700 bg-blue-50',
+      group: 'pending' as TaskGroup,
+    },
+    {
+      label: '待用户补充',
+      count:
+        awaitSupplementFromOverview ??
+        tasks.filter((task) => task.status === '待用户补充').length,
+      tone: 'text-orange-700 bg-orange-50',
+      group: 'waiting' as TaskGroup,
+    },
+    {
+      label: '已交付',
+      count: tasks.filter((task) => task.status === '已交付').length,
+      tone: 'text-emerald-700 bg-emerald-50',
+      group: 'closed' as TaskGroup,
+    },
+    {
+      label: '已终止',
+      count: tasks.filter((task) => task.status === '已终止').length,
+      tone: 'text-slate-600 bg-slate-100',
+      group: 'closed' as TaskGroup,
+    },
   ];
 
   return (
@@ -581,8 +625,12 @@ export function AdminDashboard() {
   const [selectedTaskId, setSelectedTaskId] = useState<string>();
   const [selectedTaskGroup, setSelectedTaskGroup] = useState<TaskGroup>();
   const [selectedUserId, setSelectedUserId] = useState<string>();
-  const data = useAdminData();
-  const pending = useMemo(() => data.tasks.filter((task) => !TERMINAL.has(task.status)), [data.tasks]);
+  const data = useAdminData(sessionReady && isAdmin);
+  const pendingTasks = useMemo(
+    () => data.tasks.filter((task) => !TERMINAL.has(task.status)),
+    [data.tasks],
+  );
+  const pendingCount = data.overview?.processingTaskCount ?? pendingTasks.length;
 
   const setSection = (next: AdminSection) => {
     navigate(`/admin/${next}`, { replace: false });
@@ -654,15 +702,15 @@ export function AdminDashboard() {
                 className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-blue-200 hover:text-blue-600"
               >
                 <Bell className="h-4 w-4" />
-                {pending.length > 0 && (
+                {pendingCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
-                    {pending.length}
+                    {pendingCount}
                   </span>
                 )}
               </button>
               {noticeOpen && (
                 <AdminNoticePanel
-                  tasks={pending}
+                  tasks={pendingTasks}
                   onClose={() => setNoticeOpen(false)}
                   onOpenTask={openTask}
                 />
@@ -693,7 +741,12 @@ export function AdminDashboard() {
           </div>
 
           {section === 'overview' && (
-            <AdminOverview users={data.users} tasks={data.tasks} onOpenTask={openTask} />
+            <AdminOverview
+              users={data.users}
+              tasks={data.tasks}
+              overview={data.overview}
+              onOpenTask={openTask}
+            />
           )}
           {section === 'users' && <RegisteredUserPanel initialUserId={selectedUserId} />}
           {section === 'fields' && <AdminFieldDictPanel />}
