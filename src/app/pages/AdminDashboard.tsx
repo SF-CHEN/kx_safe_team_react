@@ -5,21 +5,20 @@ import {
   Activity, Bell, ChartNoAxesCombined, ChevronRight, ClipboardCheck, ClipboardList,
   FileCheck2, History, KeyRound, Layers, LogOut, Mail, Search, User, Users, X,
 } from 'lucide-react';
-import { fetchAuthUsers } from '@/api/auth';
 import { fetchAdminEvaluationTasks } from '@/api/evaluation';
 import { fetchOperationalOverview } from '@/api/overview';
 import type { OverviewVo } from '@/api/types';
 import {
   ADMIN_REMOTE_EVENT,
   AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,
-  mapAuthUserToRecord, mapEvalRowToWorkflow, type TaskGroup,
+  mapEvalRowToWorkflow, type TaskGroup,
 } from '../components/AdminWorkflowWorkbench';
 import { AdminFieldDictPanel } from '../components/AdminFieldDictPanel';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
 import { useUser } from '../context/UserContext';
 import {
   TERMINAL_WORKFLOW_STATUSES,
-  type PlatformUserRecord, type WorkflowTask,
+  type WorkflowTask,
 } from '../data/workflowStore';
 
 type AdminSection = 'overview' | 'users' | 'fields' | 'tasks' | 'logs';
@@ -35,24 +34,21 @@ function parseAdminSection(value?: string): AdminSection {
 }
 
 function useAdminData(enabled: boolean) {
-  const [users, setUsers] = useState<PlatformUserRecord[]>([]);
   const [tasks, setTasks] = useState<WorkflowTask[]>([]);
   const [overview, setOverview] = useState<OverviewVo | null>(null);
 
   const load = useCallback(async () => {
     if (!enabled) return;
     try {
-      const [userPage, evalRows, overviewData] = await Promise.all([
-        fetchAuthUsers({ pageSize: 200, pageCurrent: 1, role: 'USER' }),
-        fetchAdminEvaluationTasks(),
+      const [evalRows, overviewData] = await Promise.all([
+        // 运营总览「最近任务」只需少量明细，不拉 200
+        fetchAdminEvaluationTasks({ pageSize: 10, pageCurrent: 1 }),
         fetchOperationalOverview(),
       ]);
-      setUsers(userPage.items.map(mapAuthUserToRecord));
       setTasks(evalRows.map(mapEvalRowToWorkflow));
       setOverview(overviewData);
     } catch (err) {
       toast.error(err instanceof Error && err.message.trim() ? err.message : '管理后台数据加载失败');
-      setUsers([]);
       setTasks([]);
       setOverview(null);
     }
@@ -65,7 +61,7 @@ function useAdminData(enabled: boolean) {
     return () => window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
   }, [load]);
 
-  return { users, tasks, overview };
+  return { tasks, overview };
 }
 
 function AdminLogin() {
@@ -175,22 +171,21 @@ function AdminLogin() {
 function Sidebar({
   active,
   onChange,
-  users,
-  tasks,
+  userCount,
+  pendingTaskCount,
   adminLabel,
 }: {
   active: AdminSection;
   onChange: (section: AdminSection) => void;
-  users: number;
-  tasks: WorkflowTask[];
+  userCount: number;
+  pendingTaskCount: number;
   adminLabel: string;
 }) {
-  const pendingTasks = tasks.filter((task) => !TERMINAL.has(task.status)).length;
   const items = [
     { key: 'overview' as const, label: '运营总览', icon: ChartNoAxesCombined, badge: 0 },
-    { key: 'users' as const, label: '用户管理', icon: Users, badge: users },
+    { key: 'users' as const, label: '用户管理', icon: Users, badge: userCount },
     { key: 'fields' as const, label: '字段管理', icon: Layers, badge: 0 },
-    { key: 'tasks' as const, label: '任务运维', icon: Activity, badge: pendingTasks },
+    { key: 'tasks' as const, label: '任务运维', icon: Activity, badge: pendingTaskCount },
     { key: 'logs' as const, label: '操作日志', icon: History, badge: 0 },
   ];
 
@@ -243,7 +238,7 @@ function Sidebar({
           className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs text-slate-500 transition hover:bg-slate-50 hover:text-blue-700"
         >
           <span>进行中任务</span>
-          <b className="rounded-md bg-slate-100 px-2 py-1 text-slate-700">{pendingTasks}</b>
+          <b className="rounded-md bg-slate-100 px-2 py-1 text-slate-700">{pendingTaskCount}</b>
         </button>
       </div>
       <div className="flex-1" />
@@ -278,12 +273,10 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
 }
 
 function AdminOverview({
-  users,
   tasks,
   overview,
   onOpenTask,
 }: {
-  users: PlatformUserRecord[];
   tasks: WorkflowTask[];
   overview: OverviewVo | null;
   onOpenTask: (id?: string, group?: TaskGroup) => void;
@@ -303,10 +296,9 @@ function AdminOverview({
   const weeklyDeliveredFromList = daily(
     tasks.filter((t) => t.pushedAt).map((t) => t.pushedAt!),
   ).reduce((a, b) => a + b, 0);
-  const weeklyNewUsersFromList = daily(users.map((u) => u.registeredAt)).reduce((a, b) => a + b, 0);
 
-  const totalUsers = overview?.totalUserCount ?? users.length;
-  const weeklyNewUsers = overview?.weeklyNewUserCount ?? weeklyNewUsersFromList;
+  const totalUsers = overview?.totalUserCount ?? 0;
+  const weeklyNewUsers = overview?.weeklyNewUserCount ?? 0;
   const processingTasks = overview?.processingTaskCount ?? pending.length;
   const inProcessingTasks = overview?.inProcessingTaskCount ?? processingFromList;
   // 无「活跃用户」字段：用近 7 天新增任务数展示（见对接纪要 Q1）
@@ -321,7 +313,8 @@ function AdminOverview({
       note: `本周新增 ${weeklyNewUsers} 位`,
       icon: Users,
       iconTone: 'bg-blue-100 text-blue-700',
-      bars: daily(users.map((u) => u.registeredAt)),
+      // 侧栏已停拉用户 page；无按日序列时 sparkline 置空
+      bars: days.map(() => 0),
       bar: 'bg-blue-500',
     },
     {
@@ -490,15 +483,11 @@ function AdminOverview({
 }
 
 function GlobalSearch({
-  users,
   tasks,
   onTask,
-  onUser,
 }: {
-  users: PlatformUserRecord[];
   tasks: WorkflowTask[];
   onTask: (id: string) => void;
-  onUser: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
   const matches = query.trim()
@@ -506,11 +495,8 @@ function GlobalSearch({
         tasks: tasks
           .filter((t) => `${t.id}${t.name}${t.userName}`.toLowerCase().includes(query.toLowerCase()))
           .slice(0, 5),
-        users: users
-          .filter((u) => `${u.id}${u.name}${u.contact}`.toLowerCase().includes(query.toLowerCase()))
-          .slice(0, 4),
       }
-    : { tasks: [], users: [] };
+    : { tasks: [] };
 
   return (
     <div className="relative">
@@ -518,7 +504,7 @@ function GlobalSearch({
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="全站搜索任务 ID 或用户名"
+        placeholder="搜索最近任务 ID 或名称"
         className="h-11 w-[380px] rounded-xl border border-blue-100 bg-[#f3f7fc] pl-10 pr-4 text-sm shadow-inner outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-50"
       />
       {query && (
@@ -543,22 +529,7 @@ function GlobalSearch({
               <span className="text-xs font-bold text-blue-600">{task.status}</span>
             </button>
           ))}
-          <div className="border-t bg-slate-50 px-4 py-2 text-[10px] font-bold tracking-widest text-slate-400">用户</div>
-          {matches.users.map((user) => (
-            <button
-              key={user.id}
-              type="button"
-              onClick={() => {
-                onUser(user.id);
-                setQuery('');
-              }}
-              className="flex w-full justify-between px-4 py-3 text-left hover:bg-blue-50"
-            >
-              <span className="text-sm font-bold text-slate-700">{user.name}</span>
-              <small className="text-slate-400">{user.id}</small>
-            </button>
-          ))}
-          {!matches.tasks.length && !matches.users.length && (
+          {!matches.tasks.length && (
             <div className="py-8 text-center text-sm text-slate-400">未找到匹配结果</div>
           )}
         </div>
@@ -630,7 +601,8 @@ export function AdminDashboard() {
     () => data.tasks.filter((task) => !TERMINAL.has(task.status)),
     [data.tasks],
   );
-  const pendingCount = data.overview?.processingTaskCount ?? pendingTasks.length;
+  const userCount = data.overview?.totalUserCount ?? 0;
+  const pendingCount = data.overview?.processingTaskCount ?? 0;
 
   const setSection = (next: AdminSection) => {
     navigate(`/admin/${next}`, { replace: false });
@@ -679,20 +651,15 @@ export function AdminDashboard() {
       <Sidebar
         active={section}
         onChange={setSection}
-        users={data.users.length}
-        tasks={data.tasks}
+        userCount={userCount}
+        pendingTaskCount={pendingCount}
         adminLabel={adminLabel}
       />
       <main className="ml-[252px] min-h-screen">
         <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-slate-200 bg-white px-8">
           <GlobalSearch
-            users={data.users}
             tasks={data.tasks}
             onTask={openTask}
-            onUser={(id) => {
-              setSelectedUserId(id);
-              setSection('users');
-            }}
           />
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -742,7 +709,6 @@ export function AdminDashboard() {
 
           {section === 'overview' && (
             <AdminOverview
-              users={data.users}
               tasks={data.tasks}
               overview={data.overview}
               onOpenTask={openTask}

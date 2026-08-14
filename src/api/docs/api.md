@@ -17,6 +17,8 @@ interface SysUser { // 首页用户
   deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  lastLoginAt?: string; // 最近登录时间
+  enabled?: boolean; // 是否启用：true-启用、false-禁用
 }
 
 interface ResultBoolean {
@@ -94,6 +96,15 @@ interface DepthModel {
   deleted?: boolean; // 软删除标记
   createdAt?: string; // 创建时间
   updatedAt?: string; // 更新时间
+}
+
+interface UserStatusSo { // 禁用/启用用户账号请求参数
+  userId?: number; // 目标用户id
+  enabled?: boolean; // 是否启用：true-启用、false-禁用
+}
+
+interface ResetPasswordSo { // 重置用户密码请求参数
+  userId?: number; // 目标用户id
 }
 
 interface UserLoginSo { // 用户登录请求参数
@@ -354,7 +365,7 @@ interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评�
   configSummary?: string; // 配置摘要
   submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
   status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'DELIVERED' | 'TERMINATED'; // 当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待补充、DELIVERED-已交付、TERMINATED-已终止
-  taskRefId?: number; // 关联具体任务表记录的主键
+  taskRefId?: number; // 关联��体任务表记录的主键
   userId?: number; // 创建用户的id
   supplementFileId?: number; // 补充材料文件id，关联sys_file.id
   deliverFileId?: number; // 交付文件id，关联sys_file.id
@@ -456,6 +467,19 @@ interface ResultListPresetSceneVo {
   message?: string;
   code?: number;
   data?: PresetSceneVo[];
+}
+
+interface ResultUserOverviewVo {
+  message?: string;
+  code?: number;
+  data?: UserOverviewVo;
+}
+
+interface UserOverviewVo { // 用户总览VO
+  totalUserCount?: number; // 总注册用户数
+  todayNewUserCount?: number; // 今日新增用户数量
+  activeUserCountLast7Days?: number; // 近7天活跃的用户数量
+  disabledUserCount?: number; // 当前禁用的账号数量
 }
 
 interface ResultTaskOverviewVo {
@@ -570,6 +594,24 @@ interface ResultListBaseDropDepthModel {
 - **Method**: `PUT`
 - **URL**: `/temp/sys-user/update`
 - **Request Body**: `SysUser`
+- **Response**: `ResultBoolean`
+
+---
+
+### 禁用/启用用户账号
+
+- **Method**: `POST`
+- **URL**: `/temp/sys-user/updateUserStatus`
+- **Request Body**: `UserStatusSo`
+- **Response**: `ResultBoolean`
+
+---
+
+### 重置用户密码为123456的MD5编码
+
+- **Method**: `POST`
+- **URL**: `/temp/sys-user/resetPassword`
+- **Request Body**: `ResetPasswordSo`
 - **Response**: `ResultBoolean`
 
 ---
@@ -1221,6 +1263,14 @@ interface ResultListBaseDropDepthModel {
 ---
 
 ### 📂 运营总览
+
+### 用户总览查看
+
+- **Method**: `GET`
+- **URL**: `/temp/overview/userOverview`
+- **Response**: `ResultUserOverviewVo`
+
+---
 
 ### 任务概览查看
 

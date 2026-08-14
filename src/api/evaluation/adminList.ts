@@ -169,19 +169,42 @@ function sortByCreatedDesc(a: AdminEvalTaskRow, b: AdminEvalTaskRow) {
   return String(b.createdAt).localeCompare(String(a.createdAt), 'zh-CN');
 }
 
-/** 拉取评测任务总表（单页上限 LIST_PAGE_SIZE） */
-export async function fetchAdminEvaluationTasks(): Promise<AdminEvalTaskRow[]> {
+export interface AdminEvalTaskPage {
+  items: AdminEvalTaskRow[];
+  total: number;
+}
+
+/** 分页拉取评测任务总表；可按 userId 过滤 */
+export async function fetchAdminEvaluationTaskPage(options?: {
+  userId?: number;
+  pageSize?: number;
+  pageCurrent?: number;
+}): Promise<AdminEvalTaskPage> {
   const page = await pageEvaluationTaskMasters({
-    pageSize: LIST_PAGE_SIZE,
-    pageCurrent: 1,
+    pageSize: options?.pageSize ?? LIST_PAGE_SIZE,
+    pageCurrent: options?.pageCurrent ?? 1,
     orderColumn: 'createdAt',
     orderType: 'desc',
+    entity: options?.userId != null ? { userId: options.userId } : undefined,
   });
   const records = page.records || [];
-  return records
-    .map(mapMaster)
-    .filter((row): row is AdminEvalTaskRow => row != null)
-    .sort(sortByCreatedDesc);
+  return {
+    items: records
+      .map(mapMaster)
+      .filter((row): row is AdminEvalTaskRow => row != null)
+      .sort(sortByCreatedDesc),
+    total: Number(page.total) || 0,
+  };
+}
+
+/** 拉取评测任务总表（返回当前页 items；需要 total 时用 fetchAdminEvaluationTaskPage） */
+export async function fetchAdminEvaluationTasks(options?: {
+  userId?: number;
+  pageSize?: number;
+  pageCurrent?: number;
+}): Promise<AdminEvalTaskRow[]> {
+  const page = await fetchAdminEvaluationTaskPage(options);
+  return page.items;
 }
 
 /** 选中任务后补齐详情、材料与沟通记录 */

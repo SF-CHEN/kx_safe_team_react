@@ -10,6 +10,21 @@ export interface SysUser {
   deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  /** 最近登录时间 */
+  lastLoginAt?: string;
+  /** 是否启用：true-启用、false-禁用 */
+  enabled?: boolean;
+}
+
+/** 禁用/启用用户账号请求参数 */
+export interface UserStatusSo {
+  userId: number;
+  enabled: boolean;
+}
+
+/** 重置用户密码请求参数（后端固定重置为 123456 的 MD5） */
+export interface ResetPasswordSo {
+  userId: number;
 }
 
 export interface UserLoginSo {
@@ -308,4 +323,12 @@ export interface OverviewVo {
   recent7DaysNewTaskCount?: number;
   totalDeliveredCount?: number;
   weeklyDeliveredCount?: number;
+}
+
+/** 用户总览（管理后台用户管理 KPI） */
+export interface UserOverviewVo {
+  totalUserCount?: number;
+  todayNewUserCount?: number;
+  activeUserCountLast7Days?: number;
+  disabledUserCount?: number;
 }

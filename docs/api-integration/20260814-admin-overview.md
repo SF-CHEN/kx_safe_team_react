@@ -14,21 +14,22 @@
 | 日期 | 说明 |
 | --- | --- |
 | 2026-08-14 | 接入 `operationalOverview`；最近任务 / 已交付·已终止拆分仍走任务列表 |
+| 2026-08-14 | 侧栏徽章改用 OverviewVo；去掉 `sys-user/page` 200；最近任务 `pageSize=10` |
 
 ## 已对接（可联调）
 
 | 能力 | 接口 | 前端封装 | 备注 |
 | --- | --- | --- | --- |
-| 运营 KPI | `GET /temp/overview/operationalOverview` | `fetchOperationalOverview` | 与用户列表、任务列表并行拉取 |
-| 最近任务 | `POST .../evaluation-task-master/page` | `fetchAdminEvaluationTasks` | 沿用任务运维列表 |
-| 通知铃铛待办列表 | 同上 | — | 仍用列表筛进行中任务 |
+| 运营 KPI / 侧栏徽章 | `GET /temp/overview/operationalOverview` | `fetchOperationalOverview` | 用户数=`totalUserCount`；进行中=`processingTaskCount` |
+| 最近任务 | `POST .../evaluation-task-master/page` | `fetchAdminEvaluationTasks({ pageSize: 10 })` | 仅总览明细，不再拉 200 |
 
 ## 关联接口清单
 
 | 依赖能力 | 接口 | 状态 | 说明 |
 | --- | --- | --- | --- |
-| 总览统计 | `operationalOverview` | 已接 | 主接口 |
-| 最近任务 | `evaluation-task-master/page` | 已接 | OverviewVo 无任务明细 |
+| 总览统计 | `operationalOverview` | 已接 | 主接口 + 侧栏数字 |
+| 最近任务 | `evaluation-task-master/page` pageSize=10 | 已接 | OverviewVo 无任务明细 |
+| 侧栏用户数 | ~~`sys-user/page`~~ | 已停用 | 改用 `totalUserCount` |
 | 活跃用户 | — | 无接口 | 见 Q1 |
 
 ## 字段映射
@@ -42,7 +43,7 @@
 | 状态概览·处理中 | `inProcessingTaskCount` | 已实现 | |
 | 状态概览·待用户补充 | `processingTaskCount - inProcessingTaskCount` | 已实现 | 推导 |
 | 状态概览·已交付 / 已终止 | 任务列表聚合 | 已实现 | OverviewVo 无法拆分 |
-| Sparkline | — | 列表样本 | 接口无按日序列，仍用本地 users/tasks 近 7 日计数作示意 |
+| Sparkline | — | 列表样本 | 用户卡无按日序列（已停拉用户 page）；任务卡用最近 10 条示意 |
 
 ## 待确认事项
 
@@ -65,7 +66,7 @@
 
 ### Q3：已交付 / 已终止拆分
 
-- **现状：** 状态概览后两格仍用列表聚合（最多 200 条），可能与 KPI 总交付数不完全一致。
+- **现状：** 状态概览后两格仍用最近 10 条列表聚合，可能与 KPI 不一致。
 - **方案：** 1) 维持 2) OverviewVo 增加分项计数
 - **状态：** 待确认
 
@@ -77,7 +78,7 @@
 
 ## 验收要点
 
-- [ ] 打开运营总览 Network 可见 `GET /temp/overview/operationalOverview`
-- [ ] 四张 KPI 主数字与接口字段一致（失败时回退列表聚合）
-- [ ] 最近任务仍来自任务列表
+- [ ] 打开管理后台 Network：**不应**出现侧栏用途的 `sys-user/page` pageSize=200
+- [ ] 可见 `GET /temp/overview/operationalOverview`；侧栏用户/进行中徽章与 OverviewVo 一致
+- [ ] 最近任务请求 `evaluation-task-master/page` 且 `pageSize=10`
 - [ ] 布局未改；第三张卡标题已按 Q1 对齐

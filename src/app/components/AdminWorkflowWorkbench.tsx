@@ -6,22 +6,24 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { fetchAuthUsers, updateAuthUserStatus, type AuthUser } from '@/api/auth';
-import { updateSysUser } from '@/api/user';
+import { resetSysUserPassword, updateSysUser } from '@/api/user';
 import {
   adminDeliverTask,
   adminRequestSupplement,
   adminTerminateTask,
   fetchAdminEvaluationTaskDetail,
+  fetchAdminEvaluationTaskPage,
   fetchAdminEvaluationTasks,
   type AdminEvalTaskDetail,
   type AdminEvalTaskRow,
 } from '@/api/evaluation';
 import { downloadSysFile } from '@/api/file';
+import { fetchUserOverview } from '@/api/overview';
+import type { UserOverviewVo } from '@/api/types';
 import { DataPagination } from './DataPagination';
-import { adminResetLocalPassword } from '../context/UserContext';
 import {
   WORKFLOW_EVENT, addAdminOperationLog,
-  getAdminOperationLogs, getPlatformActivities,
+  getAdminOperationLogs,
   type AdminOperationLog, type PlatformUserRecord, type WorkflowStatus, type WorkflowTask,
 } from '../data/workflowStore';
 
@@ -91,8 +93,11 @@ export function mapAuthUserToRecord(user: AuthUser): PlatformUserRecord {
     name: user.nickname || user.username || String(user.id),
     contact: user.username || '—',
     registeredAt: user.created_at ? new Date(user.created_at).toLocaleString('zh-CN', { hour12: false }) : '—',
-    lastLoginAt: user.updated_at ? new Date(user.updated_at).toLocaleString('zh-CN', { hour12: false }) : '—',
+    lastLoginAt: user.last_login_at
+      ? new Date(user.last_login_at).toLocaleString('zh-CN', { hour12: false })
+      : '—',
     status: user.is_active === false ? '已停用' : '正常',
+    role: user.role === 'admin' ? 'admin' : 'user',
   };
 }
 
@@ -203,28 +208,26 @@ function maskContact(contact: string) {
   return contact || '—';
 }
 
-function dateValue(value: string) {
-  return new Date(value.replace(/\//g, '-')).getTime() || 0;
-}
-
 function errorMessage(err: unknown, fallback: string) {
   return err instanceof Error && err.message.trim() ? err.message : fallback;
 }
 
 export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string }) {
   const [users, setUsers] = useState<PlatformUserRecord[]>([]);
-  const [statsUsers, setStatsUsers] = useState<PlatformUserRecord[]>([]);
-  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
-  const [activities, setActivities] = useState(() => getPlatformActivities());
+  const [userOverview, setUserOverview] = useState<UserOverviewVo | null>(null);
   const [query, setQuery] = useState('');
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [allTotal, setAllTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState<PlatformUserRecord | null>(null);
   const [historyUser, setHistoryUser] = useState<PlatformUserRecord | null>(null);
+  const [historyTasks, setHistoryTasks] = useState<WorkflowTask[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [historyTotal, setHistoryTotal] = useState(0);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -232,7 +235,6 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
       const userPage = await fetchAuthUsers({
         pageSize,
         pageCurrent: page,
-        role: 'USER',
         username: keyword || undefined,
       });
       setUsers(userPage.items.map(mapAuthUserToRecord));
@@ -246,20 +248,12 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
     }
   }, [keyword, page, pageSize]);
 
-  const loadStatsAndTasks = useCallback(async () => {
+  const loadOverview = useCallback(async () => {
     try {
-      const [statsPage, evalRows] = await Promise.all([
-        fetchAuthUsers({ pageSize: 200, pageCurrent: 1, role: 'USER' }),
-        fetchAdminEvaluationTasks(),
-      ]);
-      setStatsUsers(statsPage.items.map(mapAuthUserToRecord));
-      setAllTotal(Number(statsPage.total) || 0);
-      setTasks(evalRows.map(mapEvalRowToWorkflow));
+      setUserOverview(await fetchUserOverview());
     } catch (err) {
       toast.error(errorMessage(err, '用户统计加载失败'));
-      setStatsUsers([]);
-      setAllTotal(0);
-      setTasks([]);
+      setUserOverview(null);
     }
   }, []);
 
@@ -272,36 +266,29 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
   }, [query]);
 
   useEffect(() => { void loadUsers(); }, [loadUsers]);
-  useEffect(() => { void loadStatsAndTasks(); }, [loadStatsAndTasks]);
+  useEffect(() => { void loadOverview(); }, [loadOverview]);
   useEffect(() => {
-    const refreshActivities = () => setActivities(getPlatformActivities());
     const refreshRemote = () => {
       void loadUsers();
-      void loadStatsAndTasks();
+      void loadOverview();
     };
-    window.addEventListener(WORKFLOW_EVENT, refreshActivities);
     window.addEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
-    window.addEventListener('storage', refreshActivities);
     return () => {
-      window.removeEventListener(WORKFLOW_EVENT, refreshActivities);
       window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
-      window.removeEventListener('storage', refreshActivities);
     };
-  }, [loadUsers, loadStatsAndTasks]);
+  }, [loadUsers, loadOverview]);
 
-  const today = new Date().toLocaleDateString('zh-CN');
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const activeUserIds = new Set(activities.filter(item => dateValue(item.createdAt) >= sevenDaysAgo && (item.type === '在线体验' || item.type === '提交任务')).map(item => item.userId));
   const stats = [
-    { label: '总注册用户', value: allTotal || total, icon: UsersRound, tone: 'bg-blue-50 text-blue-600' },
-    { label: '今日新增用户', value: statsUsers.filter(user => new Date(user.registeredAt).toLocaleDateString('zh-CN') === today).length, icon: UserRound, tone: 'bg-cyan-50 text-cyan-600' },
-    { label: '近 7 天活跃用户', value: activeUserIds.size, icon: Activity, tone: 'bg-emerald-50 text-emerald-600' },
-    { label: '当前禁用账号', value: statsUsers.filter(user => user.status === '已停用').length, icon: Ban, tone: 'bg-amber-50 text-amber-600' },
+    { label: '总注册用户', value: userOverview?.totalUserCount ?? total, icon: UsersRound, tone: 'bg-blue-50 text-blue-600' },
+    { label: '今日新增用户', value: userOverview?.todayNewUserCount ?? 0, icon: UserRound, tone: 'bg-cyan-50 text-cyan-600' },
+    { label: '近 7 天活跃用户', value: userOverview?.activeUserCountLast7Days ?? 0, icon: Activity, tone: 'bg-emerald-50 text-emerald-600' },
+    { label: '当前禁用账号', value: userOverview?.disabledUserCount ?? 0, icon: Ban, tone: 'bg-amber-50 text-amber-600' },
   ];
 
   useEffect(() => {
     if (!initialUserId) return;
-    const matched = users.find(user => user.id === initialUserId) || statsUsers.find(user => user.id === initialUserId);
+    const matched = users.find(user => user.id === initialUserId);
+    setHistoryPage(1);
     setHistoryUser(matched || {
       id: initialUserId,
       name: `用户 #${initialUserId}`,
@@ -309,10 +296,55 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
       registeredAt: '—',
       lastLoginAt: '—',
       status: '正常',
+      role: 'user',
     });
-  }, [initialUserId, users, statsUsers]);
+  }, [initialUserId, users]);
 
+  useEffect(() => {
+    if (!historyUser) {
+      setHistoryTasks([]);
+      setHistoryTotal(0);
+      setHistoryLoading(false);
+      return;
+    }
+    const userId = Number(historyUser.id);
+    if (!Number.isFinite(userId)) {
+      setHistoryTasks([]);
+      setHistoryTotal(0);
+      return;
+    }
+    let cancelled = false;
+    setHistoryLoading(true);
+    void fetchAdminEvaluationTaskPage({
+      userId,
+      pageCurrent: historyPage,
+      pageSize: historyPageSize,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        setHistoryTasks(result.items.map(mapEvalRowToWorkflow));
+        setHistoryTotal(result.total);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setHistoryTasks([]);
+        setHistoryTotal(0);
+        toast.error(errorMessage(err, '历史任务加载失败'));
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [historyUser, historyPage, historyPageSize]);
+
+  const openHistory = (user: PlatformUserRecord) => {
+    setHistoryPage(1);
+    setHistoryUser(user);
+  };
   const toggleStatus = async (user: PlatformUserRecord) => {
+    if (user.role === 'admin') return toast.error('管理员账号不可操作');
     const nextActive = user.status !== '正常';
     try {
       await updateAuthUserStatus(user.id, nextActive);
@@ -320,7 +352,14 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
       notifyAdminRemoteChanged();
       const nextStatus = nextActive ? '正常' : '已停用';
       setUsers((prev) => prev.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item)));
-      setStatsUsers((prev) => prev.map((item) => (item.id === user.id ? { ...item, status: nextStatus } : item)));
+      setUserOverview((prev) => {
+        if (!prev) return prev;
+        const disabled = Number(prev.disabledUserCount || 0);
+        return {
+          ...prev,
+          disabledUserCount: nextActive ? Math.max(0, disabled - 1) : disabled + 1,
+        };
+      });
       toast.success(`账号已${nextActive ? '启用' : '禁用'}`);
     } catch (err) {
       toast.error(errorMessage(err, '账号状态更新失败'));
@@ -328,14 +367,25 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
   };
 
   const resetPassword = async (user: PlatformUserRecord) => {
-    const temporary = `Xj${Math.random().toString(36).slice(2, 8)}!`;
-    if (!(await adminResetLocalPassword(user.id, temporary))) return toast.error('该用户凭证不在当前浏览器环境，需由后端重置');
-    addAdminOperationLog({ operator: 'admin', action: '重置用户密码', detail: user.id });
-    window.prompt('临时密码已生成，请通过安全渠道告知用户：', temporary);
+    if (user.role === 'admin') return toast.error('管理员账号不可操作');
+    const userId = Number(user.id);
+    if (!Number.isFinite(userId)) return toast.error('无法重置该用户密码');
+    try {
+      await resetSysUserPassword({ userId });
+      addAdminOperationLog({ operator: 'admin', action: '重置用户密码', detail: user.id });
+      notifyAdminRemoteChanged();
+      toast.success('密码已重置');
+      // 后端固定重置为 123456 的 MD5，明文告知管理员用于安全渠道传达
+      window.prompt('密码已重置为默认值，请通过安全渠道告知用户：', '123456');
+    } catch (err) {
+      toast.error(errorMessage(err, '重置密码失败'));
+    }
   };
 
   const saveEdit = async () => {
-    if (!editing?.name.trim()) return toast.error('用户名不能为空');
+    if (!editing) return;
+    if (editing.role === 'admin') return toast.error('管理员账号不可操作');
+    if (!editing.name.trim()) return toast.error('用户名不能为空');
     const id = Number(editing.id);
     if (!Number.isFinite(id)) return toast.error('无法保存该用户');
     try {
@@ -348,7 +398,6 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
         contact: editing.contact.trim() || editing.name.trim(),
       };
       setUsers((prev) => prev.map((item) => (item.id === editing.id ? nextUser : item)));
-      setStatsUsers((prev) => prev.map((item) => (item.id === editing.id ? nextUser : item)));
       setEditing(null);
       toast.success(editing.contact.trim() && editing.contact.trim() !== editing.name.trim()
         ? '用户名已更新；联系方式暂无独立接口，未写入后端'
@@ -362,7 +411,7 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map((item, index) => { const Icon = item.icon; return <div key={item.label} className={`group relative overflow-hidden rounded-2xl border p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] transition hover:-translate-y-0.5 hover:shadow-lg ${index === 0 ? 'border-blue-100 bg-gradient-to-br from-white to-blue-50' : index === 1 ? 'border-cyan-100 bg-gradient-to-br from-white to-cyan-50' : index === 2 ? 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50' : 'border-amber-100 bg-gradient-to-br from-white to-amber-50'}`}><span className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/60" /><div className="relative flex items-center justify-between"><span className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-sm ${item.tone}`}><Icon className="h-5 w-5" /></span><span className="text-3xl font-black text-slate-950">{item.value}</span></div><div className="relative mt-4 text-sm font-bold text-slate-600">{item.label}</div><div className="relative mt-3 h-1 overflow-hidden rounded-full bg-white"><span className={`block h-full rounded-full ${index === 0 ? 'w-4/5 bg-blue-500' : index === 1 ? 'w-2/5 bg-cyan-500' : index === 2 ? 'w-3/5 bg-emerald-500' : 'w-1/4 bg-amber-500'}`} /></div></div>; })}</div>
     <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,.06)]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5"><div><h3 className="font-black text-slate-900">平台用户</h3><p className="mt-1 text-xs text-slate-400">账号注册后直接启用，不设人工审核流程</p></div><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索用户名、账号或 UID" className="h-10 w-72 rounded-xl border border-slate-200 pl-10 pr-4 text-sm outline-none focus:border-blue-500" /></div></div>
-      {!users.length ? <div className="py-16 text-center text-sm text-slate-400">{loading ? '正在加载用户…' : '暂无符合条件的用户记录'}</div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-6 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">进行中任务</th><th className="px-5 py-3">状态</th><th className="px-5 py-3">操作</th></tr></thead><tbody>{users.map(user => { const ownTasks = tasks.filter(task => task.userId === user.id); const ongoing = ownTasks.filter(task => !TERMINAL.has(task.status)).length; return <tr key={user.id} className="border-t hover:bg-slate-50/70"><td className="px-6 py-4"><div className="font-bold text-slate-800">{user.name}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{user.id}</div></td><td className="px-5 py-4 text-slate-600">{maskContact(user.contact)}</td><td className="px-5 py-4 text-xs text-slate-500">{user.registeredAt}</td><td className="px-5 py-4 text-xs text-slate-500">{user.lastLoginAt}</td><td className="px-5 py-4 font-bold text-blue-600">{ongoing || '—'}</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-2"><button onClick={() => setEditing({ ...user })} className="text-xs font-semibold text-blue-600">编辑</button><button onClick={() => toggleStatus(user)} className="text-xs font-semibold text-slate-600">{user.status === '正常' ? '禁用' : '启用'}</button><button onClick={() => resetPassword(user)} className="text-xs font-semibold text-amber-600">重置密码</button><button onClick={() => setHistoryUser(user)} className="text-xs font-semibold text-violet-600">历史任务</button></div></td></tr>; })}</tbody></table></div>}
+      {!users.length ? <div className="py-16 text-center text-sm text-slate-400">{loading ? '正在加载用户…' : '暂无符合条件的用户记录'}</div> : <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-400"><tr><th className="px-6 py-3">用户</th><th className="px-5 py-3">联系方式</th><th className="px-5 py-3">注册时间</th><th className="px-5 py-3">最后登录</th><th className="px-5 py-3">进行中任务</th><th className="px-5 py-3">状态</th><th className="px-5 py-3">操作</th></tr></thead><tbody>{users.map(user => { const isAdminUser = user.role === 'admin'; return <tr key={user.id} className="border-t hover:bg-slate-50/70"><td className="px-6 py-4"><div className="flex items-center gap-2"><span className="font-bold text-slate-800">{user.name}</span>{isAdminUser && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">管理员</span>}</div><div className="mt-1 font-mono text-[10px] text-slate-400">{user.id}</div></td><td className="px-5 py-4 text-slate-600">{maskContact(user.contact)}</td><td className="px-5 py-4 text-xs text-slate-500">{user.registeredAt}</td><td className="px-5 py-4 text-xs text-slate-500">{user.lastLoginAt}</td><td className="px-5 py-4 font-bold text-slate-400">—</td><td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.status === '正常' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{user.status}</span></td><td className="px-5 py-4"><div className="flex flex-wrap gap-2">{isAdminUser ? <span className="text-xs text-slate-400">不可操作</span> : <><button onClick={() => setEditing({ ...user })} className="text-xs font-semibold text-blue-600">编辑</button><button onClick={() => toggleStatus(user)} className="text-xs font-semibold text-slate-600">{user.status === '正常' ? '禁用' : '启用'}</button><button onClick={() => resetPassword(user)} className="text-xs font-semibold text-amber-600">重置密码</button></>}<button onClick={() => openHistory(user)} className="text-xs font-semibold text-violet-600">历史任务</button></div></td></tr>; })}</tbody></table></div>}
       <div className="border-t">
         <DataPagination
           total={total}
@@ -378,7 +427,40 @@ export function RegisteredUserPanel({ initialUserId }: { initialUserId?: string 
       </div>
     </section>
     {editing && <Modal title="编辑用户资料" onClose={() => setEditing(null)}><label className="block text-xs font-bold text-slate-500">用户名<input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><label className="mt-4 block text-xs font-bold text-slate-500">手机号／邮箱<input value={editing.contact} onChange={e => setEditing({ ...editing, contact: e.target.value })} className="mt-2 h-11 w-full rounded-xl border px-3 text-sm" /></label><button onClick={saveEdit} className="mt-6 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white">保存修改</button></Modal>}
-    {historyUser && <Modal title={`${historyUser.name} · 历史任务`} onClose={() => setHistoryUser(null)} wide><div className="space-y-2">{tasks.filter(task => task.userId === historyUser.id).map(task => <div key={task.id} className="flex items-center justify-between rounded-xl border p-4"><div><b className="text-sm text-slate-800">{task.name}</b><p className="mt-1 text-xs text-slate-400">{task.id} · {task.product}</p></div><span className={`rounded-full px-2 py-1 text-xs font-bold ${statusStyle[task.status] || fallbackStatusStyle}`}>{task.status}</span></div>)}{!tasks.some(task => task.userId === historyUser.id) && <div className="py-12 text-center text-sm text-slate-400">暂无历史任务</div>}</div></Modal>}
+    {historyUser && (
+      <Modal title={`${historyUser.name} · 历史任务`} onClose={() => setHistoryUser(null)} wide>
+        <div className="space-y-2">
+          {historyLoading ? (
+            <div className="py-12 text-center text-sm text-slate-400">正在加载历史任务…</div>
+          ) : historyTasks.length ? (
+            historyTasks.map((task) => (
+              <div key={task.id} className="flex items-center justify-between rounded-xl border p-4">
+                <div>
+                  <b className="text-sm text-slate-800">{task.name}</b>
+                  <p className="mt-1 text-xs text-slate-400">{task.id} · {task.product}</p>
+                </div>
+                <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusStyle[task.status] || fallbackStatusStyle}`}>{task.status}</span>
+              </div>
+            ))
+          ) : (
+            <div className="py-12 text-center text-sm text-slate-400">暂无历史任务</div>
+          )}
+        </div>
+        <div className="mt-4 border-t">
+          <DataPagination
+            total={historyTotal}
+            page={historyPage}
+            pageSize={historyPageSize}
+            disabled={historyLoading}
+            onPageChange={setHistoryPage}
+            onPageSizeChange={(size) => {
+              setHistoryPageSize(size);
+              setHistoryPage(1);
+            }}
+          />
+        </div>
+      </Modal>
+    )}
   </>;
 }
 

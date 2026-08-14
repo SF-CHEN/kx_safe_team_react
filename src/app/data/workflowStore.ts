@@ -60,6 +60,8 @@ export interface PlatformUserRecord {
   registeredAt: string;
   lastLoginAt: string;
   status: '正常' | '已停用';
+  /** 前端归一化角色：admin 只读展示，不可操作 */
+  role?: 'admin' | 'user';
 }
 
 export interface PlatformActivity {

@@ -237,6 +237,68 @@
         }
       }
     },
+    "/temp/sys-user/updateUserStatus": {
+      "post": {
+        "tags": [
+          "首页用户"
+        ],
+        "summary": "禁用/启用用户账号",
+        "operationId": "updateUserStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserStatusSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/sys-user/resetPassword": {
+      "post": {
+        "tags": [
+          "首页用户"
+        ],
+        "summary": "重置用户密码为123456的MD5编码",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/sys-user/register": {
       "post": {
         "tags": [
@@ -1191,6 +1253,27 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultPresetScene"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/overview/userOverview": {
+      "get": {
+        "tags": [
+          "运营总览"
+        ],
+        "summary": "用户总览查看",
+        "operationId": "userOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserOverviewVo"
                 }
               }
             }
@@ -2282,6 +2365,15 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最近登录时间"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "是否启用：true-启用、false-禁用"
           }
         }
       },
@@ -2588,6 +2680,39 @@
             "description": "更新时间"
           }
         }
+      },
+      "UserStatusSo": {
+        "type": "object",
+        "description": "禁用/启用用户账号请求参数",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标用户id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "是否启用：true-启用、false-禁用"
+          }
+        },
+        "required": [
+          "enabled",
+          "userId"
+        ]
+      },
+      "ResetPasswordSo": {
+        "type": "object",
+        "description": "重置用户密码请求参数",
+        "properties": {
+          "userId": {
+            "type": "integer",
+            "format": "int32",
+            "description": "目标用户id"
+          }
+        },
+        "required": [
+          "userId"
+        ]
       },
       "UserLoginSo": {
         "type": "object",
@@ -3510,7 +3635,7 @@
           "taskRefId": {
             "type": "integer",
             "format": "int64",
-            "description": "关联具体任务表记录的主键"
+            "description": "关联��体任务表记录的主键"
           },
           "userId": {
             "type": "integer",
@@ -3872,6 +3997,47 @@
             "items": {
               "$ref": "#/components/schemas/PresetSceneVo"
             }
+          }
+        }
+      },
+      "ResultUserOverviewVo": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserOverviewVo"
+          }
+        }
+      },
+      "UserOverviewVo": {
+        "type": "object",
+        "description": "用户总览VO",
+        "properties": {
+          "totalUserCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "总注册用户数"
+          },
+          "todayNewUserCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "今日新增用户数量"
+          },
+          "activeUserCountLast7Days": {
+            "type": "integer",
+            "format": "int64",
+            "description": "近7天活跃的用户数量"
+          },
+          "disabledUserCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "当前禁用的账号数量"
           }
         }
       },

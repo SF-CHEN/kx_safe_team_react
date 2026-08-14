@@ -1,5 +1,6 @@
 import { createTempClient } from '@/api/client';
 import type { SysUser, UserLoginVo, UserRoleCode } from '@/api/types';
+import { updateSysUserStatus } from '@/api/user/sysUser';
 import { getToken } from '@/utils/auth';
 import { unwrapGatewayData } from '@/utils/gateway';
 import { md5Password } from '@/utils/md5';
@@ -15,9 +16,12 @@ export interface AuthUser {
   role?: string;
   /** 后端原始角色码 */
   role_code?: UserRoleCode | string;
+  /** 对应 SysUser.enabled；未返回时视为启用 */
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  /** 对应 SysUser.lastLoginAt */
+  last_login_at?: string;
 }
 
 export interface AuthSession {
@@ -39,9 +43,11 @@ function mapSysUser(user?: SysUser | null): AuthUser {
     email: '',
     role: roleCode === 'ADMIN' ? 'admin' : 'user',
     role_code: roleCode,
-    is_active: user.deleted !== true,
+    // 账号启停以 enabled 为准；缺省视为启用（勿再用 deleted 冒充）
+    is_active: user.enabled !== false,
     created_at: user.createdAt,
     updated_at: user.updatedAt,
+    last_login_at: user.lastLoginAt,
   };
 }
 
@@ -117,7 +123,7 @@ export async function fetchAuthUsers(params?: {
   pageSize?: number;
   pageCurrent?: number;
   username?: string;
-  /** 后端角色码：ADMIN | USER；管理后台用户列表应传 USER */
+  /** 后端角色码：ADMIN | USER；不传则返回全部角色 */
   role?: UserRoleCode;
 }): Promise<{ items: AuthUser[]; total: number }> {
   const client = createTempClient();
@@ -152,16 +158,10 @@ export async function updateAuthUserStatus(
   userId: number | string,
   isActive: boolean,
 ): Promise<unknown> {
-  const client = createTempClient();
-  const { data } = await client.put(
-    '/temp/sys-user/update',
-    {
-      id: Number(userId),
-      deleted: !isActive,
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  );
-  return unwrapGatewayData(data);
+  return updateSysUserStatus({
+    userId: Number(userId),
+    enabled: isActive,
+  });
 }
 
 export async function createAuthUser(payload: {
