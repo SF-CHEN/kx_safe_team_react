@@ -79,11 +79,12 @@ export function normalizeAdminStatus(status: string): WorkflowStatus {
   return '处理中';
 }
 
-const ADMIN_PRODUCT_OPTIONS = ['全部产品', '模型数据安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
+const ADMIN_PRODUCT_OPTIONS = ['全部产品', '数据集安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
 
 function canonicalProduct(product: string) {
   if (product === '大模型评测') return '大模型性能评测';
   if (product === '多模态大模型安全评测') return '大模型安全评测';
+  if (product === '模型数据安全评测') return '数据集安全评测';
   return product;
 }
 
@@ -483,6 +484,7 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   const [page, setPage] = useState(1);
   const [publicText, setPublicText] = useState('');
   const [feedbackMode, setFeedbackMode] = useState<'supplement' | 'terminate'>('supplement');
+  const [terminationConfirmOpen, setTerminationConfirmOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<AdminEvalTaskDetail | null>(null);
   const [pendingDeliver, setPendingDeliver] = useState<{
     id: string;
@@ -563,6 +565,7 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
   useEffect(() => {
     setPublicText('');
     setFeedbackMode('supplement');
+    setTerminationConfirmOpen(false);
     setPendingDeliver(null);
     setSelectedDetail(null);
   }, [baseCurrent?.id]);
@@ -676,6 +679,7 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
       setSelectedDetail(detail);
       setGroup('closed');
       setPublicText('');
+      setTerminationConfirmOpen(false);
       toast.success('任务已终止');
     } catch (err) {
       toast.error(errorMessage(err, '终止任务失败'));
@@ -684,8 +688,11 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
     }
   };
   const submitFeedback = () => {
+    if (!current || !publicText.trim()) {
+      return toast.error(feedbackMode === 'supplement' ? '请填写需要用户补充的内容' : '请填写终止原因，以便用户了解处理结果');
+    }
     if (feedbackMode === 'terminate') {
-      void terminate();
+      setTerminationConfirmOpen(true);
       return;
     }
     void requestSupplement();
@@ -802,14 +809,15 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
               type="button"
               onClick={submitFeedback}
               disabled={actionBusy || (feedbackMode === 'terminate' && normalizedStatus === '已终止')}
-              className="mt-3 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+              className={`mt-3 w-full rounded-lg px-4 py-2.5 text-sm font-black text-white shadow-md transition disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none ${feedbackMode === 'supplement' ? 'bg-orange-500 shadow-orange-200 hover:bg-orange-600' : 'bg-red-600 shadow-red-200 hover:bg-red-700'}`}
             >
-              {feedbackMode === 'terminate' ? (normalizedStatus === '已终止' ? '任务已终止' : '确认终止并通知用户') : '发送补件要求'}
+              {feedbackMode === 'terminate' ? (normalizedStatus === '已终止' ? '任务已终止' : '继续终止任务') : '发送补件要求'}
             </button>
           </section>
 
-          <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={() => { void deliver(); }} disabled={actionBusy || normalizedStatus === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{normalizedStatus === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
+          <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{(pendingDeliver || current.outputs.length > 0) && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{pendingDeliver ? renderOutputFile({ id: pendingDeliver.id, name: pendingDeliver.name, size: pendingDeliver.size, category: 'report', type: '', uploadedAt: '' }) : current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={() => { void deliver(); }} disabled={actionBusy || normalizedStatus === '已交付' || !pendingDeliver} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{normalizedStatus === '已交付' ? '已完成交付' : pendingDeliver ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
           </>}
+          {terminationConfirmOpen && <Modal title="确认终止任务" onClose={() => setTerminationConfirmOpen(false)}><div className="rounded-2xl border border-red-100 bg-red-50 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" /><div><p className="text-sm font-black text-red-900">终止后任务将立即归入“已结束”并通知用户</p><p className="mt-2 text-xs leading-6 text-red-700">用户可见说明：{publicText}</p></div></div></div><div className="mt-5 flex gap-3"><button type="button" onClick={() => setTerminationConfirmOpen(false)} className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600">取消</button><button type="button" onClick={() => { void terminate(); }} className="h-11 flex-1 rounded-xl bg-red-600 text-sm font-black text-white hover:bg-red-700">确认终止并通知用户</button></div></Modal>}
         </aside>
       </div>
       </> : <div className="flex min-h-[680px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/70 px-8 text-center"><div><FileArchive className="mx-auto h-12 w-12 text-slate-300" /><h3 className="mt-4 text-base font-black text-slate-700">没有符合条件的任务</h3><p className="mt-2 text-sm text-slate-500">请在左侧调整产品类型、任务状态或搜索关键词。</p></div></div>}

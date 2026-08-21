@@ -3,6 +3,7 @@ export { createTempClient } from './client';
 export * from './types';
 export * from './auth';
 export * as aigc from './aigc';
+export * as contact from './contact';
 export * as dict from './dict';
 export * as evaluation from './evaluation';
 export * as evaluationDimension from './evaluationDimension';

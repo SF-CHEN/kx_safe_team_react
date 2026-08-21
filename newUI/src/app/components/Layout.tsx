@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GlobalFooter } from './GlobalFooter';
+import { ProductContactSection } from './ProductContactSection';
 import { GuestGuard } from './GuestGuard';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useUser } from '../context/UserContext';
@@ -44,9 +45,12 @@ interface MenuGroup {
 type MenuItem = MenuLeaf | MenuGroup;
 type CapabilityTag = '可体验' | '可创建任务' | '效果预览';
 
+const SHOW_EXPERIENCE_TAGS = false;
+
 function CapabilityTags({ tags }: { tags?: CapabilityTag[] }) {
-  if (!tags?.length) return null;
-  return <span className="ml-2 inline-flex shrink-0 gap-1">{tags.map(tag => <span key={tag} className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none ${tag === '可体验' ? 'border-sky-200 bg-sky-50 text-sky-600' : tag === '效果预览' ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>{tag}</span>)}</span>;
+  const visibleTags = tags?.filter(tag => tag !== '可体验' || SHOW_EXPERIENCE_TAGS);
+  if (!visibleTags?.length) return null;
+  return <span className="ml-2 inline-flex shrink-0 gap-1">{visibleTags.map(tag => <span key={tag} className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-none ${tag === '可体验' ? 'border-sky-200 bg-sky-50 text-sky-600' : tag === '效果预览' ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>{tag}</span>)}</span>;
 }
 
 interface ProductSeries {
@@ -74,7 +78,7 @@ const PRODUCT_SERIES: ProductSeries[] = [
     badge: null,
     items: [
       { label: '个人敏感信息审查', desc: '个人数据隐私合规检测与处理', path: '/privacy-data-audit', capabilities: ['可体验'] },
-      { label: '模型数据安全评测', desc: '训练数据安全风险深度分析', path: '/model-safety-eval', capabilities: ['可创建任务'] },
+      { label: '数据集安全评测', desc: '训练数据质量、标注与后门风险评测', path: '/model-safety-eval', capabilities: ['可创建任务'] },
       {
         label: 'AIGC内容审核与鉴伪',
         desc: 'AI生成内容审核与真伪鉴别',
@@ -103,16 +107,8 @@ const PRODUCT_SERIES: ProductSeries[] = [
       { label: '深度模型可信测评', desc: '大模型全面可信度综合评估', path: '/deep-model-eval', capabilities: ['可创建任务'] },
       { label: '具身智能可信评测', desc: '物理交互场景可信安全评测', path: '/embodied-intelligence' },
       { label: '智能体安全评测', desc: 'AI智能体行为安全综合评测', path: '/agent-safety', capabilities: ['可创建任务'] },
-      {
-        label: '大语言模型可信评测',
-        desc: '多维能力与安全评测套件',
-        isGroup: true,
-        capabilities: ['可创建任务'],
-        children: [
-          { label: '大模型性能评测', path: '/llm-evaluation' },
-          { label: '大模型安全评测', path: '/safety-evaluation' },
-        ],
-      },
+      { label: '大模型性能评测', desc: '多模态生成与理解能力评测', path: '/llm-evaluation', capabilities: ['可创建任务'] },
+      { label: '大模型安全评测', desc: '鲁棒性、隐私、安全与偏见评测', path: '/safety-evaluation', capabilities: ['可创建任务'] },
     ],
   },
   {
@@ -131,8 +127,8 @@ const PRODUCT_SERIES: ProductSeries[] = [
   },
   {
     id: 'tianche',
-    name: '合规治理侧',
-    subtitle: '合规治理侧',
+    name: '服务侧',
+    subtitle: '服务侧',
     desc: 'AI合规政策解读与备案服务',
     icon: FileText,
     grad: 'from-emerald-500 to-teal-600',
@@ -141,17 +137,20 @@ const PRODUCT_SERIES: ProductSeries[] = [
     items: [
       { label: '人工智能安全教学平台', desc: 'AI安全教育培训解决方案', path: '/ai-safety-edu', capabilities: ['可体验'] },
       { label: '大模型备案服务', desc: '备案全流程咨询与辅助', path: '/model-filing-service', capabilities: ['可体验'] },
-      { label: '可信安全标准制定服务', desc: '国际国家标准参与制定', path: '/tianche-standard-service' },
+      { label: '可信安全标准制定服务', desc: '标准规范文本编制技术支撑', path: '/tianche-standard-service' },
     ],
   },
 ];
 
+// 功能内容尚在完善时只隐藏导航入口，保留路由与页面代码便于后续恢复。
+const SHOW_ONLINE_EXPERIENCE_IN_HEADER = false;
+const SHOW_HELP_DOCS_IN_HEADER = false;
 const SECONDARY_NAV: { label: string; path: string; protected?: boolean }[] = [
-  { label: '在线体验', path: '/online-experience' },
-  { label: '帮助文档', path: '/help-docs' },
+  ...(SHOW_ONLINE_EXPERIENCE_IN_HEADER ? [{ label: '在线体验', path: '/online-experience' }] : []),
+  ...(SHOW_HELP_DOCS_IN_HEADER ? [{ label: '帮助文档', path: '/help-docs' }] : []),
   { label: '资源中心', path: '/resource-center' },
-  { label: '关于我们', path: '/about' },
   { label: '开发者中心', path: '/developer' },
+  { label: '关于我们', path: '/about' },
 ];
 
 const FORMAL_PRODUCT_PATHS = new Set([
@@ -171,6 +170,23 @@ const FORMAL_PRODUCT_PATHS = new Set([
   '/model-filing-service',
   '/tianche-standard-service',
 ]);
+
+const PRODUCT_CONTACT_NAMES: Record<string, string> = {
+  '/privacy-data-audit': '个人敏感信息审查',
+  '/model-safety-eval': '数据集安全评测',
+  '/aigc-content': 'AIGC内容审核与鉴伪',
+  '/aigc-content-marking': 'AIGC内容标识与检测',
+  '/deep-model-eval': '深度模型可信测评',
+  '/embodied-intelligence': '具身智能可信评测',
+  '/agent-safety': '智能体安全评测',
+  '/llm-evaluation': '大模型性能评测',
+  '/safety-evaluation': '大模型安全评测',
+  '/code-vulnerability-audit': '代码漏洞审查',
+  '/penetration-test': '网络渗透测试',
+  '/ai-safety-edu': '人工智能安全教学平台',
+  '/model-filing-service': '大模型备案服务',
+  '/tianche-standard-service': '可信安全标准制定服务',
+};
 
 // ── Floating Chat Panel ───────────────────────────────────────────
 function FloatingChatPanel({ onClose }: { onClose: () => void }) {
@@ -228,7 +244,7 @@ function FloatingChatPanel({ onClose }: { onClose: () => void }) {
 }
 
 // ── Floating Contact Widget ──────────────────────────────────────
-function FloatingContact() {
+function FloatingContact({ showOnlineConsultation = true }: { showOnlineConsultation?: boolean }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const hoverCloseTimer = useRef<number | null>(null);
@@ -301,7 +317,7 @@ function FloatingContact() {
         </div>
       ),
     },
-  ];
+  ].filter(item => showOnlineConsultation || item.id !== 'chat');
 
   return (
     <>
@@ -368,7 +384,8 @@ function FloatingContact() {
 }
 
 // ── Sub-navigation (product-level breadcrumb + sibling pages) ────
-const TIANHENG_PATHS = ['/llm-evaluation', '/safety-evaluation'];
+// 两个大模型评测产品已作为一级产品独立展示，保留配置但关闭页内重复切换条。
+const TIANHENG_PATHS: string[] = [];
 const TIANHENG_ITEMS = [
   { label: '大模型性能评测', path: '/llm-evaluation' },
   { label: '大模型安全评测', path: '/safety-evaluation' },
@@ -381,7 +398,7 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbCrumb[]> = {
   '/products-overview':       [{ label: '首页', path: '/' }, { label: '产品矩阵' }],
   // 数据侧
   '/products/tianyuan':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }],
-  '/model-safety-eval':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: '模型数据安全评测' }],
+  '/model-safety-eval':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: '数据集安全评测' }],
   '/aigc-content':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: 'AIGC内容审核与鉴伪' }],
   '/aigc-content-marking':    [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: 'AIGC内容标识与检测' }],
   '/privacy-data-audit':      [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '数据侧' }, { label: '个人敏感信息审查' }],
@@ -389,7 +406,7 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbCrumb[]> = {
   '/products/tianheng':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧' }],
   '/deep-model-eval':         [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '深度模型可信测评' }],
   '/embodied-intelligence':   [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '具身智能可信评测' }],
-  '/llm-evaluation':          [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '大语言模型可信评测' }],
+  '/llm-evaluation':          [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '大模型性能评测' }],
   '/safety-evaluation':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '大模型安全评测' }],
   '/agent-safety':            [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '智能体安全评测' }],
   '/training-eval':           [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '模型侧', path: '/products/tianheng' }, { label: '训练集评测' }],
@@ -400,7 +417,7 @@ const BREADCRUMB_MAP: Record<string, BreadcrumbCrumb[]> = {
   '/products/tianjian':       [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧' }],
   '/code-vulnerability-audit':[{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧', path: '/products/tianjian' }, { label: '代码漏洞审查' }],
   '/penetration-test':        [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '系统侧', path: '/products/tianjian' }, { label: '网络渗透测试' }],
-  // 合规治理侧
+  // 服务侧
   '/products/tianche':        [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧' }],
   '/ai-safety-edu':           [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧', path: '/products/tianche' }, { label: '人工智能安全教学平台' }],
   '/model-filing-service':    [{ label: '首页', path: '/' }, { label: '产品矩阵', path: '/products-overview' }, { label: '合规治理侧', path: '/products/tianche' }, { label: '大模型备案服务' }],
@@ -725,7 +742,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       '/online-experience': '在线体验｜玄鉴 AI安全与评测平台',
       '/products-overview': '产品矩阵｜玄鉴 AI安全与评测平台',
       '/privacy-data-audit': '个人敏感信息审查｜玄鉴',
-      '/model-safety-eval': '模型数据安全评测｜玄鉴',
+      '/model-safety-eval': '数据集安全评测｜玄鉴',
       '/aigc-content': 'AIGC内容审核与鉴伪｜玄鉴',
       '/aigc-content-marking': 'AIGC内容标识与检测｜玄鉴',
       '/deep-model-eval': '深度模型可信测评｜玄鉴',
@@ -743,6 +760,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       ? '帮助文档｜玄鉴 AI安全与评测平台'
       : titleMap[location.pathname] || '玄鉴 AI安全与评测平台｜榕数科技';
   }, [location.pathname]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search]);
 
   const openMega = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -1109,11 +1130,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
+      {PRODUCT_CONTACT_NAMES[location.pathname] && <ProductContactSection productName={PRODUCT_CONTACT_NAMES[location.pathname]} />}
+
       {/* ─── Global Footer ───────────────────────────────────────── */}
       <GlobalFooter />
 
       {/* ─── Floating Contact Widget (修改点5) ──────────────────── */}
-      <FloatingContact />
+      {/* 在线咨询/玄鉴智能助手后端暂未开放，保留组件代码以便后续恢复。 */}
+      <FloatingContact showOnlineConsultation={false} />
     </div>
   );
 }

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
+import { openHashRoute } from '@/utils/hashRoute';
 import {
   ShieldCheck, CheckCircle2, AlertTriangle, Clock, XCircle,
   ArrowRight, FileText, Lock, Briefcase, Send, QrCode, Phone,
   Search, MapPin, ChevronRight, Globe, Server, HelpCircle,
   ChevronDown, Users, Zap, BarChart3, Award, Building2,
 } from 'lucide-react';
-import { openHashRoute } from '@/utils/hashRoute';
 import { Button } from '../components/ui/button';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { StickySubNav } from '../components/StickySubNav';
@@ -268,33 +268,33 @@ export function ModelFilingService() {
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-medium mb-6">
                 <ShieldCheck className="w-4 h-4" />
-                大模型上线前的合规通行证
+                生成式人工智能服务合规支持
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-6">
-                一站式大模型算法<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">备案解决方案</span>
+                算法备案与大模型<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">登记备案服务方案</span>
               </h1>
               <p className="text-blue-100/80 text-lg mb-8 leading-relaxed max-w-xl">
-                深度适配 2026 年最新监管口径，从安全评测到材料申报，助您快速拿证，无忧商用。
+                围绕算法备案、大模型登记和大模型备案等路径，提供适用性判断、安全评估、材料编制与审核沟通支持。
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <div className="flex items-center gap-2 text-sm text-emerald-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>2026新规适配：API调用与生成式服务双重合规</span>
+                  <span>依据业务形态、模型来源和服务对象判断申报路径</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-emerald-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>内置网信办审核标准自测模型</span>
+                  <span>材料内容与实际技术、制度和测试结果保持一致</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                {false && <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                   <FileText className="w-4 h-4 mr-2" />
-                  免费领取 2026 备案自查清单 (PDF)
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => setConsultOpen(true)} className="text-blue-300 border-blue-400/30 hover:bg-blue-400/10 bg-transparent">
+                  获取备案材料准备清单
+                </Button>}
+                {false && <Button size="lg" variant="outline" onClick={() => setConsultOpen(true)} className="text-blue-300 border-blue-400/30 hover:bg-blue-400/10 bg-transparent">
                   预约专家免费咨询
-                </Button>
+                </Button>}
               </div>
             </motion.div>
 
@@ -320,7 +320,6 @@ export function ModelFilingService() {
         { id: 'mfs-advantages', label: '核心优势' },
         { id: 'mfs-comparison', label: '政策依据' },
         { id: 'mfs-faq', label: 'FAQ' },
-        { id: 'mfs-cta', label: '免费咨询' },
       ]} />
 
       {/* 2. Pain Points — 2×2 grid ───────────────────────────── */}
@@ -351,14 +350,14 @@ export function ModelFilingService() {
               iconColor="text-red-500"
               accentColor="#ef4444"
               shadowColor="rgba(239,68,68,0.12)"
-              title="监管红线"
-              bigNumber="10万"
-              bigNumberLabel="元罚款上限 · 强制下架"
-              desc="未备案擅自上线面临最高罚款、应用下架及停业整顿风险。2025年已有 120+ 家应用因违规被下架处理，监管红线零容忍。"
+              title="路径判断复杂"
+              bigNumber="3类"
+              bigNumberLabel="常见申报路径需要区分"
+              desc="算法备案、大模型登记和大模型备案适用条件、审核方式与所需材料不同，需要结合实际服务形态判断。"
               tags={[
-                { label: '下架风险', cls: 'bg-red-50 text-red-600 border-red-200' },
-                { label: '停业整顿', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
-                { label: '罚款处罚', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+                { label: '算法备案', cls: 'bg-red-50 text-red-600 border-red-200' },
+                { label: '模型登记', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
+                { label: '模型备案', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
               ]}
               delay={0}
             />
@@ -368,14 +367,14 @@ export function ModelFilingService() {
               iconColor="text-blue-500"
               accentColor="#3b82f6"
               shadowColor="rgba(59,130,246,0.12)"
-              title="技术门槛高"
-              bigNumber="68%"
-              bigNumberLabel="驳回原因来自材料缺失"
-              desc="缺乏对抗样本测试数据，无法通过网信办严格的安全评估。安全评估材料缺失是第一大驳回原因，专业壁垒极高。"
+              title="材料体系复杂"
+              bigNumber="多类"
+              bigNumberLabel="主体、算法、制度与评估材料"
+              desc="材料需要相互印证，主体信息、算法说明、安全评估报告、服务协议、关键字库与测试资料不能彼此矛盾。"
               tags={[
-                { label: '对抗测试难', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
-                { label: '通过率低', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-                { label: '专业壁垒高', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
+                { label: '主体材料', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
+                { label: '算法材料', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+                { label: '评估材料', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
               ]}
               delay={0.08}
             />
@@ -385,14 +384,14 @@ export function ModelFilingService() {
               iconColor="text-orange-500"
               accentColor="#f97316"
               shadowColor="rgba(249,115,22,0.12)"
-              title="资源与效率损耗"
-              bigNumber="50%"
-              bigNumberLabel="研发团队时间被合规占用"
-              desc="自评估报告动辄 80 页+，流程繁琐极易驳回，平均 3.5 次才通过，上线时间延误 3–6 个月，研发团队陷入合规泥潭。"
+              title="审核往返协同"
+              bigNumber="多轮"
+              bigNumberLabel="材料审核与反馈修订"
+              desc="申报通常涉及企业、技术、法务和属地审核部门多方协作，需要按反馈持续补充或修订材料。"
               tags={[
-                { label: '耗时半年', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
-                { label: '驳回率高', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
-                { label: '上线延误', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                { label: '审核反馈', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
+                { label: '版本修订', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+                { label: '跨团队协同', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
               ]}
               delay={0.16}
             />
@@ -402,14 +401,14 @@ export function ModelFilingService() {
               iconColor="text-purple-500"
               accentColor="#a855f7"
               shadowColor="rgba(168,85,247,0.12)"
-              title="长期发展制约"
-              bigNumber="0"
-              bigNumberLabel="元政府补贴 · 商店准入关闭"
-              desc="未完成备案的模型无法进入主流应用商店生态，直接丧失政府科技补贴资格，长期商业化路径受阻，竞争力持续削弱。"
+              title="技术事实一致性"
+              bigNumber="一致"
+              bigNumberLabel="材料需与实际系统能力对应"
+              desc="模型来源、训练数据、内容安全机制、接口能力和制度文件均应按实际情况描述，避免夸大或使用模板化虚构内容。"
               tags={[
-                { label: '应用商店封堵', cls: 'bg-purple-50 text-purple-600 border-purple-200' },
-                { label: '补贴资格丧失', cls: 'bg-violet-50 text-violet-600 border-violet-200' },
-                { label: '市场准入受阻', cls: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' },
+                { label: '模型来源', cls: 'bg-purple-50 text-purple-600 border-purple-200' },
+                { label: '安全机制', cls: 'bg-violet-50 text-violet-600 border-violet-200' },
+                { label: '材料口径', cls: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200' },
               ]}
               delay={0.24}
             />
@@ -424,15 +423,15 @@ export function ModelFilingService() {
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
               <FileText className="h-3.5 w-3.5" /> 服务内容与交付物
             </div>
-            <h2 className="mb-4 text-3xl font-black text-slate-900">从备案判断到成功公示，全程有明确交付</h2>
-            <p className="text-slate-500">不是简单代填材料，而是覆盖技术评测、合规论证、申报文件与审核跟进的一站式服务。</p>
+            <h2 className="mb-4 text-3xl font-black text-slate-900">按申报路径组织材料与评估工作</h2>
+            <p className="text-slate-500">结合算法备案、大模型登记或大模型备案的具体要求，形成可核对、可补正的申报材料体系。</p>
           </div>
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {[
-              { icon: Search, color: '#2563eb', title: '备案适用性诊断', desc: '判断业务是否涉及大模型备案、算法备案或双备案，输出备案路径与差距清单。', items: ['业务形态定性', '备案类型判断', '差距分析清单'] },
-              { icon: ShieldCheck, color: '#0891b2', title: '安全评估与整改', desc: '围绕内容安全、数据安全、模型安全和应急机制开展测试并提供整改建议。', items: ['红队安全测试', '风险整改建议', '安全评估报告'] },
-              { icon: FileText, color: '#7c3aed', title: '全套申报材料', desc: '结合模型与业务实际编制申报材料，确保技术表述、制度文件和证明材料相互一致。', items: ['自评估报告', '算法说明材料', '制度与授权文件'] },
-              { icon: Send, color: '#059669', title: '申报与补正陪跑', desc: '协助完成提交、沟通、补正和版本更新，持续跟进直至审核完成并成功公示。', items: ['材料专家预审', '审核补正响应', '公示结果跟进'] },
+              { icon: Search, color: '#2563eb', title: '申报路径判断', desc: '结合服务形态、模型来源、是否面向公众等信息，判断算法备案、大模型登记或大模型备案路径。', items: ['业务形态梳理', '模型调用方式确认', '申报路径建议'] },
+              { icon: ShieldCheck, color: '#0891b2', title: '安全评估支持', desc: '根据选定路径准备测试集、关键字库、测试账号与安全评估材料，并记录评估结果。', items: ['测试资源准备', '内容安全评估', '问题修订建议'] },
+              { icon: FileText, color: '#7c3aed', title: '申报材料编制', desc: '依据企业、算法和模型实际情况编写申报文件，避免材料之间出现口径冲突。', items: ['自评估报告', '主体与算法材料', '制度及服务协议'] },
+              { icon: Send, color: '#059669', title: '审核沟通配合', desc: '协助企业按主管部门反馈补充、修订和版本化管理材料，最终结果以主管部门审核为准。', items: ['材料提交协助', '审核意见响应', '版本记录留存'] },
             ].map((service) => {
               const Icon = service.icon;
               return (
@@ -467,19 +466,19 @@ export function ModelFilingService() {
                 <Search className="w-3.5 h-3.5" /> 政策前沿
               </div>
               <h2 className="text-3xl font-black text-gray-900 mb-5">
-                紧跟监管风向：<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">2026年备案新规核心变化</span>
+                备案与登记路径：<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">按业务实际选择申报方式</span>
               </h2>
               <p className="text-gray-600 mb-7 leading-relaxed text-sm">
-                监管部门对生成式AI的合规要求正逐步细化。我们第一时间提炼最新监管尺度，确保申报材料一次性踩准审核点。
+                生成式人工智能服务的申报要求与服务对象、模型来源和技术实现相关，页面仅作服务能力说明，实际执行以主管部门要求为准。
               </p>
 
               <div className="flex flex-col gap-3">
                 {[
-                  { old: '仅网页服务需备案', new: 'API / App / 小程序全覆盖' },
-                  { old: '安全评估参考指南', new: '抗干扰 + 价值观专项测试（强制）' },
-                  { old: '数据来源简要说明', new: '逐级授权链条 + 开源协议适用证明' },
-                  { old: '年度合规自查', new: '动态更新 + 实时抽查机制' },
+                  { old: '自研或自有算法服务', new: '算法备案路径判断' },
+                  { old: '调用第三方模型 API', new: '模型来源证明与登记判断' },
+                  { old: '自行训练或微调模型', new: '备案材料与安全评估准备' },
+                  { old: '业务或模型发生变化', new: '材料版本与变更事项维护' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                     <div className="flex-1 text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100 text-center">
@@ -489,7 +488,7 @@ export function ModelFilingService() {
                     <ArrowRight className="w-4 h-4 text-blue-400 shrink-0" />
                     <div className="flex-1 text-sm text-blue-700 bg-blue-50 p-3 rounded-lg border border-blue-200 text-center relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-16 h-16 bg-blue-400/10 blur-xl rounded-full" />
-                      <div className="text-[10px] text-blue-500 mb-1">2026新规/合规标准</div>
+                      <div className="text-[10px] text-blue-500 mb-1">申报工作重点</div>
                       <span className="font-bold relative z-10">{item.new}</span>
                     </div>
                   </div>
@@ -506,13 +505,13 @@ export function ModelFilingService() {
                   <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
                     <BarChart3 className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="font-black text-gray-900">新规三大核心特点</h3>
+                  <h3 className="font-black text-gray-900">申报材料关注重点</h3>
                 </div>
                 <div className="flex flex-col gap-3">
                   {[
-                    { label: '界定更清晰', color: '#3b82f6', desc: 'API 接口、嵌入第三方均属备案范畴，消除擦边球空间。' },
-                    { label: '安全更严格', color: '#ef4444', desc: '抗干扰与价值观对齐专项测试，必须提交权威评测报告。' },
-                    { label: '数据更透明', color: '#10b981', desc: '训练数据授权链条细化到具体来源，开源协议须明确说明。' },
+                    { label: '主体与路径', color: '#3b82f6', desc: '明确服务主体、产品形态、模型来源和对应申报路径。' },
+                    { label: '安全评估', color: '#ef4444', desc: '准备测试集、关键字库、测试账号或接口以及评估记录。' },
+                    { label: '材料一致', color: '#10b981', desc: '确保模型、数据、制度、协议和技术能力描述相互一致。' },
                   ].map((item) => (
                     <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: `${item.color}08`, border: `1px solid ${item.color}20` }}>
                       <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: item.color }} />
@@ -535,10 +534,10 @@ export function ModelFilingService() {
                 </div>
                 <div className="flex flex-col gap-2.5">
                   {[
-                    { icon: '📚', text: '材料库已同步 2026 最新审核口径，一次性踩准所有要点' },
-                    { icon: '🛡️', text: '自研安全评测平台出具权威对抗测试报告，直接满足强制要求' },
-                    { icon: '🔗', text: '专属律师团队梳理训练数据授权链条，完整覆盖开源协议说明' },
-                    { icon: '👨‍💼', text: '专家一对一辅导，材料不通过不结项，零风险承诺' },
+                    { icon: '📚', text: '根据申报路径整理主体、算法、模型及制度材料清单' },
+                    { icon: '🛡️', text: '结合实际测试结果协助形成安全评估相关材料' },
+                    { icon: '🔗', text: '核对模型来源、数据来源、调用关系与授权证明' },
+                    { icon: '👨‍💼', text: '协助响应审核反馈并维护材料版本，结果以主管部门审核为准' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-emerald-50/60">
                       <span className="text-base">{item.icon}</span>
@@ -554,8 +553,8 @@ export function ModelFilingService() {
                 style={{ background: 'linear-gradient(135deg,#1e40af,#1d4ed8)', boxShadow: '0 8px 28px rgba(30,64,175,0.25)' }}
               >
                 <div>
-                  <div className="text-white font-bold text-sm mb-1">立即咨询合规方案</div>
-                  <div className="text-blue-200 text-xs">专属顾问 15 分钟响应</div>
+                <div className="text-white font-bold text-sm mb-1">咨询申报路径与材料准备</div>
+                  <div className="text-blue-200 text-xs">结合业务实际梳理申报事项</div>
                 </div>
                 <Button size="sm" className="bg-white text-blue-700 hover:bg-blue-50 font-bold shrink-0 border-0">
                   免费咨询 <ArrowRight className="w-3.5 h-3.5 ml-1" />
@@ -581,8 +580,8 @@ export function ModelFilingService() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold mb-4">
               <ShieldCheck className="w-3.5 h-3.5" /> 服务流程
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-4">全生命周期合规护航，不仅仅是"代填表"</h2>
-            <p className="text-gray-500">从定性分析到最终公示，我们提供一站式专业服务</p>
+            <h2 className="text-3xl font-black text-gray-900 mb-4">从路径确认到审核反馈的协同流程</h2>
+            <p className="text-gray-500">具体环节、周期和结果以申报路径、材料完整度及主管部门审核为准</p>
           </div>
 
           {/* Horizontal 4-step flow */}
@@ -604,40 +603,40 @@ export function ModelFilingService() {
               {[
                 {
                   step: '01',
-                  title: '资质预审',
+                  title: '路径与差距确认',
                   icon: Search,
                   hexGrad: '#3b82f6,#6366f1',
                   accentColor: '#3b82f6',
-                  items: ['快速评估合规需求', '定制专属方案'],
-                  desc: '业务场景定性与备案类型确认，避免报错类别。',
+                  items: ['梳理业务与模型来源', '确认申报路径及缺口'],
+                  desc: '判断算法备案、大模型登记或大模型备案，并形成材料准备清单。',
                 },
                 {
                   step: '02',
-                  title: '安全评测',
+                  title: '材料与评估准备',
                   icon: ShieldCheck,
                   hexGrad: '#0ea5e9,#3b82f6',
                   accentColor: '#0ea5e9',
-                  items: ['红队对抗测试', '出具权威报告'],
-                  desc: '自研评测系统，符合网信办要求的专业安全报告。',
+                  items: ['准备测试集与关键字库', '形成安全评估材料'],
+                  desc: '按对应路径准备测试资源、制度文件、服务协议及安全评估报告。',
                   highlight: true,
                 },
                 {
                   step: '03',
-                  title: '材料撰写',
+                  title: '属地审核配合',
                   icon: FileText,
                   hexGrad: '#10b981,#06b6d4',
                   accentColor: '#10b981',
-                  items: ['80+ 项材料定制', '精准匹配新规'],
-                  desc: '全套定制材料，精准匹配最新审核标准。',
+                  items: ['提交材料与版本留存', '按反馈补充修订'],
+                  desc: '配合属地网信部门多轮材料审核；登记与备案路径可能包含安全评估接口测试。',
                 },
                 {
                   step: '04',
-                  title: '申报跟进',
+                  title: '结果与持续维护',
                   icon: Send,
                   hexGrad: '#8b5cf6,#06b6d4',
                   accentColor: '#8b5cf6',
-                  items: ['实时响应补正', '直至成功公示'],
-                  desc: '全程跟进审核进度，实时响应，直至公示。',
+                  items: ['跟进审核结果', '留存材料与变更记录'],
+                  desc: '协助跟踪审核进展与后续变更；最终审核与公开结果由主管部门决定。',
                 },
               ].map((s, i) => {
                 const Icon = s.icon;
@@ -716,37 +715,37 @@ export function ModelFilingService() {
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">懂技术更懂合规，通过率遥遥领先</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4">技术、材料与项目协同支持</h2>
             <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-emerald-500 mx-auto rounded-full" />
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all">
               <Server className="w-10 h-10 text-blue-500 mb-5" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3">技术驱动，拒绝编造</h3>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">拥有自研大模型安全评测平台，用真实测试数据支撑备案材料，轻松应对监管抽查。</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">基于实际系统形成材料</h3>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">结合真实模型、接口、测试数据和内容安全机制编制材料，避免模板化描述与实际能力不一致。</p>
               <div className="flex items-center gap-4">
                 <div className="flex-1 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="text-3xl font-black text-emerald-500 mb-1">99%</div>
-                  <div className="text-xs text-gray-500">内部预审通过率</div>
+                  <div className="text-xl font-black text-emerald-500 mb-1">一致性</div>
+                  <div className="text-xs text-gray-500">技术与材料核对</div>
                 </div>
                 <div className="flex-1 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="text-3xl font-black text-blue-500 mb-1">300+</div>
-                  <div className="text-xs text-gray-500">评测指标覆盖</div>
+                  <div className="text-xl font-black text-blue-500 mb-1">可追溯</div>
+                  <div className="text-xs text-gray-500">版本与证据留存</div>
                 </div>
               </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all">
               <Briefcase className="w-10 h-10 text-blue-500 mb-5" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3">监管背景，精准翻译</h3>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">团队由前监管机构顾问与资深AI算法工程师组成，精准翻译"法言法语"与"技术代码"。</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">跨专业协作</h3>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">由产品、算法、安全与材料人员协同核对技术事实、评估结果和申报表述，减少信息遗漏与口径偏差。</p>
               <div className="flex gap-3">
                 <div className="flex-1 flex flex-col items-center gap-2 bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center shadow-sm">
                     <Users className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xs text-center text-gray-600">前监管顾问</span>
+                  <span className="text-xs text-center text-gray-600">材料编制</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-blue-400 font-bold">+</span>
@@ -755,18 +754,18 @@ export function ModelFilingService() {
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xs text-center text-gray-600">AI 算法博士</span>
+                  <span className="text-xs text-center text-gray-600">技术评估</span>
                 </div>
               </div>
             </motion.div>
 
             <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="p-8 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all">
               <MapPin className="w-10 h-10 text-blue-500 mb-5" />
-              <h3 className="text-xl font-bold text-gray-900 mb-3">本地化服务，零时差</h3>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">深耕核心城市，熟悉各地属地网信办的本地化审核偏好，提供贴身一对一响应服务。</p>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">过程化项目管理</h3>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">围绕材料清单、审查反馈和文档版本持续管理项目过程，使补充修改的依据和责任边界清晰可查。</p>
               <div className="grid grid-cols-3 gap-2">
-                {['北京', '上海', '广州', '深圳', '杭州', '成都'].map(city => (
-                  <div key={city} className="text-center py-2 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-600">{city}</div>
+                {['路径确认', '材料清单', '版本管理', '反馈跟踪', '证据留存', '结果归档'].map(item => (
+                  <div key={item} className="text-center py-2 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-600">{item}</div>
                 ))}
               </div>
             </motion.div>
@@ -775,7 +774,7 @@ export function ModelFilingService() {
       </section>
 
       {/* 6. Lead Magnet ──────────────────────────────────────── */}
-      <section className="order-[7] py-20 bg-blue-50 relative overflow-hidden">
+      <section className="hidden order-[7] py-20 bg-blue-50 relative overflow-hidden" aria-hidden="true">
         <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-400/10 rounded-full blur-[100px] pointer-events-none" />
 
@@ -902,11 +901,11 @@ export function ModelFilingService() {
           <h2 className="text-3xl font-black text-gray-900 text-center mb-12">常见问题解答</h2>
           <div className="space-y-3">
             {[
-              { q: '只有网页版需要备案吗？App 和小程序需要吗？', a: '所有面向公众服务的形态均属于《生成式人工智能服务管理暂行办法》监管范畴，包括 App、小程序、H5 网页，甚至是开放给开发者使用的 API，均必须完成大模型备案。' },
-              { q: '备案大概需要多久可以拿证？', a: '在资料完全准备齐全并提交后，审核周期通常为 15-30 个工作日。如期间需补充材料，时间会顺延。我们提供专属通道经验与标准化材料模版，极大缩短预审周期。' },
-              { q: '如果审核不通过怎么办？费用退还吗？', a: '我们承诺：不限次协助修改申报材料，直至成功通过！在正式提交前，我们会利用自研系统进行严格内部预审核，确保所有安全评测指标达标，极大降低驳回率。' },
-              { q: '我们已经在用其他备案服务商，能中途切换吗？', a: '完全可以。我们提供"接盘"服务，帮助您梳理已有材料中的问题，仅对差距部分进行补强（如补充安全评测、数据授权链条等），避免重复工作。' },
-              { q: '大模型备案和算法备案有什么区别？', a: '大模型备案（生成式AI服务备案）侧重于生成内容的安全、价值观和数据合规；而算法备案（深度合成服务算法备案）侧重于算法机理的透明度与安全性。两者通常需要结合进行。我们提供"双备案"一站式服务。' },
+              { q: '如何判断应走算法备案、模型登记还是大模型备案？', a: '需要结合服务是否面向境内公众、模型是自研还是调用第三方 API、是否涉及训练或微调、服务形态和属地要求综合判断。我们会先完成业务与模型来源梳理，再给出申报路径建议。' },
+              { q: '不同申报路径通常需要准备哪些材料？', a: '算法备案通常涉及主体责任信息、算法安全自评估报告和拟公示内容；大模型登记或备案通常还涉及申请材料、模型来源证明、服务协议、内容安全制度、关键字库、评估测试集及测试账号或接口说明。最终清单以主管部门要求为准。' },
+              { q: '整个办理周期是固定的吗？', a: '不是。方案材料中的 3—6 个月、3—4 个月以上或 3—8 个月仅可作为项目规划参考，不是监管部门承诺时限。实际周期取决于申报路径、属地审核、材料完整度、反馈轮次和安全评估测试安排。' },
+              { q: '提交后收到补充或修订意见怎么办？', a: '我们会协助定位反馈对应的材料、技术或制度问题，统一修订相关文件并维护版本记录。是否通过以及何时完成，仍以主管部门审核结论为准。' },
+              { q: '调用第三方大模型 API 也需要评估吗？', a: '调用第三方模型且不自行训练或微调时，通常需要重点核对模型来源证明、调用关系、服务协议和面向公众的产品责任；具体是否适用大模型登记或其他路径，应结合属地要求和实际业务确认。' },
             ].map((faq, i) => (
               <FaqItem key={i} q={faq.q} a={faq.a} index={i} />
             ))}
@@ -914,7 +913,7 @@ export function ModelFilingService() {
         </div>
       </section>
 
-      <section id="mfs-cta" className="order-[10] border-t border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-blue-50 py-20">
+      <section id="mfs-cta" className="hidden order-[10] border-t border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-blue-50 py-20" aria-hidden="true">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-700">
             <Users className="h-3.5 w-3.5" /> 专家一对一服务

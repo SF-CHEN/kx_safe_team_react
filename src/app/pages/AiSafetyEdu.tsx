@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
+import { openHashRoute } from '@/utils/hashRoute';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   GraduationCap, BookOpen, Shield, Zap, Target, Users,
@@ -10,7 +11,6 @@ import {
   Trophy, RefreshCw, MessageSquare,
   Server, Cloud, AlertTriangle,
 } from 'lucide-react';
-import { openHashRoute } from '@/utils/hashRoute';
 import { Button } from '../components/ui/button';
 import { GuestGuard } from '../components/GuestGuard';
 import { useUser } from '../context/UserContext';
@@ -561,7 +561,7 @@ export function AiSafetyEdu() {
           className="absolute inset-0"
           aria-hidden="true"
           style={{
-            backgroundImage: "url('/hero-service-side.webp')",
+            backgroundImage: "url('/hero-service-side.png')",
             backgroundSize: 'cover',
             backgroundPosition: 'center center',
             transform: 'scale(1.015)',
@@ -610,14 +610,14 @@ export function AiSafetyEdu() {
                 ))}
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button size="lg" className="text-white border-0 shadow-[0_0_24px_rgba(99,102,241,0.4)]"
+                {false && <Button size="lg" className="text-white border-0 shadow-[0_0_24px_rgba(99,102,241,0.4)]"
                   style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)' }}
                   onClick={openCourseExperience}>
                   <Play className="w-4 h-4 mr-2" />免费体验课程
-                </Button>
-                <Button size="lg" variant="outline" className="text-blue-700 border-blue-300/60 hover:bg-white bg-white/60 backdrop-blur-md">
+                </Button>}
+                {false && <Button size="lg" variant="outline" className="text-blue-700 border-blue-300/60 hover:bg-white bg-white/60 backdrop-blur-md">
                   申请院校合作 <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                </Button>}
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
@@ -633,7 +633,6 @@ export function AiSafetyEdu() {
         { id: 'ase-curriculum', label: '课程体系' },
         { id: 'ase-deployment', label: '部署方式' },
         { id: 'ase-scenarios', label: '应用场景' },
-        { id: 'ase-cta', label: '立即体验' },
       ]} />
 
       {/* ── 2. Stats Bar ────────────────────────────────────── */}
@@ -848,10 +847,10 @@ export function AiSafetyEdu() {
                       </div>
                     ))}
                   </div>
-                  <button className="w-full py-3 rounded-xl text-sm font-bold transition-all"
+                  {false && <button className="w-full py-3 rounded-xl text-sm font-bold transition-all"
                     style={{ background: `linear-gradient(135deg,${dep.color},${dep.color}cc)`, color: '#fff', border: 'none', boxShadow: `0 4px 16px ${dep.color}30` }}>
                     {dep.cta} <ArrowRight className="w-4 h-4 inline ml-1" />
-                  </button>
+                  </button>}
                 </motion.div>
               );
             })}
@@ -873,12 +872,10 @@ export function AiSafetyEdu() {
             {[
               { emoji: '🎓', color: '#6366f1', title: '高校与教育机构', sub: '「理论+实践」结合教学模式', bg: 'linear-gradient(135deg,#f0f0ff,#e8f1fd)',
                 desc: '提供人工智能安全领域的理论教学与实训工具，有效解决课程资源不完整、专业实训平台缺失的难题。从AI安全核心理论学起，参与前沿科研项目，在多任务、多场景的攻防实战演练中锤炼硬技能。',
-                partner: '深圳职业技术学院', partnerBg: 'bg-indigo-50 text-indigo-700 border-indigo-100',
                 points: ['开箱即用的AI安全实验教学体系', '降低专业实训平台建设成本', '与产业前沿实际需求紧密对接', '支持私有化部署，数据不出校'],
                 cta: '申请校园版' },
               { emoji: '🏢', color: '#0ea5e9', title: '中大型企业', sub: '「学+练+评」闭环赋能体系', bg: 'linear-gradient(135deg,#f0f8ff,#e8f4ff)',
                 desc: '帮助企业系统化应对日益复杂的安全挑战，弥补体系化培训资源的不足。通过定制化AI安全课程夯实理论基础，结合真实产业案例深化实战认知，依托沉浸式攻防实训环境提升实操能力。',
-                partner: '众合科技', partnerBg: 'bg-cyan-50 text-cyan-700 border-cyan-100',
                 points: ['系统化应对日益复杂的AI安全挑战', '真实产业案例解析深化实战认知', '沉浸式攻防实训环境提升实操能力', '定制化课程与私有化部署支持'],
                 cta: '申请企业版' },
             ].map((aud, i) => (
@@ -895,10 +892,6 @@ export function AiSafetyEdu() {
                   <p className="text-gray-600 text-sm leading-relaxed">{aud.desc}</p>
                 </div>
                 <div className="p-8 bg-white">
-                  <div className="text-xs font-semibold text-gray-400 mb-3">代表合作方</div>
-                  <div className="flex flex-wrap gap-2 mb-5">
-                    <span className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${aud.partnerBg}`}>{aud.partner}</span>
-                  </div>
                   <div className="space-y-2">
                     {aud.points.map(p => (
                       <div key={p} className="flex items-center gap-2 text-sm text-gray-700">
@@ -906,10 +899,10 @@ export function AiSafetyEdu() {
                       </div>
                     ))}
                   </div>
-                  <button className="mt-6 w-full py-2.5 rounded-xl text-sm font-bold"
+                  {false && <button className="mt-6 w-full py-2.5 rounded-xl text-sm font-bold"
                     style={{ background: aud.color + '12', color: aud.color, border: `1.5px solid ${aud.color}25` }}>
                     {aud.cta} <ArrowRight className="w-3.5 h-3.5 inline ml-1" />
-                  </button>
+                  </button>}
                 </div>
               </motion.div>
             ))}
@@ -918,7 +911,7 @@ export function AiSafetyEdu() {
       </section>
 
       {/* ── 9. FAQ ──────────────────────────────────────────── */}
-      <section className="py-20 bg-slate-50 border-t border-gray-200">
+      <section className="hidden py-20 bg-slate-50 border-t border-gray-200" aria-hidden="true">
         <div className="max-w-3xl mx-auto px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-gray-900 mb-3">常见问题</h2>
@@ -937,7 +930,7 @@ export function AiSafetyEdu() {
       </section>
 
       {/* ── 10. CTA ──────────────────────────────────────────── */}
-      <section id="ase-cta" className="py-20" style={{ background: 'linear-gradient(135deg,#fffbeb,#fef3c7,#fde68a)', borderTop: '1px solid #fcd34d' }}>
+      <section id="ase-cta" className="hidden py-20" aria-hidden="true" style={{ background: 'linear-gradient(135deg,#fffbeb,#fef3c7,#fde68a)', borderTop: '1px solid #fcd34d' }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.12)', border: '1.5px solid rgba(245,158,11,0.35)' }}>

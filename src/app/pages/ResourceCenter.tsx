@@ -29,7 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import type { StoredAttachment } from '../data/workflowStore';
 
 const PRODUCT_OPTIONS = [
-  '全部产品', '模型数据安全评测', '深度模型可信测评',
+  '全部产品', '数据集安全评测', '深度模型可信测评',
   '智能体安全评测', '大模型性能评测', '大模型安全评测',
 ];
 
@@ -52,6 +52,7 @@ const STATUS_UI: Record<string, { label: string; style: string; icon: React.Elem
 function productLabel(type: EvalTask['evalType']) {
   if (type === '大模型评测') return '大模型性能评测';
   if (type === '多模态大模型安全评测') return '大模型安全评测';
+  if (type === '模型数据安全评测') return '数据集安全评测';
   return type;
 }
 
@@ -74,7 +75,7 @@ function fileStub(id: number | undefined, category: StoredAttachment['category']
 }
 
 function productTypeFromLabel(product: string): EvaluationTaskMasterProductType | 'unsupported' | undefined {
-  if (product === '模型数据安全评测') return 'DATA_SAFETY';
+  if (product === '数据集安全评测' || product === '模型数据安全评测') return 'DATA_SAFETY';
   if (product === '深度模型可信测评') return 'TRUST';
   if (product === '大模型性能评测') return 'PERFORMANCE';
   if (product === '大模型安全评测') return 'SAFETY';

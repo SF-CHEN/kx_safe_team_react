@@ -8,11 +8,11 @@ import {
 import { uploadSysFile } from '@/api/file';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
 import { fileToStoredAttachment } from '../data/workflowStore';
 
-type Variant = 'model-data' | 'deep-model';
+type Variant = 'model-data' | 'deep-model' | 'agent-safety';
 
 interface Props {
   open: boolean;
@@ -22,24 +22,34 @@ interface Props {
 
 const COPY = {
   'model-data': {
-    title: '创建模型数据安全评测任务',
-    subtitle: '上传数据工程文件，并说明本次评测希望重点关注的问题',
-    uploadTitle: '上传数据或工程文件',
-    uploadHint: '支持 ZIP、RAR、7Z、TAR、CSV、JSON、JSONL 等格式',
-    accept: '.zip,.rar,.7z,.tar,.gz,.csv,.json,.jsonl,.docx',
-    placeholder: '例如：希望重点检查训练数据的异常样本、标注质量和数据分布是否均衡。',
-    evalType: '模型数据安全评测' as const,
+    title: '创建数据集安全评测任务',
+    subtitle: '上传数据工程文件，并说明本次希望重点评测的问题',
+    uploadTitle: '上传数据工程文件',
+    uploadHint: '支持压缩包、CSV、TSV、JSON、JSONL、TXT、NPZ、NPY、XML 等材料',
+    accept: '.zip,.rar,.7z,.tar,.gz,.csv,.tsv,.json,.jsonl,.txt,.npz,.npy,.xml,.yaml,.yml,.docx',
+    placeholder: '请描述数据任务类型、数据格式、数据划分及评测重点。例如：图像分类任务，ImageFolder 格式，包含 train / val，希望重点检查异常样本、标注质量和类别分布。',
+    evalType: '数据集安全评测' as const,
     model: '用户上传的数据工程',
   },
   'deep-model': {
     title: '创建深度模型可信评测任务',
-    subtitle: '上传模型或工程文件，并说明本次评测希望重点验证的可信能力',
+    subtitle: '上传模型或工程文件，并说明希望执行的评测算法与重点问题',
     uploadTitle: '上传模型或工程文件',
-    uploadHint: '支持 ZIP、RAR、7Z、TAR、PT、PTH、PB、ONNX、H5 等格式',
-    accept: '.zip,.rar,.7z,.tar,.gz,.pt,.pth,.pb,.onnx,.h5',
-    placeholder: '例如：我想重点测试模型的鲁棒性，以及在对抗扰动下的表现。',
+    uploadHint: '支持工程压缩包及 PyTorch、TensorFlow、Keras、MindSpore 相关模型文件',
+    accept: '.zip,.rar,.7z,.tar,.gz,.pt,.pth,.pb,.h5,.keras,.ckpt,.mindir',
+    placeholder: '请说明模型框架、接入方式和评测诉求。例如：PyTorch 本地模型，希望执行对抗攻击、性能和量化评估，重点比较攻击前后输出及量化前后的精度变化。',
     evalType: '深度模型可信测评' as const,
     model: '用户上传的模型工程',
+  },
+  'agent-safety': {
+    title: '创建智能体安全评测任务',
+    subtitle: '上传智能体工程文件，并说明希望检测的安全问题与业务场景',
+    uploadTitle: '上传智能体工程文件',
+    uploadHint: '支持 ZIP、RAR、7Z、TAR、GZ 等工程压缩包，以及 JSON、YAML、YML、TXT 等配置材料',
+    accept: '.zip,.rar,.7z,.tar,.gz,.json,.yaml,.yml,.txt,.md',
+    placeholder: '请描述智能体用途、主要功能、工具或知识库接入情况，以及希望重点检测的安全问题。例如：企业知识库问答智能体，包含 RAG 与文件读取能力，希望重点检查提示词泄露、RAG 泄露和工具恶意调用风险。',
+    evalType: '智能体安全评测' as const,
+    model: '用户上传的智能体工程',
   },
 };
 
@@ -63,7 +73,7 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
 
   const submit = async () => {
     if (!file) {
-      toast.error('请先上传本地模型或工程文件');
+      toast.error('请先上传工程文件');
       return;
     }
     if (!request.trim()) {
@@ -71,6 +81,10 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       return;
     }
     if (submitting) return;
+    if (variant === 'agent-safety') {
+      toast.error('智能体安全评测创建接口尚未开放');
+      return;
+    }
 
     const requirement = request.trim();
     const userId = Number(user.id);
@@ -128,7 +142,7 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
           <div className="flex items-start justify-between gap-4">
             <div>
               <DialogTitle className="text-xl font-bold text-white">{copy.title}</DialogTitle>
-              <p className="mt-1.5 text-sm leading-6 text-blue-100">{copy.subtitle}</p>
+              <DialogDescription className="mt-1.5 text-sm leading-6 text-blue-100">{copy.subtitle}</DialogDescription>
             </div>
             <button
               type="button"

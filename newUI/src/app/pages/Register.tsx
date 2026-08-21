@@ -43,15 +43,20 @@ export function Register() {
       return;
     }
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 650));
-    const displayName = getDefaultUserName(normalizedIdentifier);
-    const ok = await register(displayName, normalizedIdentifier, password);
-    setLoading(false);
-    if (ok) {
-      toast.success('注册成功，欢迎使用玄鉴平台');
-      navigate(returnTo);
-    } else {
-      toast.error('该手机号或邮箱已经注册，请直接登录');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const displayName = getDefaultUserName(normalizedIdentifier);
+      const ok = await register(displayName, normalizedIdentifier, password);
+      if (ok) {
+        toast.success('注册成功，欢迎使用玄鉴平台');
+        navigate(returnTo && returnTo !== '/register' && returnTo !== '/login' ? returnTo : '/', { replace: true });
+      } else {
+        toast.error('该手机号或邮箱已经注册，请直接登录');
+      }
+    } catch {
+      toast.error('注册失败，请稍后重试');
+    } finally {
+      setLoading(false);
     }
   };
 

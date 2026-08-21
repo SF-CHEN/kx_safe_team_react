@@ -135,7 +135,7 @@ export function RegisteredUserPanel({
   </>;
 }
 export type TaskGroup = 'pending' | 'waiting' | 'closed' | 'all';
-const ADMIN_PRODUCT_OPTIONS = ['全部产品', '模型数据安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
+const ADMIN_PRODUCT_OPTIONS = ['全部产品', '数据集安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
 function canonicalProduct(product: string) {
   if (product === '大模型评测') return '大模型性能评测';
   if (product === '多模态大模型安全评测') return '大模型安全评测';
@@ -163,9 +163,8 @@ export function AdminWorkflowWorkbench({
   const [pageSize, setPageSize] = useState(5);
   const [page, setPage] = useState(1);
   const [publicText, setPublicText] = useState('');
-  const [category, setCategory] = useState('模型／工程文件');
-  const [dueAt, setDueAt] = useState('');
-  const [terminationReason, setTerminationReason] = useState('');
+  const [feedbackAction, setFeedbackAction] = useState<'supplement' | 'terminate'>('supplement');
+  const [terminationConfirmOpen, setTerminationConfirmOpen] = useState(false);
   const productTasks = useMemo(() => tasks.filter(task => product === '全部产品' || canonicalProduct(task.product) === product), [tasks, product]);
   const filtered = useMemo(() => productTasks.filter(task => {
     const match = !query.trim() || `${task.id}${task.name}${task.userName}${task.contact}`.toLowerCase().includes(query.trim().toLowerCase());
@@ -206,7 +205,8 @@ export function AdminWorkflowWorkbench({
   }, [filtered, selected]);
   useEffect(() => {
     setPublicText('');
-    setTerminationReason('');
+    setFeedbackAction('supplement');
+    setTerminationConfirmOpen(false);
   }, [current?.id]);
   const uploadOutputs = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!current || TERMINAL.has(current.status) || !event.target.files?.length) return;
@@ -255,7 +255,7 @@ export function AdminWorkflowWorkbench({
   };
   const requestSupplement = () => {
     if (!current || !publicText.trim()) return toast.error('请填写需要用户补充的内容');
-    requestTaskSupplement(current.id, publicText.trim(), category, dueAt, 'admin');
+    requestTaskSupplement(current.id, publicText.trim(), '补充材料', '', 'admin');
     setGroup('waiting');
     setPublicText('');
     toast.success('补件要求已推送至用户资源中心');
@@ -267,12 +267,20 @@ export function AdminWorkflowWorkbench({
       toast.success('报告已交付，用户资源中心与消息中心已同步');
     }
   };
+  const submitFeedback = () => {
+    if (!current || !publicText.trim()) return toast.error(feedbackAction === 'supplement' ? '请填写需要用户补充的内容' : '请填写终止原因，以便用户了解处理结果');
+    if (feedbackAction === 'terminate') {
+      setTerminationConfirmOpen(true);
+      return;
+    }
+    requestSupplement();
+  };
   const terminate = () => {
-    if (!current || !terminationReason.trim()) return toast.error('请填写终止原因，以便用户了解处理结果');
-    if (!window.confirm('终止后将立即通知用户，并把任务归入已结束。确定继续吗？')) return;
-    terminateWorkflowTask(current.id, terminationReason.trim(), 'admin');
+    if (!current || !publicText.trim()) return;
+    terminateWorkflowTask(current.id, publicText.trim(), 'admin');
     setGroup('closed');
-    setTerminationReason('');
+    setPublicText('');
+    setTerminationConfirmOpen(false);
     toast.success('任务已终止并通知用户');
   };
   const download = (file: WorkflowTask['inputs'][number]) => {
@@ -340,12 +348,12 @@ export function AdminWorkflowWorkbench({
         <aside className="flex h-full flex-col gap-3 rounded-xl border border-blue-300 bg-[#EEF6FF] p-4 shadow-[0_10px_28px_rgba(37,99,235,.13)] xl:sticky xl:top-[88px] xl:self-start">
           <h3 className="text-lg font-black leading-7 text-slate-950">管理员操作台</h3>{outputManager}
           {TERMINAL.has(current.status) ? <div className={`rounded-2xl border p-5 ${current.status === '已交付' ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}><div className="flex items-center gap-3">{current.status === '已交付' ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-slate-500" />}<div><h4 className="text-sm font-black text-slate-800">任务流程已结束</h4><p className="mt-1 text-xs leading-5 text-slate-500">当前状态为“{current.status}”，补件、上传、交付和终止操作均已锁定。</p></div></div></div> : <>
-          <section className="rounded-lg border border-orange-200 bg-white p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">请求用户补件</h4><p className="text-xs leading-5 text-orange-700">材料缺失或不符合要求时使用</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm"><option>模型／工程文件</option><option>配置文件</option><option>API 信息</option><option>需求说明</option><option>其他材料</option></select><input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} className="h-9 rounded-lg border border-orange-100 bg-white px-2 text-sm" /></div><textarea value={publicText} onChange={e => setPublicText(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-5 outline-none focus:border-orange-400" placeholder="填写用户可见的补件要求" /><button onClick={requestSupplement} className="mt-2 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-md shadow-orange-200 hover:bg-orange-600">发送补件要求</button></section>
+          <section className="rounded-xl border border-orange-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500 text-white"><MessageSquareWarning className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">返回意见</h4><p className="text-xs leading-5 text-orange-700">先选择处理结果，再填写用户可见说明</p></div></div><label className="mt-4 block text-xs font-bold text-slate-500">处理结果<select value={feedbackAction} onChange={event => setFeedbackAction(event.target.value as 'supplement' | 'terminate')} className="mt-2 h-10 w-full rounded-lg border border-orange-100 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-orange-400"><option value="supplement">请求用户补件</option><option value="terminate">终止任务</option></select></label><textarea value={publicText} onChange={event => setPublicText(event.target.value)} className="mt-3 min-h-24 w-full resize-y rounded-lg border border-orange-100 bg-white p-3 text-sm leading-6 outline-none focus:border-orange-400" placeholder={feedbackAction === 'supplement' ? '例如：请重新提交 XXXX 文件' : '请填写用户可见的终止原因'} /><button onClick={submitFeedback} className={`mt-3 w-full rounded-lg px-4 py-2.5 text-sm font-black text-white shadow-md transition ${feedbackAction === 'supplement' ? 'bg-orange-500 shadow-orange-200 hover:bg-orange-600' : 'bg-red-600 shadow-red-200 hover:bg-red-700'}`}>{feedbackAction === 'supplement' ? '发送补件要求' : '继续终止任务'}</button></section>
 
           <section className="overflow-hidden rounded-lg border border-blue-200 bg-white shadow-sm"><div className="p-4"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700"><Send className="h-4 w-4" /></span><div><h4 className="text-base font-black text-slate-900">正常交付</h4><p className="text-xs leading-5 text-slate-500">上传文件并正式推送给用户</p></div></div><label className="mt-3 flex min-h-16 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50/60 text-sm font-bold text-blue-700 transition hover:border-blue-500 hover:bg-blue-50"><FileUp className="h-4 w-4" />上传报告／结果文件<input type="file" multiple className="hidden" onChange={uploadOutputs} /></label>{current.outputs.length > 0 && <div className="mt-2 max-h-24 space-y-1.5 overflow-y-auto">{current.outputs.map(file => <div key={file.id} className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-slate-700"><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="truncate">{file.name}</span></div>)}</div>}<button onClick={deliver} disabled={current.status === '已交付' || !current.outputs.length} className="mt-2 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">{current.status === '已交付' ? '已完成交付' : current.outputs.length ? '确认交付并推送用户' : '请先上传交付文件'}</button></div>{current.pushedAt && <div className="border-t border-blue-100 bg-blue-50/60 px-4 py-2 text-xs leading-5 text-blue-700">最近交付：{current.pushedAt} · v{current.outputVersion || 1}</div>}</section>
 
-          <section className="rounded-lg border border-red-100 bg-white p-4"><div className="flex items-center gap-2"><XCircle className="h-5 w-5 text-red-500" /><h4 className="text-base font-black text-slate-800">终止任务</h4></div><p className="mt-0.5 text-xs leading-5 text-red-600">仅在材料长期缺失或任务无法继续时使用</p><textarea value={terminationReason} onChange={e => setTerminationReason(e.target.value)} className="mt-2 min-h-16 w-full resize-y rounded-lg border border-red-100 bg-white p-3 text-sm leading-5 outline-none focus:border-red-300" placeholder="填写用户可见的终止原因" /><button onClick={terminate} disabled={current.status === '已终止'} className="mt-2 w-full rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 hover:bg-red-600 hover:text-white disabled:text-slate-300">{current.status === '已终止' ? '任务已终止' : '终止并通知用户'}</button></section>
           </>}
+          {terminationConfirmOpen && <Modal title="确认终止任务" onClose={() => setTerminationConfirmOpen(false)}><div className="rounded-2xl border border-red-100 bg-red-50 p-4"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" /><div><p className="text-sm font-black text-red-900">终止后任务将立即归入“已结束”并通知用户</p><p className="mt-2 text-xs leading-6 text-red-700">用户可见说明：{publicText}</p></div></div></div><div className="mt-5 flex gap-3"><button onClick={() => setTerminationConfirmOpen(false)} className="h-11 flex-1 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600">取消</button><button onClick={terminate} className="h-11 flex-1 rounded-xl bg-red-600 text-sm font-black text-white hover:bg-red-700">确认终止并通知用户</button></div></Modal>}
         </aside>
       </div>
       </> : <div className="flex min-h-[680px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white/70 px-8 text-center"><div><FileArchive className="mx-auto h-12 w-12 text-slate-300" /><h3 className="mt-4 text-base font-black text-slate-700">没有符合条件的任务</h3><p className="mt-2 text-sm text-slate-500">请在左侧调整产品类型、任务状态或搜索关键词。</p></div></div>}

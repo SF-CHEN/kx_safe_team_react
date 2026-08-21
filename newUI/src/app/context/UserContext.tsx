@@ -22,7 +22,7 @@ export interface EvalTask {
   model: string;
   modelType: string;
   evalSet: string;
-  evalType: '个人敏感信息审查' | '模型数据安全评测' | 'AIGC内容审核' |
+  evalType: '个人敏感信息审查' | '数据集安全评测' | 'AIGC内容审核' |
     '深度模型可信测评' | '大模型安全评测' | '多模态大模型安全评测' |
     '大模型评测' | '智能体安全评测' | '训练集评测';
   status: '评测中' | '评测完成' | '评测失败' | '已暂停' | '排队中' | WorkflowStatus;

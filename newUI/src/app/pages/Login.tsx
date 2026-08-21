@@ -40,7 +40,7 @@ export function Login() {
       const ok = await login(account.trim(), password);
       if (ok) {
         toast.success('登录成功');
-        navigate(returnTo, { replace: true });
+        navigate(returnTo && returnTo !== '/login' ? returnTo : '/', { replace: true });
       } else {
         const msg = '账号已停用，请联系管理员';
         setFormError(msg);

@@ -76,7 +76,7 @@ const PORTAL_PRODUCTS = [
     accentColor: '#8b5cf6',
     subProducts: [
       { name: '个人敏感信息审查', path: '/privacy-data-audit' },
-      { name: '模型数据安全评测', path: '/model-safety-eval' },
+      { name: '数据集安全评测', path: '/model-safety-eval' },
       { name: 'AIGC内容审核与鉴伪', path: '/aigc-content' },
       { name: 'AIGC内容标识与检测', path: '/aigc-content-marking' },
     ],
@@ -98,7 +98,8 @@ const PORTAL_PRODUCTS = [
       { name: '深度模型可信测评', path: '/deep-model-eval' },
       { name: '具身智能可信评测', path: '/embodied-intelligence' },
       { name: '智能体安全评测', path: '/agent-safety' },
-      { name: '大语言模型可信评测', path: '/llm-evaluation' },
+      { name: '大模型性能评测', path: '/llm-evaluation' },
+      { name: '大模型安全评测', path: '/safety-evaluation' },
     ],
     helpSection: 'section-model',
     primaryPath: '/llm-evaluation',
@@ -126,9 +127,9 @@ const PORTAL_PRODUCTS = [
   },
   {
     id: 'compliance',
-    name: '合规治理侧',
+    name: '服务侧',
     tagline: 'AI合规政策解读与备案服务',
-    desc: '从备案辅导到标准建设，构建可审计的 AI 合规治理闭环',
+    desc: '从备案辅导到标准建设，构建可审计的 AI 服务支持闭环',
     icon: FileText,
     grad: 'from-emerald-500 to-teal-600',
     accentColor: '#10b981',
@@ -171,7 +172,7 @@ const METRICS = [
   {
     value: '4大',
     label: '产品系列',
-    desc: '全栈覆盖数据、模型、系统、合规治理全生命周期安全保障',
+    desc: '全栈覆盖数据、模型、系统、服务全生命周期安全保障',
     grad: 'linear-gradient(135deg,#10b981,#06b6d4)',
     barColor: '#10b981',
   },
@@ -233,7 +234,7 @@ const HERO_SLIDES = [
     eyebrow: 'XUANJIAN · DATA SECURITY',
     title: '数据侧',
     highlight: '让数据可信、合规、可用',
-    desc: '覆盖个人敏感信息审查、模型数据安全评测、AIGC内容审核与标识追溯，从数据识别、风险检测到合规处置，为模型训练和业务应用筑牢可信数据基础。',
+    desc: '覆盖个人敏感信息审查、数据集安全评测、AIGC内容审核与标识追溯，从数据识别、风险检测到合规处置，为模型训练和业务应用筑牢可信数据基础。',
     background: '/hero-data-side.png',
     accent: '#2563eb',
     glow: 'rgba(37,99,235,0.22)',
@@ -258,7 +259,7 @@ const HERO_SLIDES = [
   },
   {
     eyebrow: 'XUANJIAN · PROFESSIONAL SERVICES',
-    title: '合规治理侧',
+    title: '服务侧',
     highlight: '陪伴 AI 项目合规落地',
     desc: '提供大模型备案、安全标准咨询、人工智能安全教学与全流程专业支持，将评测能力、行业经验和合规要求转化为可执行的落地方案。',
     background: '/hero-service-side.png',
@@ -315,6 +316,8 @@ function downloadKnowledgeResource(
   URL.revokeObjectURL(url);
 }
 
+const SHOW_HOME_TRIAL_ACTIONS = false;
+
 /* ─── Product Card Component (数美 style) ────────────────── */
 function ProductCard({ product }: { product: typeof PORTAL_PRODUCTS[0] }) {
   const navigate = useNavigate();
@@ -351,7 +354,7 @@ function ProductCard({ product }: { product: typeof PORTAL_PRODUCTS[0] }) {
         <p className="text-gray-500 text-sm leading-relaxed mb-4">{product.desc}</p>
 
         {/* CTA button */}
-        <button
+        {SHOW_HOME_TRIAL_ACTIONS && <button
           className="w-full rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
           style={{
             background: 'linear-gradient(135deg,#2563eb,#3b82f6)',
@@ -362,7 +365,7 @@ function ProductCard({ product }: { product: typeof PORTAL_PRODUCTS[0] }) {
           onClick={() => navigate('/help-docs', { state: { scrollTo: product.helpSection } })}
         >
           查看详情
-        </button>
+        </button>}
       </div>
 
       {/* Divider */}
@@ -424,6 +427,7 @@ function ProductCard({ product }: { product: typeof PORTAL_PRODUCTS[0] }) {
 
 /* ─── Main Component ──────────────────────────────────────── */
 export function CompanyHome() {
+  const SHOW_XUANJIAN_ASSISTANT = false;
   const navigate = useNavigate();
   const { isGuest } = useUser();
   const [activeResourceTab, setActiveResourceTab] = useState<HomeKnowledgeTab>('实践指南');
@@ -532,7 +536,9 @@ export function CompanyHome() {
                   </strong>
                 </h1>
                 <p>{HERO_SLIDES[activeHeroSlide].desc}</p>
+                {(SHOW_HOME_TRIAL_ACTIONS || SHOW_XUANJIAN_ASSISTANT) && (
                 <div className="rongsu-hero__actions">
+                  {SHOW_HOME_TRIAL_ACTIONS && (
                   <Button
                     size="lg"
                     className="text-white font-semibold px-8 border-0"
@@ -545,24 +551,28 @@ export function CompanyHome() {
                     免费试用
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="rongsu-hero__secondary font-semibold px-8"
-                    onClick={() => setShowChat(true)}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />联系我们
-                  </Button>
+                  )}
+                  {SHOW_XUANJIAN_ASSISTANT && (
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="rongsu-hero__secondary font-semibold px-8"
+                      onClick={() => setShowChat(true)}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />联系我们
+                    </Button>
+                  )}
                 </div>
+                )}
               </article>
 
               {activeHeroSlide === 0 && (
                 <aside className="rongsu-hero__overview" aria-label="玄鉴平台四大产品体系">
                   {[
                     { name: '数据侧', count: 4, note: '审查 · 评测 · 审核 · 标识', icon: Database, color: '#7c3aed' },
-                    { name: '模型侧', count: 4, note: '性能 · 安全 · 可信', icon: Brain, color: '#2563eb' },
+                    { name: '模型侧', count: 5, note: '性能 · 安全 · 可信', icon: Brain, color: '#2563eb' },
                     { name: '系统侧', count: 2, note: '代码 · 渗透 · 防护', icon: Shield, color: '#0891b2' },
-                    { name: '合规治理侧', count: 3, note: '备案 · 标准 · 教学', icon: FileText, color: '#059669' },
+                    { name: '服务侧', count: 3, note: '备案 · 标准 · 教学', icon: FileText, color: '#059669' },
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -657,7 +667,7 @@ export function CompanyHome() {
               </div>
               <div className="h-1 w-14 rounded-full mx-auto mb-4" style={{ background: 'linear-gradient(90deg,#6366f1,#06b6d4)' }} />
               <p className="text-gray-500 text-sm max-w-2xl mx-auto">
-                涵盖数据、模型、系统、合规治理四大维度，提供全生命周期 AI 安全服务
+                涵盖数据、模型、系统、服务四大维度，提供全生命周期 AI 安全服务
               </p>
             </div>
 
@@ -1116,7 +1126,7 @@ export function CompanyHome() {
               从数据到模型，从系统到服务，玄鉴平台四大能力侧为您提供全生命周期 AI 安全保障
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Button
+              {SHOW_HOME_TRIAL_ACTIONS && <Button
                 size="lg"
                 className="text-white font-semibold px-10 shadow-xl"
                 style={{ background: 'linear-gradient(135deg,#6366f1,#4f46e5)', boxShadow: '0 8px 28px rgba(99,102,241,0.32)' }}
@@ -1124,7 +1134,7 @@ export function CompanyHome() {
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 试用体验
-              </Button>
+              </Button>}
               <Button
                 size="lg"
                 className="font-medium px-10"
@@ -1144,7 +1154,7 @@ export function CompanyHome() {
       </ScrollReveal>
 
       {/* ── Chat Dialog ── */}
-      {showChat && (
+      {SHOW_XUANJIAN_ASSISTANT && showChat && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '24px', pointerEvents: 'none' }}>
           <div style={{ width: 420, height: 'min(620px, calc(100vh - 48px))', maxWidth: 'calc(100vw - 48px)', background: '#fff', borderRadius: 20, boxShadow: '0 24px 64px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', pointerEvents: 'auto' }}>
             {/* Header */}

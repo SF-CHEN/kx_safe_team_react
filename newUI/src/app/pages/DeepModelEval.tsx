@@ -21,19 +21,14 @@ type SubmitState = 'confirm' | 'success';
 // ── Metric data ───────────────────────────────────────────────────
 
 const MODEL_WB_GROUPS = [
-  { id: 'robust',   label: '鲁棒性评测',     color: '#3b82f6', bg: '#eff6ff', items: ['FGSM_resistance', 'PGD_resistance', 'CW_resistance', 'AutoAttack'] },
-  { id: 'privacy',  label: '隐私与记忆性',   color: '#7c3aed', bg: '#f5f3ff', items: ['MIA_risk', 'model_inversion', 'memorization_score'] },
-  { id: 'fairness', label: '公平性评测',     color: '#059669', bg: '#f0fdf4', items: ['demographic_parity', 'equal_opportunity', 'calibration'] },
-  { id: 'explain',  label: '可解释性',       color: '#0891b2', bg: '#ecfeff', items: ['SHAP_score', 'LIME_score', 'gradient_saliency'] },
-  { id: 'backdoor', label: '后门检测',       color: '#f59e0b', bg: '#fffbeb', items: ['trigger_detection', 'activation_clustering'] },
-  { id: 'ood',      label: '分布外检测',     color: '#ef4444', bg: '#fef2f2', items: ['OOD_AUROC', 'uncertainty_calibration'] },
+  { id: 'adversarial', label: '对抗攻击评测', color: '#3b82f6', bg: '#eff6ff', items: ['FGSM', 'PGD', 'C&W', '攻击成功率'] },
+  { id: 'backdoor', label: '后门攻击评测', color: '#ef4444', bg: '#fef2f2', items: ['触发模式测试', '后门攻击成功率', '异常行为记录'] },
+  { id: 'performance', label: '性能评估', color: '#059669', bg: '#f0fdf4', items: ['准确率', '精确率', '召回率', 'F1分数'] },
+  { id: 'quantization', label: '量化评估', color: '#f59e0b', bg: '#fffbeb', items: ['量化前后精度差', '模型体积变化', '推理耗时变化'] },
+  { id: 'extraction', label: '逆向窃取评测', color: '#7c3aed', bg: '#f5f3ff', items: ['模型提取风险', '查询效率', '替代模型相似度'] },
 ];
 
-const MODEL_BB_GROUPS = [
-  { id: 'bb_rob',  label: '黑盒鲁棒性评测', color: '#3b82f6', bg: '#eff6ff', items: ['transfer_attack', 'query_attack', 'decision_boundary'] },
-  { id: 'bb_priv', label: '黑盒隐私推断',   color: '#7c3aed', bg: '#f5f3ff', items: ['shadow_model_attack', 'attribute_inference'] },
-  { id: 'bb_bias', label: '黑盒偏见检测',   color: '#059669', bg: '#f0fdf4', items: ['disparate_impact', 'proxy_discrimination'] },
-];
+const MODEL_BB_GROUPS = MODEL_WB_GROUPS;
 
 const MODEL_OPTIONS = ['ResNet-50', 'ViT-B/16', 'GPT-4o-mini', 'Llama-3-8B', 'Qwen2.5-7B', 'Custom-Model'];
 
@@ -95,7 +90,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
       id: `deep-model-${Date.now()}`,
       name: `${model || '自定义模型'}可信评测`,
       model: model || '自定义模型',
-      modelType: boxMode === 'whitebox' ? '白盒模型' : '黑盒模型',
+      modelType: boxMode === 'whitebox' ? '本地模型' : 'API接入模型',
       evalSet: `${totalSelected || '默认'}项可信指标`,
       evalType: '深度模型可信测评',
       status: '评测中',
@@ -178,7 +173,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <select value={model} onChange={e => setModel(e.target.value)}
                       style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: `1.5px solid ${model ? '#1d4ed8' : '#e2e8f0'}`, fontSize: 13, background: '#fff', color: model ? '#0f172a' : '#94a3b8' }}>
-                      <option value="">请选择目标模型（支持主流框架格式）</option>
+                      <option value="">请选择目标模型</option>
                       {MODEL_OPTIONS.map(m => <option key={m}>{m}</option>)}
                     </select>
                     <button style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}>
@@ -204,7 +199,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
                 <div style={{ padding: '12px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                   <CheckCircle size={14} color="#1d4ed8" style={{ marginTop: 1, flexShrink: 0 }} />
                   <span style={{ fontSize: 12, color: '#1e40af', lineHeight: 1.65 }}>
-                    支持 PyTorch (.pt/.pth)、TensorFlow (.pb)、ONNX (.onnx) 等主流格式，也可直接选择平台内置的标准测试模型。
+                    已适配 PyTorch、TensorFlow、Keras 和 MindSpore，可提交本地模型或通过 API 接入模型。
                   </span>
                 </div>
               </div>
@@ -215,7 +210,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
           {step === 'metrics' && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 22 }}>
-                {([['whitebox', '🔬 白盒模式'], ['blackbox', '⬛ 黑盒模式']] as const).map(([m, label]) => (
+                {([['whitebox', '📦 本地模型'], ['blackbox', '🔗 API接入模型']] as const).map(([m, label]) => (
                   <button key={m} onClick={() => { setBoxMode(m); setMetrics({}); }}
                     style={{ padding: '7px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: boxMode === m ? '#1d4ed8' : '#f1f5f9', color: boxMode === m ? '#fff' : '#64748b' }}>
                     {label}
@@ -266,7 +261,7 @@ function DeepModelTaskModal({ open, onClose }: ModalProps) {
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 4 }}>任务概览</div>
                 {[
                   { label: '评测类型', val: '深度模型可信评测' },
-                  { label: '评测模式', val: boxMode === 'whitebox' ? '白盒模式' : '黑盒模式' },
+                  { label: '接入方式', val: boxMode === 'whitebox' ? '本地模型' : 'API接入模型' },
                   { label: '目标模型', val: model || '未选择' },
                   { label: '评测指标', val: `${totalSelected} 项` },
                 ].map(({ label, val }) => (
@@ -391,12 +386,12 @@ function HeroModelDashboard() {
         <div style={{ padding: '12px 14px', position: 'relative', overflow: 'hidden', height: 'calc(100% - 52px)' }}>
           {[
             { t: '>>> model.load("resnet50_v2.pth")', c: '#93c5fd' },
-            { t: '>>> eval.run(checks=["robust","privacy","fairness"])', c: '#bfdbfe' },
-            { t: '[✓] 正在分析鲁棒性抗攻击能力...', c: '#34d399' },
+            { t: '>>> eval.run(checks=["adversarial","backdoor","performance"])', c: '#bfdbfe' },
+            { t: '[✓] 正在执行对抗攻击与性能评估...', c: '#34d399' },
             { t: '[WARN] FGSM 攻击成功率 → 12.4%', c: '#fbbf24' },
             { t: '[WARN] 检测到后门触发器嫌疑特征', c: '#f87171' },
-            { t: '[SCAN] 可信综合评分: 82.7 / 100', c: '#e2e8f0' },
-            { t: '[DONE] 报告 → trust_report_2026.pdf', c: '#93c5fd' },
+            { t: '[SCAN] 正在进行量化与逆向窃取评测', c: '#e2e8f0' },
+            { t: '[DONE] 报告 → model_eval_report.pdf', c: '#93c5fd' },
           ].map((line, i) => (
             <div key={i} style={{ fontSize: 8.5, fontFamily: 'monospace', color: line.c, marginBottom: 5, opacity: 0.95, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {line.t}
@@ -412,8 +407,8 @@ function HeroModelDashboard() {
           {/* Status row */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '5px 14px', background: 'rgba(0,0,0,0.45)', display: 'flex', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: 10 }}>
-              <span style={{ fontSize: 8, color: '#93c5fd', fontFamily: 'monospace' }}>鲁棒 ✓</span>
-              <span style={{ fontSize: 8, color: '#93c5fd', fontFamily: 'monospace' }}>隐私 ✓</span>
+              <span style={{ fontSize: 8, color: '#93c5fd', fontFamily: 'monospace' }}>对抗 ✓</span>
+              <span style={{ fontSize: 8, color: '#93c5fd', fontFamily: 'monospace' }}>性能 ✓</span>
               <span style={{ fontSize: 8, color: '#fbbf24', fontFamily: 'monospace' }}>后门…</span>
             </div>
             <span style={{ fontSize: 8, color: '#94a3b8', fontFamily: 'monospace' }}>87%</span>
@@ -423,9 +418,9 @@ function HeroModelDashboard() {
 
       {/* Stat cards */}
       {[
-        { v: '20+', sub: '可信维度', top: '6%',  left: '0%',  color: '#60a5fa', glow: 'rgba(96,165,250,0.35)' },
-        { v: '98.1%', sub: '加固后鲁棒性', top: '6%', right: '0%', color: '#4ade80', glow: 'rgba(74,222,128,0.35)' },
-        { v: '<1h', sub: '全量耗时', bottom: '6%', right: '0%', color: '#fb923c', glow: 'rgba(251,146,60,0.35)' },
+        { v: '5', sub: '评测算法维度', top: '6%',  left: '0%',  color: '#60a5fa', glow: 'rgba(96,165,250,0.35)' },
+        { v: '2', sub: '模型接入方式', top: '6%', right: '0%', color: '#4ade80', glow: 'rgba(74,222,128,0.35)' },
+        { v: '报告', sub: '结果统一输出', bottom: '6%', right: '0%', color: '#fb923c', glow: 'rgba(251,146,60,0.35)' },
       ].map((s, i) => (
         <div key={i} style={{
           position: 'absolute',
@@ -845,15 +840,14 @@ function AdversarialAttackLab() {
   const [attacked, setAttacked] = useState(true);
 
   const attacks: { id: AttackType; label: string; color: string; wrongLabel: string; wrongConf: number }[] = [
-    { id: 'FGSM',        label: 'FGSM',        color: '#ef4444', wrongLabel: '汽车',  wrongConf: 34 },
-    { id: 'PGD',         label: 'PGD',         color: '#f59e0b', wrongLabel: '飞机',  wrongConf: 27 },
-    { id: 'GaussianBlur',label: 'GaussianBlur', color: '#8b5cf6', wrongLabel: '建筑',  wrongConf: 61 },
+    { id: 'FGSM',        label: 'FGSM',        color: '#ef4444', wrongLabel: '北极狐',  wrongConf: 34 },
+    { id: 'PGD',         label: 'PGD',         color: '#f59e0b', wrongLabel: '白狼',  wrongConf: 27 },
+    { id: 'GaussianBlur',label: 'GaussianBlur', color: '#8b5cf6', wrongLabel: '大白熊犬',  wrongConf: 61 },
   ];
   const current = attacks.find(a => a.id === attackType)!;
 
   const handleAttackTypeChange = (t: AttackType) => { setAttackType(t); setAttacked(true); };
 
-  const noiseSeed = Math.round(epsilon * 1000);
   const noiseOpacity = Math.min(epsilon * 6, 0.82);
   const blurPx = attackType === 'GaussianBlur' ? epsilon * 60 : 0;
 
@@ -928,47 +922,7 @@ function AdversarialAttackLab() {
                     原始图片
                   </div>
                   <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: '2px solid #e2e8f0', background: '#f1f5f9', aspectRatio: '16/10' }}>
-                    {/* House SVG scene */}
-                    <svg viewBox="0 0 400 250" style={{ width: '100%', height: '100%', display: 'block' }}>
-                      {/* Sky gradient */}
-                      <defs>
-                        <linearGradient id="skyG" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#93c5fd" />
-                          <stop offset="100%" stopColor="#dbeafe" />
-                        </linearGradient>
-                        <linearGradient id="grassG" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#4ade80" />
-                          <stop offset="100%" stopColor="#16a34a" />
-                        </linearGradient>
-                      </defs>
-                      <rect width="400" height="250" fill="url(#skyG)" />
-                      <rect y="170" width="400" height="80" fill="url(#grassG)" />
-                      {/* House body */}
-                      <rect x="110" y="100" width="180" height="90" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
-                      {/* Roof */}
-                      <polygon points="100,100 200,45 300,100" fill="#dc2626" />
-                      {/* Door */}
-                      <rect x="180" y="145" width="40" height="45" rx="4" fill="#92400e" />
-                      <circle cx="215" cy="168" r="3" fill="#fbbf24" />
-                      {/* Windows */}
-                      <rect x="125" y="115" width="42" height="32" rx="3" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="1" />
-                      <line x1="146" y1="115" x2="146" y2="147" stroke="#93c5fd" strokeWidth="0.8" />
-                      <line x1="125" y1="131" x2="167" y2="131" stroke="#93c5fd" strokeWidth="0.8" />
-                      <rect x="233" y="115" width="42" height="32" rx="3" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="1" />
-                      <line x1="254" y1="115" x2="254" y2="147" stroke="#93c5fd" strokeWidth="0.8" />
-                      <line x1="233" y1="131" x2="275" y2="131" stroke="#93c5fd" strokeWidth="0.8" />
-                      {/* Chimney */}
-                      <rect x="240" y="52" width="20" height="38" fill="#9ca3af" />
-                      {/* Tree */}
-                      <rect x="58" y="150" width="8" height="30" fill="#92400e" />
-                      <ellipse cx="62" cy="140" rx="24" ry="28" fill="#16a34a" />
-                      <rect x="325" y="155" width="8" height="25" fill="#92400e" />
-                      <ellipse cx="329" cy="146" rx="20" ry="24" fill="#15803d" />
-                      {/* Path */}
-                      <path d="M170 190 Q200 185 230 190 L240 250 L160 250 Z" fill="#d4b483" />
-                      {/* Sun */}
-                      <circle cx="350" cy="35" r="22" fill="#fbbf24" opacity="0.85" />
-                    </svg>
+                    <img src="/datasets/imagenet-samoyed.jpg" alt="ImageNet-1K 萨摩耶犬真实分类样例" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
 
                     {/* Classification label */}
                     <div style={{ position: 'absolute', bottom: 10, left: 10, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)', borderRadius: 10, padding: '8px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', border: '1.5px solid #bbf7d0' }}>
@@ -976,8 +930,8 @@ function AdversarialAttackLab() {
                         <span style={{ fontSize: 11, color: '#059669', fontWeight: 700 }}>✓ 正确识别</span>
                       </div>
                       <div style={{ fontSize: 10, color: '#374151' }}>ResNet-50 识别结果</div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>🏠 房屋</div>
-                      <div style={{ fontSize: 10, color: '#64748b' }}>置信度 <strong style={{ color: '#059669' }}>99%</strong></div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>萨摩耶犬</div>
+                      <div style={{ fontSize: 10, color: '#64748b' }}>置信度 <strong style={{ color: '#059669' }}>97%</strong></div>
                     </div>
                   </div>
                 </div>
@@ -1000,61 +954,9 @@ function AdversarialAttackLab() {
                     添加扰动后
                   </div>
                   <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: `2px solid ${attacked ? '#fca5a5' : '#e2e8f0'}`, background: '#f1f5f9', aspectRatio: '16/10', transition: 'border-color 0.3s' }}>
-                    <svg viewBox="0 0 400 250" style={{ width: '100%', height: '100%', display: 'block', filter: attacked && attackType === 'GaussianBlur' ? `blur(${Math.min(blurPx, 4)}px)` : 'none', transition: 'filter 0.4s' }}>
-                      <defs>
-                        <linearGradient id="skyG2" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#93c5fd" />
-                          <stop offset="100%" stopColor="#dbeafe" />
-                        </linearGradient>
-                        <linearGradient id="grassG2" x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#4ade80" />
-                          <stop offset="100%" stopColor="#16a34a" />
-                        </linearGradient>
-                        <filter id="noiseFilter">
-                          <feTurbulence type="fractalNoise" baseFrequency={attacked ? 0.65 + epsilon * 2 : 0} numOctaves="4" seed={noiseSeed} result="noise" />
-                          <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise" />
-                          <feBlend in="SourceGraphic" in2="grayNoise" mode="hard-light" result="blended" />
-                          <feComponentTransfer in="blended">
-                            <feFuncA type="linear" slope="1" />
-                          </feComponentTransfer>
-                        </filter>
-                      </defs>
-                      <g filter={attacked && attackType !== 'GaussianBlur' ? 'url(#noiseFilter)' : ''} opacity={attacked ? 1 : 0.9}>
-                        <rect width="400" height="250" fill="url(#skyG2)" />
-                        <rect y="170" width="400" height="80" fill="url(#grassG2)" />
-                        <rect x="110" y="100" width="180" height="90" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" />
-                        <polygon points="100,100 200,45 300,100" fill="#dc2626" />
-                        <rect x="180" y="145" width="40" height="45" rx="4" fill="#92400e" />
-                        <circle cx="215" cy="168" r="3" fill="#fbbf24" />
-                        <rect x="125" y="115" width="42" height="32" rx="3" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="1" />
-                        <line x1="146" y1="115" x2="146" y2="147" stroke="#93c5fd" strokeWidth="0.8" />
-                        <line x1="125" y1="131" x2="167" y2="131" stroke="#93c5fd" strokeWidth="0.8" />
-                        <rect x="233" y="115" width="42" height="32" rx="3" fill="#bfdbfe" stroke="#93c5fd" strokeWidth="1" />
-                        <line x1="254" y1="115" x2="254" y2="147" stroke="#93c5fd" strokeWidth="0.8" />
-                        <line x1="233" y1="131" x2="275" y2="131" stroke="#93c5fd" strokeWidth="0.8" />
-                        <rect x="240" y="52" width="20" height="38" fill="#9ca3af" />
-                        <rect x="58" y="150" width="8" height="30" fill="#92400e" />
-                        <ellipse cx="62" cy="140" rx="24" ry="28" fill="#16a34a" />
-                        <rect x="325" y="155" width="8" height="25" fill="#92400e" />
-                        <ellipse cx="329" cy="146" rx="20" ry="24" fill="#15803d" />
-                        <path d="M170 190 Q200 185 230 190 L240 250 L160 250 Z" fill="#d4b483" />
-                        <circle cx="350" cy="35" r="22" fill="#fbbf24" opacity="0.85" />
-                      </g>
-                      {/* Extra noise overlay for FGSM/PGD */}
-                      {attacked && attackType !== 'GaussianBlur' && (
-                        <rect width="400" height="250" fill="none"
-                          style={{
-                            backgroundImage: `url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='4' height='4'><rect width='4' height='4' fill='%23000' opacity='0'/><circle cx='1' cy='1' r='0.5' fill='%23${attackType === 'FGSM' ? 'ef4444' : 'f59e0b'}' opacity='${Math.min(noiseOpacity * 0.4, 0.5)}'/></svg>")`,
-                          }}
-                        />
-                      )}
-                      {/* Loading shimmer */}
-                      {isAttacking && (
-                        <rect width="400" height="250" fill="rgba(239,68,68,0.08)">
-                          <animate attributeName="opacity" values="0;0.5;0" dur="0.6s" repeatCount="2" />
-                        </rect>
-                      )}
-                    </svg>
+                    <img src="/datasets/imagenet-samoyed.jpg" alt="加入扰动后的 ImageNet-1K 萨摩耶犬样例" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: attacked && attackType === 'GaussianBlur' ? `blur(${Math.min(blurPx, 4)}px)` : 'none', transition: 'filter 0.4s' }} />
+                    {attacked && attackType !== 'GaussianBlur' && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, opacity: Math.min(noiseOpacity * 1.8, 0.5), mixBlendMode: 'hard-light', backgroundImage: `repeating-linear-gradient(135deg, transparent 0 2px, ${attackType === 'FGSM' ? '#ef4444' : '#f59e0b'} 2px 3px)`, pointerEvents: 'none' }} />}
+                    {isAttacking && <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'rgba(239,68,68,.12)', pointerEvents: 'none' }} />}
 
                     {/* Classification label */}
                     <div style={{
@@ -1073,7 +975,7 @@ function AdversarialAttackLab() {
                           </div>
                           <div style={{ fontSize: 10, color: '#374151' }}>ResNet-50 识别结果</div>
                           <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
-                            {current.wrongLabel === '汽车' ? '🚗' : current.wrongLabel === '飞机' ? '✈️' : '🏢'} {current.wrongLabel}
+                            {current.wrongLabel}
                           </div>
                           <div style={{ fontSize: 10, color: '#64748b' }}>置信度 <strong style={{ color: '#ef4444' }}>{current.wrongConf}%</strong></div>
                         </>
@@ -1110,6 +1012,44 @@ function AdversarialAttackLab() {
   );
 }
 
+function CapabilityMetricBoard({ title, rows, color }: { title: string; rows: { label: string; value: string; progress: number }[]; color: string }) {
+  return <div style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div><div style={{ color: '#fff', fontSize: 13, fontWeight: 800 }}>{title}</div><div style={{ marginTop: 4, color: 'rgba(255,255,255,.35)', fontSize: 9, fontFamily: 'monospace' }}>MODEL EVALUATION RESULT</div></div>
+      <span style={{ padding: '5px 9px', borderRadius: 20, color, background: `${color}18`, border: `1px solid ${color}55`, fontSize: 9, fontWeight: 800 }}>评测示例</span>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{rows.map(row => <div key={row.label} style={{ padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.04)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}><span style={{ color: 'rgba(255,255,255,.72)', fontSize: 11, fontWeight: 700 }}>{row.label}</span><span style={{ color, fontSize: 11, fontWeight: 900 }}>{row.value}</span></div>
+      <div style={{ height: 5, borderRadius: 5, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}><div style={{ width: `${row.progress}%`, height: '100%', borderRadius: 5, background: `linear-gradient(90deg,${color},${color}88)` }} /></div>
+    </div>)}</div>
+  </div>;
+}
+
+function EvaluationImage({ src, alt }: { src: string; alt: string }) {
+  return <div style={{ height: '100%', minHeight: 370, display: 'grid', placeItems: 'center', padding: 8 }}>
+    <img src={src} alt={alt} style={{ width: '100%', maxHeight: 470, objectFit: 'contain', borderRadius: 14, border: '1px solid #dbeafe', background: '#f8fafc' }} />
+  </div>;
+}
+
+function EvaluationImageFlow({ steps }: { steps: { src: string; label: string; caption: string }[] }) {
+  return <div style={{ height: '100%', display: 'flex', alignItems: 'stretch', gap: 0 }}>
+    {steps.map((step, index) => <div key={step.label} style={{ display: 'contents' }}>
+      <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid #dbeafe', borderRadius: 14, overflow: 'hidden', background: '#fff' }}>
+        <div style={{ height: 236, display: 'grid', placeItems: 'center', background: '#f8fafc' }}>
+          <img src={step.src} alt={step.label} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+        <div style={{ padding: '13px 14px 15px' }}>
+          <div style={{ color: '#0f172a', fontSize: 14, fontWeight: 900 }}>{step.label}</div>
+          <div style={{ color: '#64748b', fontSize: 12, lineHeight: 1.6, marginTop: 5 }}>{step.caption}</div>
+        </div>
+      </div>
+      {index < steps.length - 1 && <div style={{ width: 34, flexShrink: 0, display: 'grid', placeItems: 'center', position: 'relative', zIndex: 3 }}>
+        <div style={{ width: 26, height: 26, borderRadius: 13, background: '#2563eb', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 18, fontWeight: 900, boxShadow: '0 5px 14px rgba(37,99,235,.3)' }}>›</div>
+      </div>}
+    </div>)}
+  </div>;
+}
+
 // ── Main Page ─────────────────────────────────────────────────────
 
 export function DeepModelEval() {
@@ -1126,29 +1066,55 @@ export function DeepModelEval() {
   const Z_PANELS = [
     {
       id: '01', side: 'left' as const, color: '#1d4ed8',
-      title: '鲁棒性深度评测',
-      heading: '从六个维度量化模型的抗干扰能力',
-      desc: '通过旋转、噪声、遮挡、亮度变化、对比度调整、模糊等六类扰动，全面评估视觉模型对自然变换的鲁棒性。支持 FGSM、PGD、C&W 等主流对抗攻击方法，给出可解释的量化评分和加固建议。',
-      tags: ['FGSM攻击', 'PGD攻击', 'C&W攻击', '六维鲁棒雷达图', '自适应评测'],
-      svg: <RobustnessDashboard />,
+      title: '对抗攻击评测',
+      heading: '验证模型面对对抗样本时的安全表现',
+      desc: '通过 FGSM、PGD、C&W 等对抗攻击算法构造测试样本，记录攻击前后的模型输出、攻击成功情况和性能变化，定位模型在对抗扰动下的薄弱环节。',
+      tags: ['FGSM', 'PGD', 'C&W', '攻击成功率', '结果对比'],
+      svg: <EvaluationImageFlow steps={[
+        { src: '/deep-model-eval/adversarial-before.png', label: '原始预测', caption: '模型检出 teddy bear，置信度 0.92' },
+        { src: '/deep-model-eval/adversarial-perturbation.png', label: '对抗扰动', caption: '构造像素级扰动并叠加至输入样本' },
+        { src: '/deep-model-eval/adversarial-after.png', label: '攻击后结果', caption: '目标框消失，模型预测失败' },
+      ]} />,
       onExperience: openModal,
     },
     {
-      id: '02', side: 'right' as const, color: '#7c3aed',
-      title: '对抗样本模拟实验室',
-      heading: '对抗攻击与防御效果可视化',
-      desc: '通过内置报告样例展示不同扰动强度与攻击类型下的原始样本、对抗样本、攻击成功率及防御效果，帮助用户直观理解攻击机理与模型脆弱性边界。',
-      tags: ['结果预览', '样本对比', '扰动强度', '误分析可视化'],
-      svg: <AdversarialDemo />,
+      id: '02', side: 'right' as const, color: '#dc2626',
+      title: '后门攻击评测',
+      heading: '检查触发模式下的异常行为与攻击风险',
+      desc: '向模型输入带有触发模式的测试样本，比较正常输入与触发输入下的输出差异，记录后门攻击成功情况和异常行为，为后续风险处置提供依据。',
+      tags: ['触发模式', '攻击成功率', '输出差异', '异常行为', '结果留存'],
+      svg: <EvaluationImageFlow steps={[
+        { src: '/deep-model-eval/backdoor-before.png', label: '正常样本', caption: '原始目标识别为 elephant，置信度 0.99' },
+        { src: '/deep-model-eval/backdoor-trigger.png', label: '后门触发器', caption: '向指定位置叠加触发模式' },
+        { src: '/deep-model-eval/backdoor-after.png', label: '触发后输出', caption: '目标被误识别为 sheep，置信度 0.99' },
+      ]} />,
       onExperience: openModal,
     },
     {
       id: '03', side: 'left' as const, color: '#059669',
-      title: '智能加固建议引擎',
-      heading: '一键生成针对性模型可信加固方案',
-      desc: '基于评测结果，智能推荐对抗训练、差分隐私保护、后门样本清洗、模型量化压缩等加固策略。每条建议附带预期效果与实施成本评估，帮助团队制定最优加固优先级。',
-      tags: ['对抗训练', 'DP-SGD保护', '后门清洗', '量化压缩', '优先级排序'],
-      svg: <HardenPanel />,
+      title: '性能评估',
+      heading: '量化模型在目标任务上的基础性能',
+      desc: '围绕模型任务输出准确率、精确率、召回率和 F1 分数等结果，形成统一的性能评估记录，为安全评测和后续模型优化提供基准。',
+      tags: ['准确率', '精确率', '召回率', 'F1分数', '性能基准'],
+      svg: <EvaluationImage src="/deep-model-eval/performance-chart.png" alt="准确率、精确率、召回率与 F1 分数性能评估结果" />,
+      onExperience: openModal,
+    },
+    {
+      id: '04', side: 'right' as const, color: '#d97706',
+      title: '量化评估',
+      heading: '从检测输出特征形成多维量化记录',
+      desc: '围绕模型检测输出的置信度分布特征和检测模式特征等维度，从置信度质量、跨图片一致性、类别均衡性、空间分布均匀性、尺寸多样性等维度进行量化分析，形成统一的定量评估记录，为模型质量诊断、检测能力评估和后续模型优化提供基准。',
+      tags: ['置信度质量', '跨图片一致性', '类别均衡性', '空间分布均匀性', '尺寸多样性'],
+      svg: <EvaluationImage src="/deep-model-eval/quantization-radar.png" alt="模型检测输出多维量化评估雷达图" />,
+      onExperience: openModal,
+    },
+    {
+      id: '05', side: 'left' as const, color: '#7c3aed',
+      title: '逆向窃取评测',
+      heading: '评估模型接口面对查询窃取时的风险',
+      desc: '通过模拟模型查询与替代模型构建过程，记录查询效率、提取结果和替代模型相似程度，帮助识别模型 API 可能存在的逆向窃取风险。',
+      tags: ['查询行为', '模型提取', '替代模型', '相似度', '风险记录'],
+      svg: <EvaluationImage src="/deep-model-eval/extraction-gauges.png" alt="逆向窃取风险多仪表盘评估结果" />,
       onExperience: openModal,
     },
   ];
@@ -1177,7 +1143,7 @@ export function DeepModelEval() {
               </span>
             </h1>
             <p style={{ margin: '0 0 32px', fontSize: 15, color: 'rgba(255,255,255,0.62)', maxWidth: 500, lineHeight: 1.8 }}>
-              覆盖鲁棒性、隐私性、公平性、可解释性、后门安全、分布外检测六大可信维度，为大模型与视觉模型提供从评测到加固的一体化深度可信保障服务。
+              覆盖对抗攻击、后门攻击、性能评估、量化评估和逆向窃取五个评测算法维度，为大模型与视觉模型提供从评测到加固的一体化深度可信保障服务。
             </p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <button onClick={openModal}
@@ -1209,7 +1175,6 @@ export function DeepModelEval() {
         { id: 'dme-scenarios', label: '应用场景' },
         { id: 'dme-compat', label: '技术兼容性' },
         { id: 'dme-process', label: '评测流程' },
-        { id: 'dme-cta', label: '创建正式任务' },
       ]} />
 
       {/* ── Core Features Z-layout ───────────────────────────── */}
@@ -1220,8 +1185,8 @@ export function DeepModelEval() {
               <div style={{ display: 'inline-block', fontSize: 13, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 12, padding: '4px 16px', background: '#eff6ff', borderRadius: 20 }}>
                 核心能力矩阵
               </div>
-              <h2 style={{ fontSize: 'clamp(28px,3.5vw,44px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>六大维度，全面覆盖模型可信风险</h2>
-              <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>从鲁棒性到隐私保护，构建完整的模型可信评测与加固体系</p>
+              <h2 style={{ fontSize: 'clamp(28px,3.5vw,44px)', fontWeight: 900, color: '#0f172a', margin: '0 0 12px' }}>五项核心评测能力</h2>
+              <p style={{ fontSize: 15, color: '#64748b', margin: 0 }}>围绕攻击安全、模型性能、量化效果与模型资产风险形成专项评测结果</p>
             </div>
           </ScrollReveal>
 
@@ -1229,14 +1194,13 @@ export function DeepModelEval() {
             const isLeft = panel.side === 'left';
             return (
               <ScrollReveal key={panel.id}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, alignItems: 'center', marginTop: idx === 0 ? 0 : 32 }}>
-                  <div style={{ order: isLeft ? 0 : 1, padding: isLeft ? '48px 44px 48px 0' : '48px 0 48px 44px' }}>
-                    <div style={{ background: 'linear-gradient(135deg,#0f172a,#1e293b)', borderRadius: 20, padding: '28px 28px 20px', position: 'relative', overflow: 'hidden', minHeight: 280, display: 'flex', flexDirection: 'column', boxShadow: '0 12px 48px rgba(0,0,0,0.18)' }}>
-                      <div style={{ position: 'absolute', top: -8, left: 14, fontSize: 100, fontWeight: 900, color: panel.color+'14', lineHeight: 1, userSelect: 'none', fontFamily: 'monospace' }}>{panel.id}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.12fr) minmax(0,.88fr)', gap: 0, alignItems: 'center', marginTop: idx === 0 ? 0 : 32 }}>
+                  <div style={{ order: isLeft ? 0 : 1, padding: isLeft ? '36px 28px 36px 0' : '36px 0 36px 28px' }}>
+                    <div style={{ background: 'linear-gradient(145deg,#ffffff,#f8fbff)', border: '1px solid #dbeafe', borderRadius: 20, padding: 14, position: 'relative', overflow: 'visible', minHeight: 400, display: 'flex', flexDirection: 'column', boxShadow: '0 12px 38px rgba(30,64,175,0.10)' }}>
                       <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>{panel.svg}</div>
                     </div>
                   </div>
-                  <div style={{ order: isLeft ? 1 : 0, paddingTop: 40, paddingLeft: isLeft ? 52 : 0, paddingRight: isLeft ? 0 : 52, paddingBottom: 20 }}>
+                  <div style={{ order: isLeft ? 1 : 0, paddingTop: 40, paddingLeft: isLeft ? 42 : 0, paddingRight: isLeft ? 0 : 42, paddingBottom: 20 }}>
                     <div style={{ fontSize: 18, color: panel.color, letterSpacing: '0.04em', fontWeight: 800, marginBottom: 14 }}>功能 {panel.id} &nbsp;·&nbsp; {panel.title}</div>
                     <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 16px', lineHeight: 1.35 }}>{panel.heading}</h3>
                     <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.8, margin: '0 0 22px' }}>{panel.desc}</p>
@@ -1266,7 +1230,7 @@ export function DeepModelEval() {
             <div style={{ textAlign: 'center', marginBottom: 56 }}>
               <p style={{ fontSize: 12, fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 10px' }}>行业解决方案</p>
               <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>场景化落地方案</h2>
-              <p style={{ fontSize: 16, color: '#64748b' }}>不只是功能清单 — 给出完整架构路径，直面行业核心痛点</p>
+              <p style={{ fontSize: 16, color: '#64748b' }}>覆盖视觉模型、模型上线验证与模型 API 资产安全场景</p>
             </div>
           </ScrollReveal>
 
@@ -1276,55 +1240,58 @@ export function DeepModelEval() {
                 id: 'autonomous',
                 icon: '🚗',
                 accentColor: '#3b82f6',
-                tag: '自动驾驶感知',
-                title: '视觉识别算法鲁棒性深度验证',
-                subtitle: '极端天气与对抗样本下的感知稳定性保障',
-                desc: '自动驾驶视觉感知算法在雨雾、强光及对抗贴片等场景下易出现识别失效，引发安全事故。提供六维鲁棒性深度评测，覆盖 FGSM/PGD 等主流攻击，并给出对抗训练加固方案，确保极端场景下的感知稳定性。',
+                tag: '视觉模型安全',
+                title: '视觉模型攻防安全验证',
+                subtitle: '验证对抗样本与后门触发模式下的模型表现',
+                desc: '面向图像分类、目标检测等视觉模型，通过对抗攻击和后门攻击测试，比较正常样本、对抗样本及触发样本下的模型输出，记录攻击成功情况和异常行为。',
                 metrics: [
-                  { value: '12+', label: '攻击算法' },
-                  { value: '98.2%', label: '加固后稳定性' },
-                  { value: '六维', label: '鲁棒评测' },
+                  { value: '对抗', label: '攻击评测' },
+                  { value: '后门', label: '触发测试' },
+                  { value: '样本级', label: '结果定位' },
                 ],
-                tags: ['自动驾驶', '目标检测', 'ADAS系统', '对抗训练'],
-                mock: <AutonomousVisionMock />,
+                tags: ['图像分类', '目标检测', 'FGSM', 'PGD', '后门触发'],
+                mock: <div style={{ minHeight: 250 }}><EvaluationImageFlow steps={[
+                  { src: '/deep-model-eval/adversarial-before.png', label: '正常输入', caption: '基准预测结果与目标框' },
+                  { src: '/deep-model-eval/adversarial-after.png', label: '对抗输入', caption: '扰动后目标框消失' },
+                ]} /></div>,
               },
               {
-                id: 'medical',
-                icon: '🏥',
-                accentColor: '#7c3aed',
-                tag: '医疗AI诊断',
-                title: '医疗模型隐私泄露风险深度审计',
-                subtitle: '防止患者数据被成员推断攻击泄露，HIPAA合规',
-                desc: '医疗 AI 模型训练于大量患者敏感数据，极易遭受成员推断、模型逆向等隐私攻击，导致患者隐私泄露。针对医疗模型进行隐私风险深度审计，应用差分隐私保护，将攻击成功率从 23% 降至 1% 以下。',
-                metrics: [
-                  { value: 'HIPAA', label: '合规标准' },
-                  { value: '-98%', label: '隐私攻击风险' },
-                  { value: '深度', label: '隐私审计' },
-                ],
-                tags: ['医学影像', '电子病历', '辅助诊断', 'DP-SGD'],
-                mock: <MedicalAIMock />,
-              },
-              {
-                id: 'financial',
-                icon: '🏦',
+                id: 'deployment',
+                icon: '📦',
                 accentColor: '#059669',
-                tag: '金融信贷风控',
-                title: '信贷评分模型公平性与歧视性检测',
-                subtitle: '发现并消除算法偏见，满足监管公平贷款要求',
-                desc: '信贷评分模型可能因训练数据中的历史偏见，对不同性别、地域群体产生歧视性决策，面临监管处罚与声誉风险。通过 Demographic Parity、Equal Opportunity 等指标深度量化公平性缺口，提供去偏重采样与校准后处理方案。',
+                tag: '模型上线验证',
+                title: '模型质量与检测能力量化评估',
+                subtitle: '从检测输出特征形成统一的多维定量记录',
+                desc: '面向模型质量诊断与检测能力评估，分析置信度质量、跨图片一致性、类别均衡性、空间分布均匀性与尺寸多样性，形成可用于版本比较和后续优化的量化基准。',
                 metrics: [
-                  { value: '0', label: '歧视性决策' },
-                  { value: '3+', label: '公平性指标' },
-                  { value: '一键', label: '去偏修复' },
+                  { value: '置信度', label: '质量分析' },
+                  { value: '一致性', label: '跨图评估' },
+                  { value: '均衡性', label: '分布记录' },
                 ],
-                tags: ['信贷风控', '反歧视', '监管合规', '公平ML'],
-                mock: <FinancialModelMock />,
+                tags: ['置信度质量', '跨图片一致性', '类别均衡性', '空间分布', '尺寸多样性'],
+                mock: <EvaluationImage src="/deep-model-eval/quantization-radar.png" alt="模型质量多维量化评估结果" />,
+              },
+              {
+                id: 'api-protection',
+                icon: '🔗',
+                accentColor: '#7c3aed',
+                tag: '模型API保护',
+                title: '模型API逆向窃取风险评测',
+                subtitle: '模拟查询与替代模型构建过程，识别模型资产风险',
+                desc: '面向通过 API 提供能力的模型服务，模拟查询和替代模型构建过程，记录查询行为、提取结果与替代模型相似程度，评估接口可能面临的逆向窃取风险。',
+                metrics: [
+                  { value: '查询', label: '行为记录' },
+                  { value: '提取', label: '风险评测' },
+                  { value: '相似度', label: '结果指标' },
+                ],
+                tags: ['API模型', '查询行为', '模型提取', '替代模型', '相似度'],
+                mock: <EvaluationImage src="/deep-model-eval/extraction-gauges.png" alt="模型 API 逆向窃取风险评估结果" />,
               },
             ].map(sol => (
               <ScrollReveal key={sol.id}>
                 <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
                   <div style={{ height: 4, background: `linear-gradient(90deg,${sol.accentColor},${sol.accentColor}88)` }} />
-                  <div style={{ padding: '32px 36px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'start' }}>
+                  <div style={{ padding: '32px 36px', display: 'grid', gridTemplateColumns: 'minmax(0,.88fr) minmax(0,1.12fr)', gap: 34, alignItems: 'center' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                         <div style={{ fontSize: 28 }}>{sol.icon}</div>
@@ -1360,90 +1327,80 @@ export function DeepModelEval() {
       </section>
 
       {/* ── Tech Compatibility ────────────────────────────────── */}
-      <section id="dme-compat" style={{ background: '#fff', padding: '80px 0', borderTop: '1px solid #e2e8f0' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px' }}>
+      <section id="dme-compat" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#f4f8fd', backgroundImage: 'linear-gradient(rgba(37,99,235,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,.035) 1px,transparent 1px),radial-gradient(circle at 18% 62%,rgba(37,99,235,.1),transparent 30%),radial-gradient(circle at 82% 42%,rgba(13,148,136,.09),transparent 28%)', backgroundSize: '32px 32px,32px 32px,auto,auto', padding: '88px 0 96px', borderTop: '1px solid #dbe7f5' }}>
+        <div aria-hidden="true" style={{ position: 'absolute', left: '50%', top: 250, width: 520, height: 1, background: 'linear-gradient(90deg,transparent,rgba(37,99,235,.2),rgba(13,148,136,.2),transparent)', transform: 'translateX(-50%)' }} />
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px', position: 'relative', zIndex: 1 }}>
           <ScrollReveal>
-            <div style={{ textAlign: 'center', marginBottom: 56 }}>
-              <div style={{ display: 'inline-block', fontSize: 11, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 12, padding: '4px 16px', background: '#eff6ff', borderRadius: 20 }}>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <div style={{ display: 'inline-block', fontSize: 11, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.14em', fontWeight: 800, marginBottom: 14, padding: '6px 16px', background: 'rgba(255,255,255,.78)', border: '1px solid #bfdbfe', borderRadius: 20, boxShadow: '0 6px 20px rgba(37,99,235,.08)' }}>
                 技术优势
               </div>
-              <h2 style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>企业级架构，无缝集成</h2>
-              <p style={{ fontSize: 15, color: '#64748b' }}>兼容主流 AI 框架与云平台，支持私有化部署与 API 接入</p>
+              <h2 style={{ fontSize: 'clamp(30px,3vw,40px)', fontWeight: 900, letterSpacing: '-.03em', color: '#0f172a', margin: '0 0 14px' }}>框架适配与模型接入</h2>
+              <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.8, margin: 0 }}>适配四类已验证框架，支持本地模型和 API 接入模型两种方式</p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'stretch' }}>
-              <div style={{ background: '#f8fafc', borderRadius: 20, border: '1px solid #e2e8f0', padding: '36px 32px' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', marginBottom: 6 }}>兼容主流框架与模型格式</div>
-                <div style={{ fontSize: 13, color: '#64748b', marginBottom: 28, lineHeight: 1.65 }}>无需修改现有代码，直接对接您使用的训练框架和模型格式。</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: 24, alignItems: 'stretch' }}>
+              <article style={{ minHeight: 430, background: 'rgba(255,255,255,.9)', borderRadius: 24, border: '1px solid rgba(148,163,184,.25)', padding: '30px', boxShadow: '0 18px 50px rgba(30,64,175,.08)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, marginBottom: 26 }}>
+                  <div><div style={{ fontSize: 19, fontWeight: 900, color: '#0f172a', marginBottom: 8 }}>已适配的模型框架</div><div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>四类框架均已完成模型评测适配验证</div></div>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(145deg,#eff6ff,#e0ecff)', color: '#2563eb', display: 'grid', placeItems: 'center', border: '1px solid #dbeafe', flexShrink: 0 }}><Cpu size={21} /></div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 14, flex: 1 }}>
                   {[
-                    { name: 'PyTorch',     icon: '🔥', color: '#ee4c2c' },
-                    { name: 'TensorFlow', icon: '🧮', color: '#ff6f00' },
-                    { name: 'ONNX',        icon: '🔗', color: '#717171' },
-                    { name: 'Hugging Face',icon: '🤗', color: '#ffcc00' },
-                    { name: 'JAX',         icon: '🚀', color: '#6366f1' },
-                    { name: 'OpenVINO',    icon: '⚡', color: '#0071c5' },
-                    { name: 'AWS',         icon: '☁️', color: '#ff9900' },
-                    { name: 'Azure',       icon: '🌐', color: '#0078d4' },
-                    { name: 'Kubernetes',  icon: '⚙️', color: '#326ce5' },
+                    { name: 'PyTorch', mark: 'P', color: '#ee4c2c', soft: '#fff3ef' },
+                    { name: 'TensorFlow', mark: 'TF', color: '#f59e0b', soft: '#fff8e7' },
+                    { name: 'Keras', mark: 'K', color: '#d00000', soft: '#fff1f2' },
+                    { name: 'MindSpore', mark: 'M', color: '#2563eb', soft: '#eff6ff' },
                   ].map((item) => (
-                    <div key={item.name} style={{ padding: '14px 10px', background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                      <span style={{ fontSize: 20 }}>{item.icon}</span>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>{item.name}</span>
+                    <div key={item.name} className="transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 hover:shadow-lg" style={{ padding: '20px 16px', background: '#fff', borderRadius: 16, border: '1px solid #e4ebf5', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 6px 20px rgba(15,23,42,.045)', minHeight: 132 }}>
+                      <span style={{ width: 48, height: 48, display: 'grid', placeItems: 'center', borderRadius: 15, background: item.soft, color: item.color, fontSize: item.mark.length > 1 ? 15 : 22, fontWeight: 950, letterSpacing: '-.03em', border: `1px solid ${item.color}18` }}>{item.mark}</span>
+                      <span style={{ fontSize: 13, color: '#1e293b', fontWeight: 800, textAlign: 'center' }}>{item.name}</span>
+                      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>框架适配</span>
                     </div>
                   ))}
                 </div>
-              </div>
+              </article>
 
-              <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#1e293b 100%)', borderRadius: 20, border: '1px solid rgba(29,78,216,0.2)', padding: '36px 32px', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6 }}>灵活部署，随需而变</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 32, lineHeight: 1.65 }}>无论您的安全策略如何，都能找到匹配的部署方案。</div>
+              <article style={{ minHeight: 430, background: 'rgba(255,255,255,.9)', borderRadius: 24, border: '1px solid rgba(148,163,184,.25)', padding: '30px', boxShadow: '0 18px 50px rgba(30,64,175,.08)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, marginBottom: 22 }}>
+                  <div><div style={{ fontSize: 19, fontWeight: 900, color: '#0f172a', marginBottom: 8 }}>两种模型接入方式</div><div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.7 }}>根据模型交付形态选择匹配的评测入口</div></div>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: 'linear-gradient(145deg,#ecfeff,#dcfce7)', color: '#0f9f8f', display: 'grid', placeItems: 'center', border: '1px solid #ccfbf1', flexShrink: 0 }}><Zap size={21} /></div>
+                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
                   {[
                     {
-                      icon: '🔒', color: '#93c5fd', borderColor: 'rgba(147,197,253,0.3)', bg: 'rgba(147,197,253,0.07)',
-                      title: '私有化部署',
-                      desc: '数据不出域，物理隔离。完全掌控模型与数据全生命周期，满足最高安全等级要求。',
-                      tags: ['离线运行', '等保三级', '数据零上传'],
+                      icon: <Lock size={24} />, color: '#2563eb', borderColor: '#cfe0ff', bg: 'linear-gradient(135deg,#f8fbff,#eef5ff)',
+                      title: '本地模型',
+                      desc: '提交本地模型及必要的运行配置，由评测流程加载模型并执行所选评测算法。',
+                      tags: ['模型文件', '运行配置', '算法评测'],
                     },
                     {
-                      icon: '⚡', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', bg: 'rgba(16,185,129,0.07)',
-                      title: 'SaaS 云端版',
-                      desc: '开箱即用，弹性扩容。无需运维，分钟级接入，按量计费，快速验证模型可信度。',
-                      tags: ['即开即用', '自动扩容', 'API接入'],
-                    },
-                    {
-                      icon: '🌐', color: '#a78bfa', borderColor: 'rgba(167,139,250,0.3)', bg: 'rgba(167,139,250,0.07)',
-                      title: '混合云架构',
-                      desc: '模型与敏感数据本地化，评测算力云端化。兼顾安全合规与弹性算力，最优成本结构。',
-                      tags: ['模型本地', '云端算力', '成本最优'],
+                      icon: <Zap size={24} />, color: '#0f9f8f', borderColor: '#bceee7', bg: 'linear-gradient(135deg,#f6fffd,#ebfbf8)',
+                      title: 'API接入模型',
+                      desc: '通过模型接口地址及必要的调用配置接入，以接口调用方式执行相应评测。',
+                      tags: ['接口地址', '调用配置', 'API评测'],
                     },
                   ].map((item) => (
-                    <div key={item.title} style={{ padding: '18px 20px', borderRadius: 14, background: item.bg, border: `1px solid ${item.borderColor}`, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                      <div style={{ width: 38, height: 38, borderRadius: 10, background: `${item.color}22`, border: `1px solid ${item.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                    <div key={item.title} className="transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md" style={{ padding: '20px', borderRadius: 17, background: item.bg, border: `1px solid ${item.borderColor}`, display: 'flex', gap: 17, alignItems: 'flex-start', flex: 1 }}>
+                      <div style={{ width: 52, height: 52, borderRadius: 16, background: '#fff', color: item.color, border: `1px solid ${item.borderColor}`, display: 'grid', placeItems: 'center', boxShadow: `0 8px 22px ${item.color}14`, flexShrink: 0 }}>
                         {item.icon}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                          <div style={{ width: 16, height: 16, borderRadius: '50%', background: item.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ fontSize: 9, color: '#fff', fontWeight: 800 }}>✓</span>
-                          </div>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{item.title}</span>
-                        </div>
-                        <p style={{ margin: '0 0 10px', fontSize: 12, color: 'rgba(255,255,255,0.55)', lineHeight: 1.65 }}>{item.desc}</p>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', marginBottom: 7 }}>{item.title}</div>
+                        <p style={{ margin: '0 0 13px', fontSize: 12, color: '#64748b', lineHeight: 1.7 }}>{item.desc}</p>
+                        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
                           {item.tags.map(t => (
-                            <span key={t} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 6, background: `${item.color}15`, color: item.color, border: `1px solid ${item.borderColor}`, fontWeight: 600 }}>{t}</span>
+                            <span key={t} style={{ fontSize: 10, padding: '4px 9px', borderRadius: 999, background: 'rgba(255,255,255,.5)', color: item.color, border: `1px solid ${item.borderColor}`, fontWeight: 700 }}>{t}</span>
                           ))}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </article>
             </div>
           </ScrollReveal>
         </div>
@@ -1458,16 +1415,16 @@ export function DeepModelEval() {
                 简单四步
               </div>
               <h2 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', margin: '0 0 12px' }}>快速启动您的深度模型可信评测</h2>
-              <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>从上传模型到完整可信报告，全程自动化，最快1小时出结果</p>
+              <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>提交模型并选择评测算法后，执行专项评测并输出结果报告</p>
             </div>
           </ScrollReveal>
           <ScrollReveal>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, position: 'relative' }}>
               {[
-                { num: 1, color: '#1d4ed8', bg: '#eff6ff', icon: <Upload size={22} />, title: '上传目标模型', desc: '支持 PyTorch、TensorFlow、ONNX 等主流格式，或选择平台内置基准模型' },
-                { num: 2, color: '#7c3aed', bg: '#f5f3ff', icon: <Eye size={22} />, title: '选择评测指标', desc: '从鲁棒性、隐私、公平性、可解释性、后门、OOD六大维度按需选择' },
-                { num: 3, color: '#059669', bg: '#f0fdf4', icon: <Cpu size={22} />, title: '自动深度评测', desc: '平台自动执行攻击模拟与可信度评估，过程实时可视化' },
-                { num: 4, color: '#f59e0b', bg: '#fffbeb', icon: <FileText size={22} />, title: '获取可信报告', desc: '收到详细的可信评分、风险项列表与针对性加固建议' },
+                { num: 1, color: '#1d4ed8', bg: '#eff6ff', icon: <Upload size={22} />, title: '接入目标模型', desc: '选择本地模型或 API 接入模型，并补充必要的运行或调用配置' },
+                { num: 2, color: '#7c3aed', bg: '#f5f3ff', icon: <Eye size={22} />, title: '选择评测算法', desc: '从对抗攻击、后门攻击、性能、量化和逆向窃取五项能力中按需选择' },
+                { num: 3, color: '#059669', bg: '#f0fdf4', icon: <Cpu size={22} />, title: '执行专项评测', desc: '按模型接入方式和所选算法执行测试，记录过程与样本级结果' },
+                { num: 4, color: '#f59e0b', bg: '#fffbeb', icon: <FileText size={22} />, title: '获取评测报告', desc: '查看评测指标、异常记录、结果对比与风险说明' },
               ].map((step, i, arr) => (
                 <React.Fragment key={step.num}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 200px', padding: '0 12px' }}>
@@ -1487,26 +1444,6 @@ export function DeepModelEval() {
               ))}
             </div>
           </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────── */}
-      <section id="dme-cta" style={{ position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg,#fdf4ff 0%,#f5f3ff 50%,#ede9fe 100%)', padding: '70px 40px', borderTop: '1px solid #ddd6fe' }}>
-        <div style={{ maxWidth: 660, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, color: '#3b0764', marginBottom: 14 }}>开始您的深度模型可信评测之旅</h2>
-          <p style={{ fontSize: 14, color: '#374151', marginBottom: 32, lineHeight: 1.8 }}>
-            全面评测您的 AI 模型可信度，在上线前发现并修复鲁棒性、隐私与公平性风险
-          </p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={openModal}
-              style={{ padding: '14px 40px', borderRadius: 10, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', border: 'none', color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 22px rgba(124,58,237,0.35)' }}>
-              <Zap size={16} /> 开始模型评测
-            </button>
-            <button onClick={() => navigate('/developer')}
-              style={{ padding: '14px 32px', borderRadius: 10, background: '#fff', border: '1.5px solid #c4b5fd', color: '#5b21b6', fontSize: 15, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Lock size={15} /> 查看技术文档
-            </button>
-          </div>
         </div>
       </section>
 

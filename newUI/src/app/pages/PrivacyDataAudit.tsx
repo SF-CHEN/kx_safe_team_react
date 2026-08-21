@@ -21,10 +21,10 @@ const C = {
 
 // ── Law badge data ────────────────────────────────────────────────
 const LAWS = [
-  { abbr: '个保法', name: '《个人信息保护法》', year: '2021', color: '#8b5cf6', desc: '第十条：不得非法收集、使用、加工、传输他人个人信息' },
-  { abbr: '网安法', name: '《网络安全法》', year: '2017', color: '#6366f1', desc: '第四十二条：不得泄露、篡改、毁损收集的个人信息' },
-  { abbr: '数安法', name: '《数据安全法》', year: '2021', color: '#7c3aed', desc: '第二十七条：数据处理活动应当依法开展数据分类分级保护' },
-  { abbr: 'GB/T', name: 'GB/T 35273-2020', year: '2020', color: '#4f46e5', desc: '个人信息安全规范，明确个人信息的分类与处理要求' },
+  { abbr: '个保法', name: '《个人信息保护法》', year: '2021年11月施行', color: '#8b5cf6', desc: '界定敏感个人信息并明确特定处理规则、风险评估及个人信息保护合规审计义务。' },
+  { abbr: '行政法规', name: '《网络数据安全管理条例》', year: '2025年1月施行', color: '#6366f1', desc: '细化网络数据处理者的安全保护、个人信息合规审计和风险管理要求，体现最新行政法规口径。' },
+  { abbr: 'GB/T', name: 'GB/T 45574-2025', year: '2025年11月实施', color: '#7c3aed', desc: '规定敏感个人信息识别与处理安全要求，为智能识别和后续处置提供技术依据。' },
+  { abbr: 'GB/T', name: 'GB/T 46903-2025', year: '2026年7月实施', color: '#4f46e5', desc: '规定个人信息保护合规审计流程与方法，为证据整理和审计报告生成提供依据。' },
 ];
 
 // ── Capability panels ─────────────────────────────────────────────
@@ -54,7 +54,7 @@ function MultiModalPanel() {
         </div>
       ))}
       <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.06))', borderRadius: 10, border: '1px solid rgba(139,92,246,0.18)', textAlign: 'center', fontSize: 12, color: '#7c3aed', fontWeight: 600 }}>
-        识别率 ≥ 98.7% · 支持 20+ 文件格式
+        多格式内容解析 · 识别结果可定位
       </div>
     </div>
   );
@@ -73,7 +73,7 @@ function RuleLibraryPanel() {
         <div key={i} style={{ padding: '16px 14px', background: 'rgba(255,255,255,0.9)', borderRadius: 12, border: `1.5px solid ${cat.color}18`, boxShadow: `0 2px 10px ${cat.color}08` }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{cat.name}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, background: `${cat.color}12`, padding: '2px 8px', borderRadius: 12 }}>{cat.count} 类</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: cat.color, background: `${cat.color}12`, padding: '2px 8px', borderRadius: 12 }}>预置规则</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {cat.items.map(item => (
@@ -113,12 +113,12 @@ function LowFalsePositivePanel() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, color: '#64748b' }}>{ex.type}</span>
-            <span style={{ fontSize: 11, color: ex.isTP ? '#dc2626' : '#16a34a', fontWeight: 600 }}>置信度 {(ex.conf * 100).toFixed(0)}%</span>
+            <span style={{ fontSize: 11, color: ex.isTP ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{ex.isTP ? '高相关候选' : '低相关候选'}</span>
           </div>
         </div>
       ))}
       <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(99,102,241,0.06))', borderRadius: 10, border: '1px solid rgba(139,92,246,0.18)', fontSize: 12, color: '#7c3aed', fontWeight: 600, textAlign: 'center' }}>
-        行业平均误报率 12% → 本产品 &lt;2%
+        结合上下文复核候选字段，降低易混淆信息误判
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ function ScheduledScanPanel() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {[
           { label: '支持数据源', value: '数据库/文档/API' },
-          { label: '最小巡检间隔', value: '30分钟' },
+          { label: '巡检频率', value: '按需配置' },
           { label: '变化量感知', value: '增量扫描' },
           { label: '告警通知', value: '邮件/Webhook' },
         ].map((m, i) => (
@@ -603,10 +603,10 @@ function ApplicationScenariosSection({ onStartTask }: { onStartTask: () => void 
                       <span key={t} style={{ padding: '4px 12px', background: '#f1f5f9', borderRadius: 20, fontSize: 12, color: '#475569', fontWeight: 500 }}>{t}</span>
                     ))}
                   </div>
-                  <button onClick={onStartTask}
+                  {false && <button onClick={onStartTask}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', background: `linear-gradient(135deg,${scenario.color},${scenario.color}cc)`, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: `0 4px 16px ${scenario.color}35` }}>
                     <Play size={14} /> 立即在线体验
-                  </button>
+                  </button>}
                 </div>
 
                 {/* Right: mock preview */}
@@ -744,9 +744,9 @@ export function PrivacyDataAudit() {
       panelBg: 'linear-gradient(145deg,#eef2ff,#e0e7ff)',
       title: '内置丰富规则库',
       icon: Database,
-      heading: '预置 26 大类敏感数据模板，开箱即用',
-      desc: '内置符合国内主流监管要求的敏感数据类型库，涵盖身份证号、手机号、银行卡、邮箱、住址、社保账号等 26 大类，同时支持自定义正则规则，满足行业特殊合规需求，无需从零配置。',
-      tags: ['26类内置规则', '自定义正则扩展', '行业专属模板', '一键启用'],
+      heading: '预置常见敏感信息规则，支持按业务扩展',
+      desc: '覆盖身份证号、手机号、银行卡、邮箱、住址等常见敏感信息类型，并支持自定义正则与行业规则扩展，便于结合实际审查范围进行配置。',
+      tags: ['常见信息规则', '自定义正则', '行业模板', '按需启用'],
       panel: <RuleLibraryPanel />,
     },
     {
@@ -755,7 +755,7 @@ export function PrivacyDataAudit() {
       title: '低误报率算法',
       icon: Brain,
       heading: '上下文语境分析，不再被假阳性所困扰',
-      desc: '基于大模型语义理解，将敏感信息候选词还原至原始上下文中综合判断，有效区分合同编号与身份证号、系统 ID 与手机号等易混淆场景，误报率比行业平均水平低 80%。',
+      desc: '结合语义理解，将敏感信息候选词还原至原始上下文中综合判断，辅助区分合同编号与身份证号、系统 ID 与手机号等易混淆场景，并保留候选依据供人工复核。',
       tags: ['语义上下文理解', '误报智能过滤', '置信度评估', '人工规则豁免'],
       panel: <LowFalsePositivePanel />,
     },
@@ -792,13 +792,13 @@ export function PrivacyDataAudit() {
                 基于 AI 语义分析技术，精准识别身份证、手机号、银行卡等敏感数据，一键生成合规审计报告，助力企业满足《个人信息保护法》合规要求。
               </p>
               <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 40 }}>
-                <button onClick={openExperience}
+                {false && <button onClick={openExperience}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 9, padding: '13px 28px', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 24px rgba(139,92,246,0.4)' }}>
                   <Play size={16} /> 立即在线体验
-                </button>
+                </button>}
               </div>
               <div style={{ display: 'flex', gap: 24, paddingTop: 20, borderTop: '1px solid rgba(71,104,139,0.18)' }}>
-                {[{ v: '26类', l: '内置规则模板' }, { v: '98.7%', l: '识别准确率' }, { v: '<2%', l: '误报率' }, { v: '20+', l: '文件格式支持' }].map(s => (
+                {[{ v: '多类型', l: '敏感信息识别' }, { v: '语义级', l: '上下文判断' }, { v: '可配置', l: '规则与范围' }, { v: '可追溯', l: '审计结果' }].map(s => (
                   <div key={s.l} style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 18, fontWeight: 900, color: '#a78bfa' }}>{s.v}</div>
                     <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{s.l}</div>
@@ -850,7 +850,6 @@ export function PrivacyDataAudit() {
         { id: 'pda-demo', label: '效果预览' },
         { id: 'pda-flow', label: '服务流程' },
         { id: 'pda-scenarios', label: '应用场景' },
-        { id: 'pda-cta', label: '预约演示' },
       ]} />
 
       {/* ── 2. Compliance Basis ────────────────────────────────── */}
@@ -877,7 +876,7 @@ export function PrivacyDataAudit() {
                     <span style={{ fontSize: 14, fontWeight: 900, color: law.color }}>{law.abbr}</span>
                   </div>
                   <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', marginBottom: 4, lineHeight: 1.4 }}>{law.name}</div>
-                  <div style={{ fontSize: 11, color: law.color, fontWeight: 700, marginBottom: 10 }}>（{law.year}年施行）</div>
+                  <div style={{ fontSize: 11, color: law.color, fontWeight: 700, marginBottom: 10 }}>{law.year}</div>
                   <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.7, margin: 0 }}>{law.desc}</p>
                 </motion.div>
               </ScrollReveal>
@@ -929,9 +928,9 @@ export function PrivacyDataAudit() {
                     </div>
                     <h3 style={{ fontSize: 23, fontWeight: 800, color: '#0f172a', margin: '0 0 16px', lineHeight: 1.35 }}>{panel.heading}</h3>
                     <p style={{ fontSize: 14.5, color: '#64748b', lineHeight: 1.8, margin: '0 0 24px' }}>{panel.desc}</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(panel.tags.length, 4)}, minmax(0, 1fr))`, gap: 8 }}>
                       {panel.tags.map(t => (
-                        <span key={t} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 20, background: `${panel.color}10`, color: panel.color, border: `1px solid ${panel.color}25`, fontWeight: 600 }}>{t}</span>
+                        <span key={t} style={{ fontSize: 11, padding: '6px 8px', borderRadius: 20, background: `${panel.color}10`, color: panel.color, border: `1px solid ${panel.color}25`, fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>{t}</span>
                       ))}
                     </div>
                   </div>
@@ -952,7 +951,6 @@ export function PrivacyDataAudit() {
       <div id="pda-scenarios"><ApplicationScenariosSection onStartTask={openExperience} /></div>
 
       {/* ── 7. Lead Gen Form ─────────────────────────────────── */}
-      <div id="pda-cta"><LeadFormSection /></div>
 
     </div>
   );

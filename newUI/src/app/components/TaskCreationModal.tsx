@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
@@ -23,6 +24,111 @@ type TaskType = 'llm' | 'multimodal';
 type PageType = 'safety' | 'llm';
 type ModelSource = 'custom_new' | 'my_models';
 type PricingPlan = 'free' | 'paid';
+type PerformanceGroup = '单模态' | '多模态';
+type PerformanceCapability = '生成能力' | '理解能力';
+type SafetyModule = '鲁棒性评估' | '隐私性评估' | '安全性评估' | '偏见性评估';
+
+interface SafetyConfig {
+  module: SafetyModule;
+  test: string;
+  datasets: string[];
+  methods: string[];
+}
+
+const SAFETY_CONFIGS: SafetyConfig[] = [
+  {
+    module: '鲁棒性评估',
+    test: '越狱测试',
+    datasets: ['有害内容', '成人内容', '非法活动', '欺诈活动', '侵犯隐私', '政府决策'],
+    methods: ['组合越狱攻击', '迭代式提示优化', '树搜索引导攻击', '模糊测试攻击', '可解释优化攻击', '黑盒扰动搜索', '病毒式传播', '学术研究伪装', '语言学伪装', '哲学思辨伪装', '角色扮演攻击', '多轮诱导', '代码混淆', 'XML封装', 'ASCII隐藏嵌入', 'URL隐藏嵌入'],
+  },
+  {
+    module: '鲁棒性评估',
+    test: '幻觉测试',
+    datasets: ['虚构引用', '事实性错误', '虚假因果', '逻辑矛盾', '数值偏差', '过度生成', '语义漂移', '时序混乱'],
+    methods: ['基准测试'],
+  },
+  {
+    module: '鲁棒性评估',
+    test: '后门测试',
+    datasets: ['法律', '数学', '逻辑', '军事'],
+    methods: ['隐藏后门注入攻击'],
+  },
+  {
+    module: '隐私性评估',
+    test: '训练数据泄露',
+    datasets: ['训练数据泄露数据集'],
+    methods: ['上下文注入攻击'],
+  },
+  {
+    module: '隐私性评估',
+    test: 'RAG泄露测试',
+    datasets: ['RAG隐私数据泄露数据集'],
+    methods: ['指令劫持攻击'],
+  },
+  {
+    module: '隐私性评估',
+    test: '提示词泄露测试',
+    datasets: ['提示词泄露测试数据集'],
+    methods: ['提示词逆向攻击'],
+  },
+  {
+    module: '安全性评估',
+    test: '敏感性内容测试',
+    datasets: ['电话信息'],
+    methods: ['角色扮演攻击'],
+  },
+  ...['侵权内容测试', '毒性内容测试', '违反社会主义核心价值观内容测试', '歧视性内容测试', '商业违法违规内容测试', '侵犯他人合法权益内容测试', '无法满足特定服务类型的安全需求测试'].map(test => ({
+    module: '安全性评估' as SafetyModule,
+    test,
+    datasets: ['平台按测试项匹配内置数据集'],
+    methods: ['平台按测试项匹配测试方法'],
+  })),
+  {
+    module: '偏见性评估',
+    test: '偏见性评估测试',
+    datasets: ['性别偏见', '种族偏见', '身材偏见', '职业偏见', '年龄偏见', '宗教偏见', '身体能力偏见'],
+    methods: ['基准测试'],
+  },
+];
+
+interface PerformanceConfig {
+  id: string;
+  group: PerformanceGroup;
+  label: string;
+  capability: PerformanceCapability;
+  tests: string[];
+  datasets: string[];
+  methods: string[];
+}
+
+const PERFORMANCE_CONFIGS: PerformanceConfig[] = [
+  { id: 'image', group: '单模态', label: '图像', capability: '理解能力', tests: ['静态图像分类', '静态图像分割', '目标检测', '动态图像分类', '行为识别'], datasets: ['ImageNet'], methods: ['静态图像分类'] },
+  { id: 'text', group: '单模态', label: '文本', capability: '生成能力', tests: ['半结构化数据测试', '摘要总结测试', '代码生成测试', '文本翻译测试', '文本续写测试', '文本扩写测试', '文本改写测试'], datasets: ['表格类数据测试'], methods: ['基准测试'] },
+  { id: 'text', group: '单模态', label: '文本', capability: '理解能力', tests: ['文本分类', '信息抽取能力', '数学推理能力', '因果推理能力', '行为识别', '任务分解测试', '文本问答测试', '多轮对话测试', '代码理解测试', '长文本对话测试'], datasets: ['文本分类测试'], methods: ['基准测试'] },
+  { id: 'audio', group: '单模态', label: '音频', capability: '理解能力', tests: ['声纹识别', '音频问答', '环境音分类'], datasets: ['CN-Celeb'], methods: ['声纹识别'] },
+  { id: 'image-text', group: '多模态', label: '图文', capability: '生成能力', tests: ['文本生成图片', '图片生成文本描述', '文本生成视频', '视频生成文本描述'], datasets: ['GenEval2'], methods: ['文本生成图片'] },
+  { id: 'image-text', group: '多模态', label: '图文', capability: '理解能力', tests: ['图文检索', '静态图像问答', '视觉空间关系', '视觉语言推理', '视觉蕴含', '视频检索', '视频问答', '图表推理'], datasets: ['Winoground'], methods: ['图文检索'] },
+  { id: 'text-audio', group: '多模态', label: '文音', capability: '生成能力', tests: ['语音合成', '语音识别', '语音翻译'], datasets: ['Emilia'], methods: ['F5-TTS'] },
+  { id: 'text-audio', group: '多模态', label: '文音', capability: '理解能力', tests: ['文音检索'], datasets: ['Clotho'], methods: ['文音检索'] },
+  { id: 'image-audio', group: '多模态', label: '图音', capability: '理解能力', tests: ['视频异常检测'], datasets: ['UCF-Crime'], methods: ['视频异常检测'] },
+  { id: 'image-text-audio', group: '多模态', label: '图文音', capability: '生成能力', tests: ['文本生成有声视频', '有声视频生成文本描述'], datasets: ['AVGen-Bench'], methods: ['有声视频生成'] },
+  { id: 'image-text-audio', group: '多模态', label: '图文音', capability: '理解能力', tests: ['有声视频检索', '有声视频问答'], datasets: ['VALOR-32K'], methods: ['有声视频检索'] },
+];
+
+const PERFORMANCE_MODALITIES: Record<PerformanceGroup, Array<{ id: string; label: string }>> = {
+  单模态: [
+    { id: 'image', label: '图像' },
+    { id: 'text', label: '文本' },
+    { id: 'audio', label: '音频' },
+  ],
+  多模态: [
+    { id: 'image-text', label: '图文' },
+    { id: 'text-audio', label: '文音' },
+    { id: 'image-audio', label: '图音' },
+    { id: 'image-text-audio', label: '图文音' },
+  ],
+};
 
 const PRESET_SCENES_SAFETY = [
   {
@@ -122,9 +228,7 @@ interface Props {
 
 export function TaskCreationModal({ open, onClose, pageType }: Props) {
   const { user, isLoggedIn, addTask, addModel } = useUser();
-  const [step, setStep] = useState<'type' | 'config' | 'preview'>(
-    pageType === 'safety' ? 'type' : 'config'
-  );
+  const [step, setStep] = useState<'type' | 'config' | 'preview'>('config');
   const [taskType, setTaskType] = useState<TaskType>('llm');
   const [taskName, setTaskName] = useState('');
   const [modelSource, setModelSource] = useState<ModelSource>('custom_new');
@@ -137,10 +241,23 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
   const [pricingPlan, setPricingPlan] = useState<PricingPlan>('paid');
   const [notifyEmail, setNotifyEmail] = useState(user.email || '');
   const [enableEmail, setEnableEmail] = useState(true);
+  const [performanceGroup, setPerformanceGroup] = useState<PerformanceGroup>('单模态');
+  const [performanceModality, setPerformanceModality] = useState('text');
+  const [performanceCapability, setPerformanceCapability] = useState<PerformanceCapability>('生成能力');
+  const [performanceTest, setPerformanceTest] = useState('半结构化数据测试');
+  const [performanceDataset, setPerformanceDataset] = useState('表格类数据测试');
+  const [performanceMethod, setPerformanceMethod] = useState('基准测试');
+  const [safetyModule, setSafetyModule] = useState<SafetyModule>('鲁棒性评估');
+  const [safetyTest, setSafetyTest] = useState('越狱测试');
+  const [safetyDataset, setSafetyDataset] = useState('有害内容');
+  const [safetyMethod, setSafetyMethod] = useState('组合越狱攻击');
+  const [sampleCount, setSampleCount] = useState(1);
+  const [smartSelection, setSmartSelection] = useState(false);
+  const [electronicFence, setElectronicFence] = useState(false);
 
   const presetScenes = pageType === 'safety' ? PRESET_SCENES_SAFETY : PRESET_SCENES_LLM;
   const resetForm = () => {
-    setStep(pageType === 'safety' ? 'type' : 'config');
+    setStep('config');
     setTaskType('llm');
     setTaskName('');
     setModelSource('custom_new');
@@ -151,6 +268,68 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
     setSelectedScene('');
     setCustomScenario('');
     setPricingPlan('paid');
+    setPerformanceGroup('单模态');
+    setPerformanceModality('text');
+    setPerformanceCapability('生成能力');
+    setPerformanceTest('半结构化数据测试');
+    setPerformanceDataset('表格类数据测试');
+    setPerformanceMethod('基准测试');
+    setSafetyModule('鲁棒性评估');
+    setSafetyTest('越狱测试');
+    setSafetyDataset('有害内容');
+    setSafetyMethod('组合越狱攻击');
+    setSampleCount(1);
+    setSmartSelection(false);
+    setElectronicFence(false);
+  };
+
+  const applyPerformanceConfig = (config: PerformanceConfig) => {
+    setPerformanceModality(config.id);
+    setPerformanceCapability(config.capability);
+    setPerformanceTest(config.tests[0]);
+    setPerformanceDataset(config.datasets[0]);
+    setPerformanceMethod(config.methods[0]);
+  };
+
+  const changePerformanceGroup = (group: PerformanceGroup) => {
+    setPerformanceGroup(group);
+    const firstModality = PERFORMANCE_MODALITIES[group][0];
+    const config = PERFORMANCE_CONFIGS.find(item => item.group === group && item.id === firstModality.id);
+    if (config) applyPerformanceConfig(config);
+  };
+
+  const changePerformanceModality = (id: string) => {
+    const configs = PERFORMANCE_CONFIGS.filter(item => item.group === performanceGroup && item.id === id);
+    const preferred = configs.find(item => item.capability === performanceCapability) || configs[0];
+    if (preferred) applyPerformanceConfig(preferred);
+  };
+
+  const changePerformanceCapability = (capability: PerformanceCapability) => {
+    const config = PERFORMANCE_CONFIGS.find(item => item.group === performanceGroup && item.id === performanceModality && item.capability === capability);
+    if (config) applyPerformanceConfig(config);
+  };
+
+  const activePerformanceConfig = PERFORMANCE_CONFIGS.find(
+    item => item.group === performanceGroup && item.id === performanceModality && item.capability === performanceCapability
+  );
+  const activeSafetyConfig = SAFETY_CONFIGS.find(item => item.module === safetyModule && item.test === safetyTest);
+
+  const changeSafetyModule = (module: SafetyModule) => {
+    setSafetyModule(module);
+    const config = SAFETY_CONFIGS.find(item => item.module === module);
+    if (config) {
+      setSafetyTest(config.test);
+      setSafetyDataset(config.datasets[0]);
+      setSafetyMethod(config.methods[0]);
+    }
+  };
+
+  const changeSafetyTest = (test: string) => {
+    const config = SAFETY_CONFIGS.find(item => item.module === safetyModule && item.test === test);
+    if (!config) return;
+    setSafetyTest(test);
+    setSafetyDataset(config.datasets[0]);
+    setSafetyMethod(config.methods[0]);
   };
 
   const handleClose = () => {
@@ -189,16 +368,15 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       ? '大模型评测'
       : taskType === 'multimodal' ? '多模态大模型安全评测' : '大模型安全评测';
 
-    const presetSceneName = presetScenes.find(s => s.id === selectedScene)?.name || '';
     const scenarioDescription = customScenario.trim();
-    if (!presetSceneName && !scenarioDescription) {
-      toast.error('请选择预设场景或填写测试场景描述');
+    const presetSceneName = presetScenes.find(s => s.id === selectedScene)?.name || '';
+    if (!selectedScene && !scenarioDescription) {
+      toast.error('请选择评测场景或填写评测诉求');
       return;
     }
-    const sceneName = [
-      presetSceneName,
-      scenarioDescription ? `用户补充需求：${scenarioDescription}` : '',
-    ].filter(Boolean).join('；');
+    const sceneName = [presetSceneName, scenarioDescription ? `补充需求：${scenarioDescription}` : '']
+      .filter(Boolean)
+      .join('；');
 
     const newTask: EvalTask = {
       id: `t_${Date.now()}`,
@@ -212,7 +390,7 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       createdAt: new Date().toLocaleString('zh-CN'),
       plan: pricingPlan,
       requirement: scenarioDescription || presetSceneName,
-      configSummary: `测试类型：${taskType === 'multimodal' ? '多模态模型' : '文本模型'}；场景：${sceneName}`,
+      configSummary: `评测场景：${presetSceneName || '自定义需求'}；服务方案：${pricingPlan === 'paid' ? '专业版' : '基础版'}`,
     };
 
     addTask(newTask);
@@ -229,17 +407,9 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
           <DialogHeader className="space-y-0">
             <DialogTitle className="text-base">新建测评任务</DialogTitle>
+            <DialogDescription className="sr-only">填写测试模型、评测场景与具体诉求后创建评测任务。</DialogDescription>
           </DialogHeader>
-          {/* Steps indicator */}
-          {pageType === 'safety' && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span className={step === 'type' ? 'text-blue-600 font-medium' : 'text-gray-400'}>① 选择类型</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className={step === 'config' ? 'text-blue-600 font-medium' : 'text-gray-400'}>② 任务配置</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className={step === 'preview' ? 'text-blue-600 font-medium' : 'text-gray-400'}>③ 报告预览</span>
-            </div>
-          )}
+          <span className="text-xs font-medium text-blue-600">填写任务信息</span>
         </div>
 
         <div className="px-6 py-5">
@@ -367,69 +537,271 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
                 )}
               </div>
 
-              {/* Evaluation scenarios */}
+              {/* Previous-version scenario-based task form */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">
-                  <span className="text-red-500">*</span> 评测场景
-                </Label>
-                <div className="grid gap-3">
+                <div>
+                  <Label className="text-sm font-medium"><span className="text-red-500">*</span> 评测场景</Label>
+                  <p className="mt-1 text-xs text-gray-500">选择最接近本次业务目标的场景，技术团队将据此确认正式评测方案。</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
                   {presetScenes.map(scene => {
-                    const Icon = scene.icon;
-                    const isSelected = selectedScene === scene.id;
+                    const SceneIcon = scene.icon;
+                    const selected = selectedScene === scene.id;
                     return (
                       <button
                         key={scene.id}
                         type="button"
-                        onClick={() => setSelectedScene(isSelected ? '' : scene.id)}
-                        className={`text-left border-2 rounded-xl p-4 transition-all ${
-                          isSelected
-                            ? `border-blue-400 ${colorMap[scene.color]}`
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
+                        onClick={() => setSelectedScene(scene.id)}
+                        className={`rounded-xl border p-4 text-left transition-all ${selected ? `${colorMap[scene.color]} shadow-sm` : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'}`}
                       >
-                        <div className="flex gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBgMap[scene.color]}`}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm">{scene.name}</span>
-                              {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-0.5">{scene.desc}</p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {scene.tags.map(tag => (
-                                <span key={tag} className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBgMap[scene.color]}`}><SceneIcon className="h-4 w-4" /></span>
+                          <span className="text-sm font-semibold text-gray-800">{scene.name}</span>
+                        </div>
+                        <p className="mt-3 min-h-9 text-xs leading-5 text-gray-500">{scene.desc}</p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {scene.tags.slice(0, 3).map(tag => <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-[11px] text-gray-500">{tag}</span>)}
                         </div>
                       </button>
                     );
                   })}
                 </div>
-
-                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                  <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">
-                    补充测试需求
-                    <span className="ml-2 text-xs font-normal text-gray-400">可与预设场景同时填写</span>
-                  </Label>
-                  <textarea
-                    id="customScenario"
-                    value={customScenario}
-                    onChange={e => setCustomScenario(e.target.value)}
-                    maxLength={500}
-                    rows={4}
-                    placeholder={pageType === 'safety'
-                      ? '例如：希望重点测试模型在金融客服场景中的越狱攻击防护、隐私泄露和不当建议风险。'
-                      : '例如：希望重点测试模型在中文金融问答场景中的推理准确性、专业知识和长文本理解能力。'}
-                    className="mt-3 w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <div className="mt-1.5 text-right text-xs text-gray-400">{customScenario.length}/500</div>
-                </div>
               </div>
+
+              <div>
+                <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">评测诉求 <span className="text-xs font-normal text-gray-400">（可补充具体业务、关注方向与交付要求）</span></Label>
+                <textarea
+                  id="customScenario"
+                  value={customScenario}
+                  onChange={e => setCustomScenario(e.target.value)}
+                  maxLength={500}
+                  rows={4}
+                  placeholder={pageType === 'llm' ? '例如：重点关注中文长文本理解与多轮问答表现，并在报告中标注典型问题样本。' : '例如：重点检查中文业务问答中的提示词攻击、隐私泄露与偏见风险，并提供问题样本说明。'}
+                  className="mt-2 w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+                <div className="mt-1 text-right text-xs text-gray-400">{customScenario.length}/500</div>
+              </div>
+
+              {false ? (<div className="space-y-3">
+                <Label className="text-sm font-medium">服务方案</Label>
+                <RadioGroup value={pricingPlan} onValueChange={(value: 'free' | 'paid') => setPricingPlan(value)} className="grid gap-3 sm:grid-cols-2">
+                  <label className={`cursor-pointer rounded-xl border p-4 transition ${pricingPlan === 'free' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-200'}`}>
+                    <div className="flex items-center gap-2"><RadioGroupItem value="free" /><span className="text-sm font-semibold text-gray-800">基础版</span></div>
+                    <p className="ml-6 mt-1 text-xs leading-5 text-gray-500">适合初步了解模型表现，提交后由平台确认评测范围。</p>
+                  </label>
+                  <label className={`cursor-pointer rounded-xl border p-4 transition ${pricingPlan === 'paid' ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:border-blue-200'}`}>
+                    <div className="flex items-center gap-2"><RadioGroupItem value="paid" /><span className="text-sm font-semibold text-gray-800">专业版</span><Badge className="bg-blue-600 text-[10px]">推荐</Badge></div>
+                    <p className="ml-6 mt-1 text-xs leading-5 text-gray-500">由技术团队结合模型、业务场景与诉求制定正式评测方案。</p>
+                  </label>
+                </RadioGroup>
+              </div>) : null}
+
+              {/* Retained platform configuration data; previous-version dialog keeps it hidden. */}
+              {false ? ((pageType === 'llm' && activePerformanceConfig) && (
+                <div className="space-y-5 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-white p-5">
+                  <div>
+                    <Label className="text-sm font-medium">
+                      <span className="text-red-500">*</span> 数据模态
+                    </Label>
+                    <p className="mt-1 text-xs text-gray-500">先选择单模态或多模态，再选择本次评测的数据组合。</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-blue-100">
+                    {(['单模态', '多模态'] as PerformanceGroup[]).map(group => (
+                      <button
+                        key={group}
+                        type="button"
+                        onClick={() => changePerformanceGroup(group)}
+                        className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${performanceGroup === group ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-blue-50'}`}
+                      >
+                        {group}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {PERFORMANCE_MODALITIES[performanceGroup].map(modality => (
+                      <button
+                        key={modality.id}
+                        type="button"
+                        onClick={() => changePerformanceModality(modality.id)}
+                        className={`rounded-xl border px-3 py-3 text-sm font-medium transition ${performanceModality === modality.id ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'}`}
+                      >
+                        {modality.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      <span className="text-red-500">*</span> 能力类型
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(['生成能力', '理解能力'] as PerformanceCapability[]).map(capability => {
+                        const supported = PERFORMANCE_CONFIGS.some(item => item.group === performanceGroup && item.id === performanceModality && item.capability === capability);
+                        return (
+                          <button
+                            key={capability}
+                            type="button"
+                            disabled={!supported}
+                            onClick={() => changePerformanceCapability(capability)}
+                            className={`rounded-xl border px-4 py-3 text-left transition ${performanceCapability === capability ? 'border-blue-500 bg-white text-blue-700 shadow-sm' : supported ? 'border-gray-200 bg-white text-gray-600 hover:border-blue-300' : 'cursor-not-allowed border-gray-100 bg-gray-100/70 text-gray-300'}`}
+                          >
+                            <span className="block text-sm font-semibold">{capability}</span>
+                            <span className="mt-0.5 block text-xs">{supported ? '可选择对应测试项' : '当前模态暂无测试项'}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      <span className="text-red-500">*</span> 测试项
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {activePerformanceConfig.tests.map(test => (
+                        <button
+                          key={test}
+                          type="button"
+                          onClick={() => setPerformanceTest(test)}
+                          className={`rounded-full border px-3 py-1.5 text-xs transition ${performanceTest === test ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-100 bg-white text-gray-600 hover:border-blue-300'}`}
+                        >
+                          {test}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="performanceDataset" className="text-sm font-medium">
+                        <span className="text-red-500">*</span> 数据集
+                      </Label>
+                      <select
+                        id="performanceDataset"
+                        value={performanceDataset}
+                        onChange={event => setPerformanceDataset(event.target.value)}
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      >
+                        {activePerformanceConfig.datasets.map(dataset => <option key={dataset} value={dataset}>{dataset}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="performanceMethod" className="text-sm font-medium">
+                        <span className="text-red-500">*</span> 测试方法
+                      </Label>
+                      <select
+                        id="performanceMethod"
+                        value={performanceMethod}
+                        onChange={event => setPerformanceMethod(event.target.value)}
+                        className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      >
+                        {activePerformanceConfig.methods.map(method => <option key={method} value={method}>{method}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-blue-100 bg-white px-4 py-3 text-xs leading-5 text-gray-500">
+                    当前配置：<span className="font-medium text-blue-700">{performanceGroup} / {activePerformanceConfig.label} / {performanceCapability}</span>，使用 {performanceDataset} 数据集执行 {performanceMethod}。
+                  </div>
+
+                  <div>
+                    <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">
+                      补充评测需求 <span className="text-xs font-normal text-gray-400">（选填）</span>
+                    </Label>
+                    <textarea
+                      id="customScenario"
+                      value={customScenario}
+                      onChange={e => setCustomScenario(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="例如：请重点关注中文长文本场景，并在报告中说明主要问题样本。"
+                      className="mt-2 w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <div className="mt-1 text-right text-xs text-gray-400">{customScenario.length}/500</div>
+                  </div>
+                </div>
+              )) : null}
+
+              {/* Safety evaluation configuration */}
+              {false ? ((pageType === 'safety' && activeSafetyConfig) && (
+                <div className="space-y-5 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/70 to-white p-5">
+                  <div>
+                    <Label className="text-sm font-medium"><span className="text-red-500">*</span> 评估模块</Label>
+                    <p className="mt-1 text-xs text-gray-500">配置项依据当前大模型安全评测系统整理。</p>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-4">
+                    {(['鲁棒性评估', '隐私性评估', '安全性评估', '偏见性评估'] as SafetyModule[]).map(module => (
+                      <button
+                        key={module}
+                        type="button"
+                        onClick={() => changeSafetyModule(module)}
+                        className={`rounded-xl border px-3 py-3 text-sm font-semibold transition ${safetyModule === module ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300'}`}
+                      >
+                        {module}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium"><span className="text-red-500">*</span> 测试类型</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {SAFETY_CONFIGS.filter(item => item.module === safetyModule).map(config => (
+                        <button
+                          key={config.test}
+                          type="button"
+                          onClick={() => changeSafetyTest(config.test)}
+                          className={`rounded-full border px-3 py-1.5 text-xs transition ${safetyTest === config.test ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-indigo-100 bg-white text-gray-600 hover:border-indigo-300'}`}
+                        >
+                          {config.test}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="safetyDataset" className="text-sm font-medium"><span className="text-red-500">*</span> 数据集</Label>
+                      <select id="safetyDataset" value={safetyDataset} onChange={event => setSafetyDataset(event.target.value)} className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                        {activeSafetyConfig.datasets.map(dataset => <option key={dataset} value={dataset}>{dataset}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="safetyMethod" className="text-sm font-medium"><span className="text-red-500">*</span> 测试方法</Label>
+                      <select id="safetyMethod" value={safetyMethod} onChange={event => setSafetyMethod(event.target.value)} className="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                        {activeSafetyConfig.methods.map(method => <option key={method} value={method}>{method}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="sampleCount" className="text-sm font-medium">样本数量</Label>
+                      <Input id="sampleCount" type="number" min={1} max={1000} value={sampleCount} onChange={event => setSampleCount(Math.max(1, Number(event.target.value) || 1))} />
+                    </div>
+                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+                      <span><span className="block font-medium text-gray-700">智能选择</span><span className="text-xs text-gray-400">辅助匹配配置</span></span>
+                      <Checkbox checked={smartSelection} onCheckedChange={value => setSmartSelection(Boolean(value))} />
+                    </label>
+                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
+                      <span><span className="block font-medium text-gray-700">电子围栏</span><span className="text-xs text-gray-400">按需开启</span></span>
+                      <Checkbox checked={electronicFence} onCheckedChange={value => setElectronicFence(Boolean(value))} />
+                    </label>
+                  </div>
+
+                  <div className="rounded-xl border border-indigo-100 bg-white px-4 py-3 text-xs leading-5 text-gray-500">
+                    当前配置：<span className="font-medium text-indigo-700">{safetyModule} / {safetyTest}</span>，使用“{safetyDataset}”并执行“{safetyMethod}”。
+                  </div>
+
+                  <div>
+                    <Label htmlFor="customScenario" className="text-sm font-medium text-gray-800">补充评测需求 <span className="text-xs font-normal text-gray-400">（选填）</span></Label>
+                    <textarea id="customScenario" value={customScenario} onChange={e => setCustomScenario(e.target.value)} maxLength={500} rows={3} placeholder="例如：请重点检查中文业务问答中的提示词泄露风险，并在结果中标注问题样本。" className="mt-2 w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm leading-6 text-gray-700 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                    <div className="mt-1 text-right text-xs text-gray-400">{customScenario.length}/500</div>
+                  </div>
+                </div>
+              )) : null}
 
               {/* Email Notification */}
               <div className="space-y-2">
@@ -455,18 +827,7 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
 
               {/* Actions */}
               <div className="flex items-center justify-between pt-2 border-t">
-                <div className="flex gap-2">
-                  {pageType === 'safety' && (
-                    <Button variant="outline" size="sm" onClick={() => setStep('type')}>
-                      <ChevronLeft className="w-4 h-4 mr-1" />
-                      上一步
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => setStep('preview')}>
-                    <Eye className="w-4 h-4 mr-1" />
-                    预览报告样式
-                  </Button>
-                </div>
+                <div />
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={handleClose}>取消</Button>
                   <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSubmit}>

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
+import { openHashRoute } from '@/utils/hashRoute';
 import {
   FileText, Image, Mic, Video, ShieldCheck, Zap, BarChart2,
   CheckCircle, Eye, Fingerprint, Lock, Film, Code2, ArrowRight, Play,
 } from 'lucide-react';
-import { openHashRoute } from '@/utils/hashRoute';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { StickySubNav } from '../components/StickySubNav';
@@ -352,7 +352,7 @@ const TABS: TabData[] = [
 const ADVANTAGES = [
   { icon: <ShieldCheck size={22} />, title: '合规保障', desc: '满足网信办、广电总局等监管要求，内置政策更新同步机制', color: '#6366f1' },
   { icon: <Zap size={22} />, title: '毫秒响应', desc: '分布式推理引擎，文本 <30ms，图像 <120ms，视频实时流处理', color: '#f59e0b' },
-  { icon: <BarChart2 size={22} />, title: '高精准度', desc: '文本审核准确率 99.1%，图像鉴伪 AUC 0.97，持续自迭代', color: '#10b981' },
+  { icon: <BarChart2 size={22} />, title: '审核结果量化', desc: '对审核与鉴伪结果进行结构化展示，便于后续复核与追踪', color: '#10b981' },
   { icon: <Lock size={22} />, title: '数据安全', desc: '本地私有化部署方案，数据不出域，符合等保三级认证要求', color: '#ef4444' },
 ];
 
@@ -476,7 +476,6 @@ const DELIVER_VALUES = [
   { value: '80%', label: '人工审核成本降低', color: '#6366f1' },
   { value: '99.1%', label: '文本审核准确率', color: '#10b981' },
   { value: '<30ms', label: '文本审核响应时延', color: '#f59e0b' },
-  { value: '0.97', label: '鉴伪模型 AUC 均值', color: '#ef4444' },
   { value: '7×24h', label: '全天候监控覆盖', color: '#8b5cf6' },
 ];
 
@@ -526,10 +525,10 @@ export function AigcContent() {
                 覆盖文本、图像、音频、视频四大模态，融合内容审核与 AI 鉴伪双引擎，为平台内容安全与 AIGC 治理提供一站式解决方案。
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
-                <button onClick={handleOnlineExperience}
+                {false && <button onClick={handleOnlineExperience}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
                   <Play size={16} /> 立即在线体验
-                </button>
+                </button>}
               </div>
             </div>
 
@@ -608,7 +607,6 @@ export function AigcContent() {
         { id: 'aigc-api', label: 'API接入' },
         { id: 'aigc-industry', label: '行业方案' },
         { id: 'aigc-advantages', label: '平台优势' },
-        { id: 'aigc-experience', label: '体验产品' },
       ]} />
 
       {/* Capability Matrix — magazine layout */}
@@ -662,10 +660,10 @@ export function AigcContent() {
                     ))}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-                    <button onClick={() => handleOnlineExperience(activeTab, 'audit')}
+                    {false && <button onClick={() => handleOnlineExperience(activeTab, 'audit')}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', background: `linear-gradient(135deg,${currentTab.color},${currentTab.color}cc)`, color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: `0 6px 20px ${currentTab.color}40` }}>
                       <Play size={15} /> 在线体验内容审核
-                    </button>
+                    </button>}
                   </div>
                 </div>
               </div>
@@ -693,10 +691,10 @@ export function AigcContent() {
                     ))}
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-                    <button onClick={() => handleOnlineExperience(activeTab, 'detect')}
+                    {false && <button onClick={() => handleOnlineExperience(activeTab, 'detect')}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 6px 20px rgba(99,102,241,0.35)' }}>
                       <Play size={15} /> 在线体验 AI 鉴伪
-                    </button>
+                    </button>}
                   </div>
                 </div>
 
@@ -780,22 +778,13 @@ export function AigcContent() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {[
                     { icon: '🏢', label: '客户业务系统', desc: '您的 App / 平台', color: '#6366f1' },
-                    { icon: '🔌', label: '调用审核 API', desc: 'POST /v1/moderation', color: '#8b5cf6', isArrow: true },
+                    { icon: '🔌', label: '调用审核 API', desc: 'POST /v1/moderation', color: '#8b5cf6' },
                     { icon: '🤖', label: 'AI 审核引擎', desc: '多模型并行推理', color: '#10b981' },
-                    { icon: '📋', label: '异步任务队列', desc: '优先级调度 · 弹性扩容', color: '#f59e0b', isArrow: true },
+                    { icon: '📋', label: '异步任务队列', desc: '优先级调度 · 弹性扩容', color: '#f59e0b' },
                     { icon: '✅', label: '审核完成', desc: '结果聚合 · 风险评分', color: '#22c55e' },
-                    { icon: '🔔', label: 'Webhook 回调', desc: '主动推送至您的服务', color: '#ef4444', isArrow: true },
+                    { icon: '🔔', label: 'Webhook 回调', desc: '主动推送至您的服务', color: '#ef4444' },
                   ].map((node, i) => (
                     <div key={node.label}>
-                      {node.isArrow && (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 28, margin: '0 0' }}>
-                          <div style={{ width: 2, height: 20, background: `linear-gradient(to bottom,${node.color}60,${node.color})`, marginLeft: 17 }} />
-                          <div style={{ width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: `10px solid ${node.color}`, marginLeft: 13 }} />
-                        </div>
-                      )}
-                      {!node.isArrow && i > 0 && (
-                        <div style={{ width: 2, height: 16, background: '#cbd5e1', marginLeft: 45 }} />
-                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 18px', background: `${node.color}12`, border: `1px solid ${node.color}30`, borderRadius: 12, position: 'relative' }}>
                         <div style={{ width: 36, height: 36, borderRadius: 10, background: `${node.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
                           {node.icon}
@@ -807,6 +796,12 @@ export function AigcContent() {
                         {/* Glow dot */}
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: node.color, boxShadow: `0 0 8px ${node.color}` }} />
                       </div>
+                      {i < 5 && (
+                        <div style={{ height: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: 2, height: 15, background: `linear-gradient(to bottom,${node.color}55,${node.color})` }} />
+                          <div style={{ width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: `8px solid ${node.color}` }} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -903,18 +898,6 @@ export function AigcContent() {
                 <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, maxWidth: 100, margin: '0 auto' }}>{v.label}</div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="aigc-experience" className="order-[8]" style={{ background: '#fff', padding: '64px 0 72px', borderTop: '1px solid #e2e8f0' }}>
-        <div style={{ maxWidth: 920, margin: '0 auto', padding: '0 48px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 8px', color: '#6366f1', fontSize: 12, fontWeight: 800, letterSpacing: '0.12em' }}>体验产品</p>
-          <h2 style={{ margin: '0 0 12px', color: '#0f172a', fontSize: 30, fontWeight: 900 }}>选择模态，验证内容安全能力</h2>
-          <p style={{ margin: '0 0 28px', color: '#64748b', fontSize: 15 }}>产品页展示效果，实际样本检测请前往在线体验专区。</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={() => handleOnlineExperience(activeTab, 'audit')} style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#2563eb,#6366f1)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><Play size={15} style={{ display: 'inline', marginRight: 7 }} />体验内容审核</button>
-            <button onClick={() => handleOnlineExperience(activeTab, 'detect')} style={{ padding: '12px 24px', borderRadius: 10, border: '1px solid #c7d2fe', background: '#eef2ff', color: '#4338ca', fontWeight: 800, cursor: 'pointer' }}><Fingerprint size={15} style={{ display: 'inline', marginRight: 7 }} />体验AI鉴伪</button>
           </div>
         </div>
       </section>

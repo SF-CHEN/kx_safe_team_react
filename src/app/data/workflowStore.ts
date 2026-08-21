@@ -60,8 +60,6 @@ export interface PlatformUserRecord {
   registeredAt: string;
   lastLoginAt: string;
   status: '正常' | '已停用';
-  /** 前端归一化角色：admin 只读展示，不可操作 */
-  role?: 'admin' | 'user';
 }
 
 export interface PlatformActivity {
@@ -99,7 +97,7 @@ const ACTIVITY_KEY = 'xuanjian-platform-activities-v1';
 export const WORKFLOW_EVENT = 'xuanjian-workflow-change';
 export const TERMINAL_WORKFLOW_STATUSES: WorkflowStatus[] = ['已交付', '已终止'];
 export const FORMAL_TASK_PRODUCTS = new Set([
-  '模型数据安全评测', '深度模型可信测评', '智能体安全评测',
+  '数据集安全评测', '模型数据安全评测', '深度模型可信测评', '智能体安全评测',
   '大模型评测', '大模型性能评测', '大模型安全评测', '多模态大模型安全评测',
 ]);
 
@@ -128,6 +126,7 @@ function normalizeTask(task: WorkflowTask): WorkflowTask {
   const normalized = normalizeStatus(String(task.status));
   return {
     ...task,
+    product: task.product === '模型数据安全评测' ? '数据集安全评测' : task.product,
     status: normalized,
     communications: task.communications || [],
     publicMessage: task.publicMessage || (String(task.status) === '处理异常' ? '任务处理遇到异常，管理员正在核实。' : undefined),

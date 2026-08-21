@@ -9,7 +9,7 @@ const FOOTER_SERVICE_COLS = [
     label: '数据侧', color: '#a78bfa',
     items: [
       { name: '个人敏感信息审查', path: '/privacy-data-audit' },
-      { name: '模型数据安全评测', path: '/model-safety-eval' },
+      { name: '数据集安全评测', path: '/model-safety-eval' },
       { name: 'AIGC内容审核与鉴伪', path: '/aigc-content' },
       { name: 'AIGC内容标识与检测', path: '/aigc-content-marking' },
     ],
@@ -20,7 +20,8 @@ const FOOTER_SERVICE_COLS = [
       { name: '深度模型可信测评', path: '/deep-model-eval' },
       { name: '具身智能可信评测', path: '/embodied-intelligence' },
       { name: '智能体安全评测', path: '/agent-safety' },
-      { name: '大语言模型可信评测', path: '/llm-evaluation' },
+      { name: '大模型性能评测', path: '/llm-evaluation' },
+      { name: '大模型安全评测', path: '/safety-evaluation' },
     ],
   },
   {
@@ -31,7 +32,7 @@ const FOOTER_SERVICE_COLS = [
     ],
   },
   {
-    label: '合规治理侧', color: '#34d399',
+    label: '服务侧', color: '#34d399',
     items: [
       { name: '人工智能安全教学平台', path: '/ai-safety-edu' },
       { name: '大模型备案服务', path: '/model-filing-service' },

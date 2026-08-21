@@ -332,3 +332,25 @@ export interface UserOverviewVo {
   activeUserCountLast7Days?: number;
   disabledUserCount?: number;
 }
+
+/** 用户联系记录（管理端实体；公司字段 OpenAPI 拼写为 compantName） */
+export interface UserContact {
+  createdAt?: string;
+  updatedAt?: string;
+  deleted?: boolean;
+  id?: number;
+  replied?: boolean;
+  userName?: string;
+  compantName?: string;
+  contactInformation?: string;
+  requirementDescription?: string;
+  contactResult?: string;
+}
+
+/** 前台填报联系信息 */
+export interface UserContactSubmitSo {
+  userName: string;
+  companyName: string;
+  contactInformation: string;
+  requirementDescription: string;
+}

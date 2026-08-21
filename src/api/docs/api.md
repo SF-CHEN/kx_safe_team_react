@@ -9,6 +9,25 @@
 以下是系统中涉及的所有数据结构的 TypeScript 接口定义：
 
 ```typescript
+interface UserContact { // 用户联系记录
+  createdAt?: string; // 创建时间
+  updatedAt?: string; // 修改时间
+  deleted?: boolean; // 软删除标记，false未删除，true已删除
+  id?: number;
+  replied?: boolean; // 是否回复用户，false未回复，true已回复
+  userName?: string; // 用户名称
+  compantName?: string; // 公司名称
+  contactInformation?: string; // 联系方式
+  requirementDescription?: string; // 需求描述
+  contactResult?: string; // 联系结果
+}
+
+interface ResultBoolean {
+  message?: string;
+  code?: number;
+  data?: boolean;
+}
+
 interface SysUser { // 首页用户
   id?: number; // id
   username?: string;
@@ -19,12 +38,6 @@ interface SysUser { // 首页用户
   updatedAt?: string;
   lastLoginAt?: string; // 最近登录时间
   enabled?: boolean; // 是否启用：true-启用、false-禁用
-}
-
-interface ResultBoolean {
-  message?: string;
-  code?: number;
-  data?: boolean;
 }
 
 interface SysDict {
@@ -69,7 +82,7 @@ interface ModelDataSafetyEvaluationTask { // 模型数据安全评测任务表
   evaluationRequirement?: string; // 评测诉求
   status?: string; // 状态
   emailStatus?: string; // 邮件发送状态
-  deleted?: boolean; // 软删除标记
+  deleted?: boolean; // 软删��标记
   createdAt?: string; // 创建时间
   updatedAt?: string; // 更新时间
   id?: number; // id
@@ -98,6 +111,52 @@ interface DepthModel {
   updatedAt?: string; // 更新时间
 }
 
+interface UserContactSubmitSo { // 用户联系填报
+  userName?: string; // 姓名
+  companyName?: string; // 公司
+  contactInformation?: string; // 联系方式
+  requirementDescription?: string; // 需求描述
+}
+
+interface ResultUserContact {
+  message?: string;
+  code?: number;
+  data?: UserContact;
+}
+
+interface PageQuerySo {
+  pageSize?: number; // 分页大小
+  pageCurrent?: number; // 当前页
+  orderColumn?: string; // 排序字段
+  orderType?: string; // 排序方式
+  entity?: UserContact; // 实体参数
+}
+
+interface OrderItem {
+  column?: string;
+  asc?: boolean;
+}
+
+interface PageUserContact {
+  records?: UserContact[];
+  total?: number;
+  size?: number;
+  current?: number;
+  orders?: OrderItem[];
+  optimizeCountSql?: PageUserContact;
+  searchCount?: PageUserContact;
+  optimizeJoinOfCountSql?: boolean;
+  maxLimit?: number;
+  countId?: string;
+  pages?: number;
+}
+
+interface ResultPageUserContact {
+  message?: string;
+  code?: number;
+  data?: PageUserContact;
+}
+
 interface UserStatusSo { // 禁用/启用用户账号请求参数
   userId?: number; // 目标用户id
   enabled?: boolean; // 是否启用：true-启用、false-禁用
@@ -121,19 +180,6 @@ interface ResultUserLoginVo {
 interface UserLoginVo { // 用户登录返回VO
   user?: SysUser; // 用户信息
   token?: string; // JWT token
-}
-
-interface PageQuerySo {
-  pageSize?: number; // 分页大小
-  pageCurrent?: number; // 当前页
-  orderColumn?: string; // 排序字段
-  orderType?: string; // 排序方式
-  entity?: SysUser; // 实体参数
-}
-
-interface OrderItem {
-  column?: string;
-  asc?: boolean;
 }
 
 interface PageSysUser {
@@ -365,7 +411,7 @@ interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评�
   configSummary?: string; // 配置摘要
   submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
   status?: 'PROCESSING' | 'AWAIT_SUPPLEMENT' | 'DELIVERED' | 'TERMINATED'; // 当前状态：PROCESSING-处理中、AWAIT_SUPPLEMENT-待补充、DELIVERED-已交付、TERMINATED-已终止
-  taskRefId?: number; // 关联��体任务表记录的主键
+  taskRefId?: number; // 关联具体任务表记录的主键
   userId?: number; // 创建用户的id
   supplementFileId?: number; // 补充材料文件id，关联sys_file.id
   deliverFileId?: number; // 交付文件id，关联sys_file.id
@@ -457,7 +503,7 @@ interface ResultDepthModel {
   data?: DepthModel;
 }
 
-interface PresetSceneVo { // 预置场景VO
+interface PresetSceneVo { // 预置���景VO
   sceneId?: number; // 场景id
   sceneName?: string; // 场景名称
   dimensionNames?: string[]; // 场景下的所有子维度名称集合
@@ -586,6 +632,74 @@ interface ResultListBaseDropDepthModel {
 ```
 
 ## 2. 接口列表 (API Endpoints)
+
+### 📂 用户联系记录
+
+### 修改用户联系记录
+
+- **Method**: `PUT`
+- **URL**: `/temp/user-contact/update`
+- **Request Body**: `UserContact`
+- **Response**: `ResultBoolean`
+
+---
+
+### 用户填报联系信息
+
+- **Method**: `POST`
+- **URL**: `/temp/user-contact/submit`
+- **Request Body**: `UserContactSubmitSo`
+- **Response**: `ResultUserContact`
+
+---
+
+### 分页查询用户联系记录
+
+- **Method**: `POST`
+- **URL**: `/temp/user-contact/page`
+- **Request Body**: `PageQuerySo`
+- **Response**: `ResultPageUserContact`
+
+---
+
+### 新增用户联系记录
+
+- **Method**: `POST`
+- **URL**: `/temp/user-contact/add`
+- **Request Body**: `UserContact`
+- **Response**: `ResultUserContact`
+
+---
+
+### 获取用户联系记录
+
+- **Method**: `GET`
+- **URL**: `/temp/user-contact/getDetailById`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultUserContact`
+
+---
+
+### 删除用户联系记录
+
+- **Method**: `DELETE`
+- **URL**: `/temp/user-contact/deleteOne`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 批量删除用户联系记录
+
+- **Method**: `DELETE`
+- **URL**: `/temp/user-contact/batchDel`
+- **Query / Path Parameters**:
+  - `ids` (query): number[] (Required) 
+- **Response**: `ResultBoolean`
+
+---
 
 ### 📂 首页用户
 

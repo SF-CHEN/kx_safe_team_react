@@ -22,12 +22,12 @@ const StandardsCard = () => (
         <div className="flex items-center justify-between mb-5 pb-4" style={{ borderBottom: '1px solid rgba(226,232,240,0.6)' }}>
           <div className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-violet-500" />
-            <span className="text-gray-900 text-sm font-semibold">可信标准认证体系</span>
+            <span className="text-gray-900 text-sm font-semibold">标准文档建设框架</span>
           </div>
           <motion.div animate={{ opacity: [1, 0.7, 1] }} transition={{ duration: 2.5, repeat: Infinity }}
             className="px-2.5 py-1 rounded-full text-violet-600 text-xs font-bold flex items-center gap-1.5"
             style={{ background: 'rgba(237,233,254,0.9)', border: '1px solid rgba(196,181,253,0.8)' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />已发布
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />技术支撑
           </motion.div>
         </div>
 
@@ -123,7 +123,7 @@ export function TiancheStandardService() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-blue-400">制定与落地服务</span>
               </h1>
               <p className="text-blue-100/80 text-lg mb-8 leading-relaxed max-w-xl">
-                依托浙江大学学术资源与行业专家团队，帮助企业系统性构建 AI 应用评测规范、数据治理标准与模型交付体系，助力参与行业及国家 AI 标准制定。
+                提供标准需求分析、框架设计、文本起草、评审修改与实施说明等技术支撑，帮助组织形成结构完整、可评审、可执行的标准规范文档。
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <div className="flex items-center gap-2 text-sm text-emerald-400">
@@ -132,14 +132,14 @@ export function TiancheStandardService() {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-emerald-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>学术 + 实践双轨标准制定，可交付完整规范文本</span>
+                  <span>学术研究与业务实践双轨编制，可交付完整规范文本</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="text-white border-0 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+                <Button size="lg" onClick={() => setConsultOpen(true)} className="text-white border-0 shadow-[0_0_20px_rgba(139,92,246,0.4)]"
                   style={{ background: 'linear-gradient(135deg,#8b5cf6,#6366f1)' }}>
                   <FileText className="w-4 h-4 mr-2" />
-                  免费领取 AI 标准建设白皮书
+                  获取标准编制说明
                 </Button>
                 <Button size="lg" variant="outline" onClick={() => setConsultOpen(true)} className="text-blue-300 border-blue-400/30 hover:bg-blue-400/10 bg-transparent">
                   预约专家免费咨询
@@ -159,7 +159,6 @@ export function TiancheStandardService() {
         { id: 'tss-scope', label: '服务范围' },
         { id: 'tss-process', label: '服务流程' },
         { id: 'tss-faq', label: 'FAQ' },
-        { id: 'tss-cta', label: '立即咨询' },
       ]} />
 
       {/* ── 2. Why Standards Matter ───────────────────────────── */}
@@ -194,8 +193,8 @@ export function TiancheStandardService() {
               },
               {
                 icon: Lock, iconBg: 'bg-purple-50', iconColor: 'text-purple-500', accentColor: '#a855f7', shadow: 'rgba(168,85,247,0.12)',
-                title: '无法参与行业话语权', bigNum: '0', bigLabel: '参与国家标准 = 失去先发优势',
-                desc: '标准制定方掌握行业规则制定权，未能参与的企业只能被动接受，在市场准入、客户信任和政策红利上处于不利地位。',
+                title: '规范文档难沉淀', bigNum: '0', bigLabel: '统一文本 = 执行口径不一致',
+                desc: '缺少结构化、可评审的规范文档，容易造成技术、业务和管理团队理解不一，也难以持续维护与复用。',
                 tags: [{ label: '话语权缺失', cls: 'bg-purple-50 text-purple-600 border-purple-200' }, { label: '竞争劣势', cls: 'bg-violet-50 text-violet-600 border-violet-200' }],
               },
             ].map((card, i) => {
@@ -351,7 +350,7 @@ export function TiancheStandardService() {
             {[
               { num: '01', icon: Search, color: '#3b82f6', title: '现状评估', desc: '审查企业现有AI应用评测机制与数据治理实践，识别与主流标准的差距与风险敞口', tags: ['差距分析', '合规诊断'] },
               { num: '02', icon: Target, color: '#8b5cf6', title: '标准设计', desc: '参照国内外标准框架，结合企业业务场景，量身定制AI评测规范与数据管理制度', tags: ['定制规范', '框架设计'] },
-              { num: '03', icon: FileText, color: '#06b6d4', title: '文本起草', desc: '由行业专家团队执笔，出具符合监管要求与国际视野的标准文本、白皮书及实施指南', tags: ['标准文本', '可交付成果'] },
+              { num: '03', icon: FileText, color: '#06b6d4', title: '文本起草', desc: '结合适用法规、标准框架与业务要求，形成标准文本、编制说明及实施指南', tags: ['标准文本', '可交付成果'] },
               { num: '04', icon: GraduationCap, color: '#f59e0b', title: '培训落地', desc: '开展内部宣贯培训，辅导技术与业务团队理解并执行新制定的标准体系', tags: ['培训赋能', '执行支撑'] },
               { num: '05', icon: RefreshCw, color: '#10b981', title: '持续维护', desc: '跟踪监管动态，定期更新标准内容，提供年度复审与整改闭环追踪服务', tags: ['动态更新', '闭环管理'] },
             ].map((s, i) => {
@@ -388,7 +387,7 @@ export function TiancheStandardService() {
               <Zap className="w-3.5 h-3.5" /> 服务流程
             </div>
             <h2 className="text-3xl font-black text-gray-900 mb-4">六步交付，标准落地有据可查</h2>
-            <p className="text-gray-500">从需求调研到发布运营，每个里程碑均有可交付成果</p>
+            <p className="text-gray-500">从需求调研到文档交付与实施支持，每个里程碑均有可核对成果</p>
           </div>
           <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-5">
             {[
@@ -397,7 +396,7 @@ export function TiancheStandardService() {
               { step: '03', icon: FileText, color: '#06b6d4', title: '标准起草', deliverable: '标准草案', desc: '专家团队执笔，形成完整规范文本初稿' },
               { step: '04', icon: Users, color: '#f59e0b', title: '评审确认', deliverable: '正式版本', desc: '多方专家评审，修订完善并确认最终版本' },
               { step: '05', icon: Target, color: '#ef4444', title: '试点验证', deliverable: '验证报告', desc: '在典型业务场景中试点执行，收集问题反馈' },
-              { step: '06', icon: RefreshCw, color: '#10b981', title: '发布运营', deliverable: '运营手册', desc: '正式发布，培训赋能，建立持续更新机制' },
+              { step: '06', icon: RefreshCw, color: '#10b981', title: '交付维护', deliverable: '维护说明', desc: '交付定稿文档，提供内部宣贯与后续修订支持' },
             ].map((s, i) => {
               const Icon = s.icon;
               return (
@@ -427,14 +426,14 @@ export function TiancheStandardService() {
       <section className="py-24 bg-white border-y border-gray-200">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-black text-gray-900 mb-4">学术背景 + 实战经验，双重保障标准质量</h2>
+            <h2 className="text-3xl font-black text-gray-900 mb-4">专业研究 + 编制方法，支撑规范文档质量</h2>
             <div className="w-16 h-1 bg-gradient-to-r from-violet-500 to-blue-500 mx-auto rounded-full" />
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: GraduationCap, color: '#8b5cf6', title: '浙大学术背书', stat1: { v: '50+', l: '专职研究员' }, stat2: { v: '200+', l: '学术论文' }, desc: '依托浙江大学滨江研究院，团队在AI安全、数据治理及标准制定领域具有深厚的学术积累与研究实力。' },
-              { icon: Briefcase, color: '#3b82f6', title: '丰富实践经验', stat1: { v: '80+', l: '标准项目经验' }, stat2: { v: '30+', l: '行业覆盖' }, desc: '已为金融、医疗、政务等行业头部企业完成超过 80 个 AI 标准建设项目，积累了丰富的可复用方法论与行业实践。' },
-              { icon: Star, color: '#10b981', title: '参与国家标准', stat1: { v: '10+', l: '国家/行业标准' }, stat2: { v: '3', l: '国际标准委员' }, desc: '核心专家深度参与多项 GB/T 国家标准起草，并担任 ISO/IEC 技术委员会委员，具备直接连接监管层的独特资源。' },
+              { icon: GraduationCap, color: '#8b5cf6', title: '复合专业团队', stat1: { v: '研究', l: '框架对标' }, stat2: { v: '业务', l: '场景转译' }, desc: '结合AI安全、数据治理、评测工程和文档编制能力，将外部要求转化为可执行的规范条款。' },
+              { icon: Briefcase, color: '#3b82f6', title: '规范编制方法', stat1: { v: '结构化', l: '条文设计' }, stat2: { v: '可评审', l: '版本修订' }, desc: '通过需求访谈、资料研究、框架设计、条文起草、评审记录和版本管理形成完整编制过程。' },
+              { icon: Star, color: '#10b981', title: '多框架对标能力', stat1: { v: '国内', l: '法规与标准' }, stat2: { v: '国际', l: '治理框架' }, desc: '按项目适用范围参考国内外法规、国家标准、行业规范和治理框架，为文本编制提供技术依据。' },
             ].map((card, i) => {
               const Icon = card.icon;
               return (
@@ -466,14 +465,14 @@ export function TiancheStandardService() {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-black text-gray-900 mb-4">交付物清单，有形成果可落地</h2>
-              <p className="text-gray-500">每个服务周期结束均提供完整的书面交付物，可直接用于监管审查与内部执行</p>
+              <p className="text-gray-500">按约定范围提供书面交付物，供客户内部审议、立项或向相关组织提交时参考</p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
               {[
-                { icon: '📋', color: '#8b5cf6', title: 'AI 评测规范文本', desc: '符合监管要求的完整评测标准文本，可作为企业内部制度文件' },
+                { icon: '📋', color: '#8b5cf6', title: 'AI 评测规范文本', desc: '结合适用要求编制的完整规范文本，可作为企业内部制度或申报材料基础' },
                 { icon: '🗂️', color: '#3b82f6', title: '数据治理制度', desc: '数据采集、标注、存储与销毁的完整管理规范，对齐 GDPR 与国内个保法' },
                 { icon: '🔍', color: '#06b6d4', title: '合规差距分析报告', desc: '量化现状与目标标准的差距，明确优先整改项与整改路径' },
-                { icon: '🏅', color: '#10b981', title: '标准符合性声明', desc: '由专家团队出具的标准符合性声明书，可用于客户审计与政府监管申报' },
+                { icon: '📝', color: '#10b981', title: '编制与评审说明', desc: '记录编制依据、条款设计、评审意见和修订过程，不替代官方认证或发布文件' },
               ].map((item, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
                   className="bg-white rounded-2xl p-6 flex flex-col gap-4" style={{ border: `1.5px solid ${item.color}20`, boxShadow: `0 4px 20px ${item.color}0a` }}>
@@ -496,53 +495,23 @@ export function TiancheStandardService() {
           </div>
           <div className="space-y-4">
             {[
-              { q: '我们公司规模不大，也需要标准制定服务吗？', a: '是的。无论企业规模，使用 AI 就涉及合规责任。对于中小企业，我们提供轻量版服务，以行业通用模板为基础快速落地，成本更低、周期更短，同样能满足基本监管要求。' },
-              { q: '制定标准需要多长时间？', a: '轻量版（采用现有框架适配）通常 4–8 周；全定制版（从零构建）通常 3–6 个月。具体取决于企业 AI 应用的复杂程度和涉及的监管场景数量。' },
-              { q: '标准制定完成后，我们如何确保员工真正执行？', a: '我们在交付阶段提供分层培训：高管层战略宣讲、技术层操作培训、业务层合规意识培育。同时提供在线学习材料和季度合规复核服务，确保标准真正落地而非"束之高阁"。' },
-              { q: '你们能帮助我们参与国家或行业标准制定吗？', a: '可以。我们与全国信息安全标准化技术委员会（TC260）、中国通信标准化协会（CCSA）等机构保持密切合作关系，可协助有意愿的企业以成员单位身份参与工作组，贡献行业经验，提升标准话语权。' },
-              { q: '如果监管政策发生变化，标准需要更新吗？如何收费？', a: '签约后首年内的政策变化引起的标准更新免费；第二年起提供年度维护订阅服务，按协议收取维护费用。我们会主动跟踪监管动态并提前通知客户，确保您始终处于合规状态。' },
+              { q: '这项服务具体交付什么？', a: '我们提供标准文本编制的技术支撑，包括资料研究、需求与范围梳理、框架设计、条文起草、编制说明以及评审意见修改。具体文档清单、验证工作和修改轮次以项目合同约定为准。' },
+              { q: '可以支撑哪些类型和阶段的标准编制？', a: '可根据项目要求，为国家标准、行业标准、地方标准、团体标准或企业标准提供相应阶段的文本编制技术支撑，覆盖前期研究、草案起草、征求意见材料整理和技术审查修改等工作。标准类型、归口组织和工作阶段由委托方及有权组织确认。' },
+              { q: '你们是否负责标准立项、牵头或正式发布？', a: '我们提供资料研究、框架设计、条文起草、编制说明和评审修改等文本编制技术支撑。标准立项、牵头单位、归口、审查与发布由委托方及有权组织按相应流程决定，我们不对立项或发布结果作承诺。' },
+              { q: '标准编制周期如何确定？', a: '周期取决于标准范围、技术证据准备、参与单位协调、验证需求和评审修改轮次。完成前期调研后，我们会给出文本编制里程碑；该周期仅对应技术支撑工作，不等同于标准立项、审查或发布周期。' },
+              { q: '政策、技术或上位标准变化后如何处理？', a: '可根据变化内容提供差异分析、条文影响评估与修订建议。是否启动修订、采用何种程序以及后续服务范围，由标准责任主体和项目合同确定。' },
+              { q: '服务费用如何确定？', a: '费用根据标准类型、技术复杂度、调研与验证工作量、会议支持和约定修改轮次综合评估。需求和交付边界确认后提供报价；外部评审、会议及第三方验证费用如有发生，另行约定。' },
             ].map((item, i) => <FaqItem key={i} q={item.q} a={item.a} index={i} />)}
           </div>
         </div>
       </section>
 
-      {/* ── 9. CTA ────────────────────────────────────────────── */}
-      <section id="tss-cta" className="py-24" style={{ background: 'linear-gradient(135deg,#f5f3ff,#ede9fe,#ddd6fe)', borderTop: '1px solid #c4b5fd' }}>
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)', border: '1.5px solid rgba(139,92,246,0.3)' }}>
-              <Award className="w-8 h-8" style={{ color: '#7c3aed' }} />
-            </div>
-            <h2 className="text-3xl font-black mb-4" style={{ color: '#3b0764' }}>开启 AI 标准建设之旅</h2>
-            <p className="text-lg mb-10 max-w-2xl mx-auto leading-relaxed" style={{ color: '#4c1d95' }}>
-              在 AI 全面落地的时代，标准不是成本，而是竞争壁垒。让我们帮您比同行早一步建立可信 AI 治理体系。
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center mb-10">
-              <Button size="lg" className="font-bold px-8 border-0" style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: '#fff', boxShadow: '0 4px 20px rgba(124,58,237,0.35)' }}>
-                <FileText className="w-4 h-4 mr-2" />
-                免费领取 AI 标准建设白皮书
-              </Button>
-              <Button size="lg" onClick={() => setConsultOpen(true)} className="font-bold px-8" style={{ background: '#fff', border: '1.5px solid #a78bfa', color: '#5b21b6' }}>
-                预约专家免费咨询 <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-center gap-8 text-sm" style={{ color: '#4c1d95' }}>
-              {['专家 15 分钟响应', '免费初步合规诊断', '标准不通过不结项'].map(item => (
-                <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: '#7c3aed' }} />
-                  {item}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
       <ExpertConsultModal
         open={consultOpen}
         onClose={() => setConsultOpen(false)}
         serviceName="可信安全标准制定服务"
         accent="#7c3aed"
-        topics={['企业 AI 治理标准建设', '数据与模型评测规范', '行业标准或团体标准制定', '现有标准体系差距分析']}
+        topics={['企业 AI 治理标准建设', '数据与模型评测规范', '行业／团体标准文本编制支撑', '现有标准体系差距分析']}
       />
     </div>
   );

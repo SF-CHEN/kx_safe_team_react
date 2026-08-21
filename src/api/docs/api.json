@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "temp-maven Api Doc",
-    "description": "springfox swagger 3.0整合Demo",
+    "description": "rongshu-index API",
     "contact": {
       "name": "lighter",
       "email": "123456@gmail.com"
@@ -20,13 +20,44 @@
     }
   ],
   "paths": {
+    "/temp/user-contact/update": {
+      "put": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "修改用户联系记录",
+        "operationId": "update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserContact"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/sys-user/update": {
       "put": {
         "tags": [
           "首页用户"
         ],
         "summary": "修改首页用户",
-        "operationId": "update",
+        "operationId": "update_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -57,7 +88,7 @@
           ""
         ],
         "summary": "修改",
-        "operationId": "update_1",
+        "operationId": "update_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -88,7 +119,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "修改预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "update_2",
+        "operationId": "update_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -119,7 +150,7 @@
           "模型可信评测任务表"
         ],
         "summary": "修改模型可信评测任务表",
-        "operationId": "update_3",
+        "operationId": "update_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -150,7 +181,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "修改模型数据安全评测任务表",
-        "operationId": "update_4",
+        "operationId": "update_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -181,7 +212,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "修改评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "update_5",
+        "operationId": "update_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -212,7 +243,7 @@
           ""
         ],
         "summary": "修改",
-        "operationId": "update_6",
+        "operationId": "update_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -230,6 +261,99 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/user-contact/submit": {
+      "post": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "用户填报联系信息",
+        "operationId": "submit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserContactSubmitSo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserContact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/user-contact/page": {
+      "post": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "分页查询用户联系记录",
+        "operationId": "findPage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageUserContact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/user-contact/add": {
+      "post": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "新增用户联系记录",
+        "operationId": "add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserContact"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserContact"
                 }
               }
             }
@@ -336,7 +460,7 @@
           "首页用户"
         ],
         "summary": "分页查询首页用户",
-        "operationId": "findPage",
+        "operationId": "findPage_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -398,7 +522,7 @@
           "首页用户"
         ],
         "summary": "新增首页用户",
-        "operationId": "add",
+        "operationId": "add_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -468,7 +592,7 @@
           "文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录"
         ],
         "summary": "分页查询文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录",
-        "operationId": "findPage_1",
+        "operationId": "findPage_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -499,7 +623,7 @@
           ""
         ],
         "summary": "分页查询",
-        "operationId": "findPage_2",
+        "operationId": "findPage_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -530,7 +654,7 @@
           ""
         ],
         "summary": "新增",
-        "operationId": "add_1",
+        "operationId": "add_2",
         "requestBody": {
           "content": {
             "application/json": {
@@ -561,7 +685,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "分页查询预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "findPage_3",
+        "operationId": "findPage_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -592,7 +716,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "新增预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "add_2",
+        "operationId": "add_3",
         "requestBody": {
           "content": {
             "application/json": {
@@ -623,7 +747,7 @@
           "模型可信评测任务表"
         ],
         "summary": "分页查询模型可信评测任务表",
-        "operationId": "findPage_4",
+        "operationId": "findPage_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -654,7 +778,7 @@
           "模型可信评测任务表"
         ],
         "summary": "新增模型可信评测任务表",
-        "operationId": "add_3",
+        "operationId": "add_4",
         "requestBody": {
           "content": {
             "application/json": {
@@ -685,7 +809,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "分页查询模型数据安全评测任务表",
-        "operationId": "findPage_5",
+        "operationId": "findPage_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -716,7 +840,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "新增模型数据安全评测任务表",
-        "operationId": "add_4",
+        "operationId": "add_5",
         "requestBody": {
           "content": {
             "application/json": {
@@ -747,7 +871,7 @@
           "评测任务"
         ],
         "summary": "分页查询评测任务",
-        "operationId": "findPage_6",
+        "operationId": "findPage_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -778,7 +902,7 @@
           "评测任务"
         ],
         "summary": "新增评测任务",
-        "operationId": "add_5",
+        "operationId": "add_6",
         "requestBody": {
           "content": {
             "application/json": {
@@ -840,7 +964,7 @@
           "评测任务总表（统一管理四种评测任务）"
         ],
         "summary": "分页查询评测任务总表（统一管理四种评测任务）",
-        "operationId": "findPage_7",
+        "operationId": "findPage_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -933,7 +1057,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "分页查询评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "findPage_8",
+        "operationId": "findPage_9",
         "requestBody": {
           "content": {
             "application/json": {
@@ -964,7 +1088,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "新增评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "add_6",
+        "operationId": "add_7",
         "requestBody": {
           "content": {
             "application/json": {
@@ -995,7 +1119,7 @@
           ""
         ],
         "summary": "分页查询",
-        "operationId": "findPage_9",
+        "operationId": "findPage_10",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1026,7 +1150,7 @@
           ""
         ],
         "summary": "新增",
-        "operationId": "add_7",
+        "operationId": "add_8",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1051,13 +1175,45 @@
         }
       }
     },
+    "/temp/user-contact/getDetailById": {
+      "get": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "获取用户联系记录",
+        "operationId": "getDetailById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserContact"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/sys-user/getDetailById": {
       "get": {
         "tags": [
           "首页用户"
         ],
         "summary": "获取首页用户",
-        "operationId": "getDetailById",
+        "operationId": "getDetailById_1",
         "parameters": [
           {
             "name": "id",
@@ -1110,7 +1266,7 @@
           "文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录"
         ],
         "summary": "获取文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录",
-        "operationId": "getDetailById_1",
+        "operationId": "getDetailById_2",
         "parameters": [
           {
             "name": "id",
@@ -1167,7 +1323,7 @@
           ""
         ],
         "summary": "获取",
-        "operationId": "getDetailById_2",
+        "operationId": "getDetailById_3",
         "parameters": [
           {
             "name": "id",
@@ -1234,7 +1390,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "获取预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "getDetailById_3",
+        "operationId": "getDetailById_4",
         "parameters": [
           {
             "name": "id",
@@ -1350,7 +1506,7 @@
           "模型可信评测任务表"
         ],
         "summary": "获取模型可信评测任务表",
-        "operationId": "getDetailById_4",
+        "operationId": "getDetailById_5",
         "parameters": [
           {
             "name": "id",
@@ -1382,7 +1538,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "获取模型数据安全评测任务表",
-        "operationId": "getDetailById_5",
+        "operationId": "getDetailById_6",
         "parameters": [
           {
             "name": "id",
@@ -1435,7 +1591,7 @@
           "评测任务"
         ],
         "summary": "获取评测任务",
-        "operationId": "getDetailById_6",
+        "operationId": "getDetailById_7",
         "parameters": [
           {
             "name": "id",
@@ -1467,7 +1623,7 @@
           "评测任务总表（统一管理四种评测任务）"
         ],
         "summary": "获取评测任务总表（统一管理四种评测任务）",
-        "operationId": "getDetailById_7",
+        "operationId": "getDetailById_8",
         "parameters": [
           {
             "name": "id",
@@ -1531,7 +1687,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "获取评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "getDetailById_8",
+        "operationId": "getDetailById_9",
         "parameters": [
           {
             "name": "id",
@@ -1598,7 +1754,7 @@
           ""
         ],
         "summary": "获取",
-        "operationId": "getDetailById_9",
+        "operationId": "getDetailById_10",
         "parameters": [
           {
             "name": "id",
@@ -1659,13 +1815,80 @@
         }
       }
     },
+    "/temp/user-contact/deleteOne": {
+      "delete": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "删除用户联系记录",
+        "operationId": "deleteOne",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/user-contact/batchDel": {
+      "delete": {
+        "tags": [
+          "用户联系记录"
+        ],
+        "summary": "批量删除用户联系记录",
+        "operationId": "batchDel",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/sys-user/deleteOne": {
       "delete": {
         "tags": [
           "首页用户"
         ],
         "summary": "删除首页用户",
-        "operationId": "deleteOne",
+        "operationId": "deleteOne_1",
         "parameters": [
           {
             "name": "id",
@@ -1697,7 +1920,7 @@
           "首页用户"
         ],
         "summary": "批量删除首页用户",
-        "operationId": "batchDel",
+        "operationId": "batchDel_1",
         "parameters": [
           {
             "name": "ids",
@@ -1732,7 +1955,7 @@
           "文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录"
         ],
         "summary": "删除文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录",
-        "operationId": "deleteOne_1",
+        "operationId": "deleteOne_2",
         "parameters": [
           {
             "name": "id",
@@ -1764,7 +1987,7 @@
           "文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录"
         ],
         "summary": "批量删除文件表，公网用户上传的文件信息，磁盘文件存放于local_save_path配置目录",
-        "operationId": "batchDel_1",
+        "operationId": "batchDel_2",
         "parameters": [
           {
             "name": "ids",
@@ -1799,7 +2022,7 @@
           ""
         ],
         "summary": "删除",
-        "operationId": "deleteOne_2",
+        "operationId": "deleteOne_3",
         "parameters": [
           {
             "name": "id",
@@ -1831,7 +2054,7 @@
           ""
         ],
         "summary": "批量删除",
-        "operationId": "batchDel_2",
+        "operationId": "batchDel_3",
         "parameters": [
           {
             "name": "ids",
@@ -1866,7 +2089,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "删除预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "deleteOne_3",
+        "operationId": "deleteOne_4",
         "parameters": [
           {
             "name": "id",
@@ -1898,7 +2121,7 @@
           "预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此"
         ],
         "summary": "批量删除预制场景表，原sys_dict中type=PRESET_SCENE的数据迁移至此",
-        "operationId": "batchDel_3",
+        "operationId": "batchDel_4",
         "parameters": [
           {
             "name": "ids",
@@ -1933,7 +2156,7 @@
           "模型可信评测任务表"
         ],
         "summary": "删除模型可信评测任务表",
-        "operationId": "deleteOne_4",
+        "operationId": "deleteOne_5",
         "parameters": [
           {
             "name": "id",
@@ -1965,7 +2188,7 @@
           "模型可信评测任务表"
         ],
         "summary": "批量删除模型可信评测任务表",
-        "operationId": "batchDel_4",
+        "operationId": "batchDel_5",
         "parameters": [
           {
             "name": "ids",
@@ -2000,7 +2223,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "删除模型数据安全评测任务表",
-        "operationId": "deleteOne_5",
+        "operationId": "deleteOne_6",
         "parameters": [
           {
             "name": "id",
@@ -2032,7 +2255,7 @@
           "模型数据安全评测任务表"
         ],
         "summary": "批量删除模型数据安全评测任务表",
-        "operationId": "batchDel_5",
+        "operationId": "batchDel_6",
         "parameters": [
           {
             "name": "ids",
@@ -2067,7 +2290,7 @@
           "评测任务"
         ],
         "summary": "删除评测任务",
-        "operationId": "deleteOne_6",
+        "operationId": "deleteOne_7",
         "parameters": [
           {
             "name": "id",
@@ -2099,7 +2322,7 @@
           "评测任务"
         ],
         "summary": "批量删除评测任务",
-        "operationId": "batchDel_6",
+        "operationId": "batchDel_7",
         "parameters": [
           {
             "name": "ids",
@@ -2134,7 +2357,7 @@
           "评测任务总表（统一管理四种评测任务）"
         ],
         "summary": "删除评测任务总表（统一管理四种评测任务）",
-        "operationId": "deleteOne_7",
+        "operationId": "deleteOne_8",
         "parameters": [
           {
             "name": "id",
@@ -2166,7 +2389,7 @@
           "评测任务总表（统一管理四种评测任务）"
         ],
         "summary": "批量删除评测任务总表（统一管理四种评测任务）",
-        "operationId": "batchDel_7",
+        "operationId": "batchDel_8",
         "parameters": [
           {
             "name": "ids",
@@ -2201,7 +2424,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "删除评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "deleteOne_8",
+        "operationId": "deleteOne_9",
         "parameters": [
           {
             "name": "id",
@@ -2233,7 +2456,7 @@
           "评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此"
         ],
         "summary": "批量删除评测维度表，树形结构，原sys_dict中type=DIMENSION的数据迁移至此",
-        "operationId": "batchDel_8",
+        "operationId": "batchDel_9",
         "parameters": [
           {
             "name": "ids",
@@ -2268,7 +2491,7 @@
           ""
         ],
         "summary": "删除",
-        "operationId": "deleteOne_9",
+        "operationId": "deleteOne_10",
         "parameters": [
           {
             "name": "id",
@@ -2300,7 +2523,7 @@
           ""
         ],
         "summary": "批量删除",
-        "operationId": "batchDel_9",
+        "operationId": "batchDel_10",
         "parameters": [
           {
             "name": "ids",
@@ -2332,6 +2555,69 @@
   },
   "components": {
     "schemas": {
+      "UserContact": {
+        "type": "object",
+        "description": "用户联系记录",
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "修改时间"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "软删除标记，false未删除，true已删除"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "replied": {
+            "type": "boolean",
+            "description": "是否回复用户，false未回复，true已回复"
+          },
+          "userName": {
+            "type": "string",
+            "description": "用户名称"
+          },
+          "compantName": {
+            "type": "string",
+            "description": "公司名称"
+          },
+          "contactInformation": {
+            "type": "string",
+            "description": "联系方式"
+          },
+          "requirementDescription": {
+            "type": "string",
+            "description": "需求描述"
+          },
+          "contactResult": {
+            "type": "string",
+            "description": "联系结果"
+          }
+        }
+      },
+      "ResultBoolean": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "boolean"
+          }
+        }
+      },
       "SysUser": {
         "type": "object",
         "description": "首页用户",
@@ -2345,7 +2631,8 @@
             "type": "string"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "writeOnly": true
           },
           "role": {
             "type": "string",
@@ -2374,21 +2661,6 @@
           "enabled": {
             "type": "boolean",
             "description": "是否启用：true-启用、false-禁用"
-          }
-        }
-      },
-      "ResultBoolean": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "code": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "data": {
-            "type": "boolean"
           }
         }
       },
@@ -2566,7 +2838,7 @@
           },
           "deleted": {
             "type": "boolean",
-            "description": "软删除标记"
+            "description": "软删��标记"
           },
           "createdAt": {
             "type": "string",
@@ -2681,6 +2953,170 @@
           }
         }
       },
+      "UserContactSubmitSo": {
+        "type": "object",
+        "description": "用户联系填报",
+        "properties": {
+          "userName": {
+            "type": "string",
+            "description": "姓名",
+            "maxLength": 100,
+            "minLength": 0
+          },
+          "companyName": {
+            "type": "string",
+            "description": "公司",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "contactInformation": {
+            "type": "string",
+            "description": "联系方式",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "requirementDescription": {
+            "type": "string",
+            "description": "需求描述",
+            "maxLength": 2000,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "companyName",
+          "contactInformation",
+          "requirementDescription",
+          "userName"
+        ]
+      },
+      "ResultUserContact": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserContact"
+          }
+        }
+      },
+      "分页查询实体类": {
+        "type": "object",
+        "properties": {
+          "pageSize": {
+            "type": "integer",
+            "format": "int64",
+            "description": "分页大小",
+            "example": 10
+          },
+          "pageCurrent": {
+            "type": "integer",
+            "format": "int64",
+            "description": "当前页",
+            "example": 1
+          },
+          "orderColumn": {
+            "type": "string",
+            "description": "排序字段",
+            "example": "id"
+          },
+          "orderType": {
+            "type": "string",
+            "description": "排序方式",
+            "example": "desc"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/UserContact",
+            "description": "实体参数"
+          }
+        }
+      },
+      "OrderItem": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "type": "string"
+          },
+          "asc": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageUserContact": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserContact"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageUserContact",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageUserContact",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageUserContact": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageUserContact"
+          }
+        }
+      },
       "UserStatusSo": {
         "type": "object",
         "description": "禁用/启用用户账号请求参数",
@@ -2721,12 +3157,14 @@
           "username": {
             "type": "string",
             "description": "用户名",
-            "minLength": 1
+            "maxLength": 100,
+            "minLength": 0
           },
           "password": {
             "type": "string",
             "description": "密码",
-            "minLength": 1
+            "maxLength": 200,
+            "minLength": 0
           }
         },
         "required": [
@@ -2760,48 +3198,6 @@
           "token": {
             "type": "string",
             "description": "JWT token"
-          }
-        }
-      },
-      "分页查询实体类": {
-        "type": "object",
-        "properties": {
-          "pageSize": {
-            "type": "integer",
-            "format": "int64",
-            "description": "分页大小",
-            "example": 10
-          },
-          "pageCurrent": {
-            "type": "integer",
-            "format": "int64",
-            "description": "当前页",
-            "example": 1
-          },
-          "orderColumn": {
-            "type": "string",
-            "description": "排序字段",
-            "example": "id"
-          },
-          "orderType": {
-            "type": "string",
-            "description": "排序方式",
-            "example": "desc"
-          },
-          "entity": {
-            "$ref": "#/components/schemas/SysUser",
-            "description": "实体参数"
-          }
-        }
-      },
-      "OrderItem": {
-        "type": "object",
-        "properties": {
-          "column": {
-            "type": "string"
-          },
-          "asc": {
-            "type": "boolean"
           }
         }
       },
@@ -3635,7 +4031,7 @@
           "taskRefId": {
             "type": "integer",
             "format": "int64",
-            "description": "关联��体任务表记录的主键"
+            "description": "关联具体任务表记录的主键"
           },
           "userId": {
             "type": "integer",
@@ -3962,7 +4358,7 @@
       },
       "PresetSceneVo": {
         "type": "object",
-        "description": "预置场景VO",
+        "description": "预置���景VO",
         "properties": {
           "sceneId": {
             "type": "integer",

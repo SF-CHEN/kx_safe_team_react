@@ -32,13 +32,6 @@ const AWARDS = [
     ],
   },
   {
-    year: '2023',
-    color: '#10b981',
-    items: [
-      { org: '榕数科技', title: '浙江省规划科学技术一等奖', tag: '政府奖项' },
-    ],
-  },
-  {
     year: '长期荣誉',
     color: '#f59e0b',
     items: [
@@ -55,7 +48,6 @@ const RONGSHU_PRODUCTS = [
     icon: Database, color: '#8b5cf6',
     title: '面向领域的算法服务操作系统',
     desc: '集数据标注、模型训练和应用监管于一体的一站式平台。',
-    badge: '2023年浙江省规划科技一等奖',
   },
   {
     icon: Cpu, color: '#3b82f6',
@@ -237,12 +229,6 @@ export function AboutUs() {
                             <div className="flex-1">
                               <div className="text-gray-800 font-semibold text-sm leading-snug">{p.title}</div>
                               <div className="text-gray-500 text-xs mt-0.5 leading-snug">{p.desc}</div>
-                              {p.badge && (
-                                <span className="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                                  style={{ background: 'rgba(245,158,11,0.12)', color: '#d97706', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                  🏆 {p.badge}
-                                </span>
-                              )}
                             </div>
                           </div>
                         );
@@ -418,7 +404,7 @@ export function AboutUs() {
             <p className="text-gray-500 text-sm mb-8 leading-relaxed">
               无论您是寻求 AI 安全评测服务的企业，还是有意开展科研合作的高校与机构，我们都欢迎联系。
             </p>
-            <div className="grid grid-cols-3 gap-4 max-w-xl mx-auto mb-8 text-left">
+            <div className="mx-auto mb-8 grid max-w-3xl grid-cols-1 gap-4 text-left md:grid-cols-3">
               {[
                 { icon: Phone, label: '联系电话', value: '13940451397', color: '#3b82f6' },
                 { icon: Mail,  label: '邮箱',     value: 'contact@hzrongshu.cn', color: '#8b5cf6' },
@@ -426,14 +412,14 @@ export function AboutUs() {
               ].map(c => {
                 const Icon = c.icon;
                 return (
-                  <div key={c.label} className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                  <div key={c.label} className="flex min-w-0 items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 md:min-h-[112px]">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: `${c.color}15` }}>
                       <Icon className="w-4 h-4" style={{ color: c.color }} />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-xs text-gray-400 font-medium">{c.label}</div>
-                      <div className="text-gray-700 text-xs font-semibold mt-0.5">{c.value}</div>
+                      <div className="mt-1 break-words text-xs font-semibold leading-5 text-gray-700">{c.value}</div>
                     </div>
                   </div>
                 );

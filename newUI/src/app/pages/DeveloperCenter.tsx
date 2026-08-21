@@ -251,17 +251,24 @@ print(result.details)     # [{"dimension": "违禁内容", "score": 0.92}]`;
 
 client = aisc_sec.Client(api_key="sk-proj-your-key-here")
 
-# 创建模型安全评测任务
-task = client.eval.model(
-    model_path="./yolov9_model.pth",
-    dataset_path="./test_dataset.zip",
-    attacks=["FGSM", "PGD", "DeepFool"],
-    box_mode="whitebox",
+# 创建数据集安全评测任务
+task = client.eval.dataset(
+    dataset_path="./training_data",
+    task_type="object_detection",
+    data_format="COCO",
+    data_splits=["train", "val", "test"],
+    methods=[
+        "balance", "anomaly", "annotation_correctness",
+        "annotation_completeness", "backdoor_screening"
+    ],
 )
 
-print(task.task_id)        # "eval_9f3b2c1d"
-print(task.status)         # "pending" | "running" | "completed"
-print(task.robustness)     # 72.4  (score out of 100)`;
+print(task.task_id)
+print(task.status)
+
+# 任务完成后获取可追溯的 JSONL 结果
+result = client.eval.result(task.task_id, format="jsonl")
+print(result.path)`;
 
   const CODEAUDIT_INIT_CODE = `import aisc_codeaudit
 
@@ -296,19 +303,21 @@ print(report.issues[0].line) # 42`;
 }`;
 
   const SEC_WEBHOOK = `{
-  "task_id":     "eval_9f3b2c1d",
-  "event":       "eval.completed",
-  "branch":      "model",
-  "box_mode":    "whitebox",
-  "robustness":  72.4,
-  "privacy_risk": "LOW",
-  "report_url":  "https://api.example.com/v1/eval/report/eval_demo",
-  "metrics": {
-    "FGSM_resistance":  0.724,
-    "PGD_resistance":   0.658,
-    "backdoor_clean":   0.982
-  },
-  "timestamp":   "2026-05-14T10:12:44Z"
+  "task_id": "<task_id>",
+  "event": "eval.completed",
+  "task_type": "object_detection",
+  "data_format": "COCO",
+  "data_splits": ["train", "val", "test"],
+  "methods": [
+    "balance",
+    "anomaly",
+    "annotation_correctness",
+    "annotation_completeness",
+    "backdoor_screening"
+  ],
+  "result_format": "jsonl",
+  "result_url": "<result_url>",
+  "timestamp": "<completed_at>"
 }`;
 
   const CODEAUDIT_WEBHOOK = `{
@@ -403,7 +412,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
             ? '跟随本指南，快速完成代码漏洞审查 API 接入，提交您的第一个 SAST 扫描任务，并通过 Webhook 接收 AI 修复建议。'
             : isPrivacy
             ? '跟随本指南，快速完成个人敏感信息审查 API 接入，提交您的第一个数据扫描任务，自动识别身份证号、手机号等敏感信息并输出脱敏结果。'
-            : '跟随本指南，快速完成模型数据安全评测 API 接入，提交您的第一个安全评测任务。'}
+            : '跟随本指南，了解数据集安全评测的任务参数、执行方式与 JSONL 结果结构。'}
         </p>
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 18px', background: 'rgba(240,136,62,0.08)', border: '1px solid rgba(240,136,62,.28)', borderRadius: 10, marginBottom: 28 }}>
@@ -428,8 +437,8 @@ print(report.desensitized_content)  # "110101**********34..."`;
 
         <StepCard num={2}
           title={isAigc ? '初始化客户端' : isCodeAudit ? '初始化客户端并提交扫描任务' : isPrivacy ? '初始化客户端并提交扫描任务' : '初始化客户端并提交任务'}
-          desc={isAigc ? '用您的 API Key 初始化客户端，完成第一次文本审核调用。' : isCodeAudit ? '用您的 API Key 初始化客户端，提交代码片段完成第一次 SAST + AI 混合扫描。' : isPrivacy ? '用您的 API Key 初始化客户端，提交数据文件完成第一次敏感信息扫描，并获取脱敏处理结果。' : '用您的 API Key 初始化客户端，提交第一个模型安全评测任务。'}>
-          <CodeBlock code={INIT_CODE} lang="python" label={isAigc ? 'Python — 文本审核示例' : isCodeAudit ? 'Python — 代码漏洞扫描示例' : isPrivacy ? 'Python — 敏感信息扫描示例' : 'Python — 模型安全评测示例'} />
+          desc={isAigc ? '用您的 API Key 初始化客户端，完成第一次文本审核调用。' : isCodeAudit ? '用您的 API Key 初始化客户端，提交代码片段完成第一次 SAST + AI 混合扫描。' : isPrivacy ? '用您的 API Key 初始化客户端，提交数据文件完成第一次敏感信息扫描，并获取脱敏处理结果。' : '按数据任务类型、格式、划分和评测方法提交数据集评测任务。'}>
+          <CodeBlock code={INIT_CODE} lang="python" label={isAigc ? 'Python — 文本审核示例' : isCodeAudit ? 'Python — 代码漏洞扫描示例' : isPrivacy ? 'Python — 敏感信息扫描示例' : 'Python — 数据质量与安全评测示例'} />
         </StepCard>
 
         <StepCard num={3} title="创建 API Key" desc="前往「API Keys 与 Webhook」页面，获取您的专属 API 密钥。">
@@ -445,7 +454,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
 
         <StepCard num={4}
           title={isAigc ? '配置 Webhook（异步任务）' : isCodeAudit ? '接收扫描结果（Webhook）' : isPrivacy ? '接收扫描结果（Webhook）' : '接收评测结果（Webhook）'}
-          desc={isAigc ? '音视频审核为异步模式。配置 Webhook 地址，任务完成后平台主动推送结果。' : isCodeAudit ? '代码扫描任务为异步模式，配置 Webhook 后，扫描完成时平台推送漏洞列表与 AI 修复建议链接。' : isPrivacy ? '敏感信息扫描任务为异步模式，配置 Webhook 后，扫描完成时平台推送发现清单、风险等级与脱敏报告链接。' : '安全评测任务为异步模式，配置 Webhook 后，评测完成时平台主动推送报告链接。'}>
+          desc={isAigc ? '音视频审核为异步模式。配置 Webhook 地址，任务完成后平台主动推送结果。' : isCodeAudit ? '代码扫描任务为异步模式，配置 Webhook 后，扫描完成时平台推送漏洞列表与 AI 修复建议链接。' : isPrivacy ? '敏感信息扫描任务为异步模式，配置 Webhook 后，扫描完成时平台推送发现清单、风险等级与脱敏报告链接。' : '任务完成后可接收结果地址，并通过 JSONL 留存方法明细和异常样本信息。'}>
           <CodeBlock code={WEBHOOK_CODE} lang="json" label="回调 Payload 示例" />
         </StepCard>
       </div>
@@ -473,7 +482,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
             ? [['TPH', '10', '每小时扫描任务数'], ['月配额', '50', '每月任务总量']]
             : isPrivacy
             ? [['TPH', '20', '每小时扫描任务数'], ['月配额', '200', '每月任务总量']]
-            : [['TPH', '5', '每小时评测任务数'], ['月配额', '20', '每月任务总量']]
+            : [['接口额度', '按项目配置', '正式接入时确认'], ['结果格式', 'JSONL', '任务结果留存']]
           ).map(([key, val, desc]) => (
             <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <span style={{ fontSize: 13.5, color: T.textSub }}>{desc}</span>
@@ -500,7 +509,7 @@ print(report.desensitized_content)  # "110101**********34..."`;
 // ─── API Keys ────────────────────────────────────────────────────
 const PRODUCT_SCOPES: Record<string, string[]> = {
   aigc:      ['AIGC 内容审核', 'AI 鉴伪检测', '任务管理', 'Webhook'],
-  sec:       ['模型安全评测', '数据集评测', '评测报告读取', '安全加固'],
+  sec:       ['数据集评测', '任务状态查询', 'JSONL 结果读取', '历史任务管理'],
   codeaudit: ['SAST 代码扫描', 'SCA 依赖分析', '扫描报告读取', 'AI 修复建议'],
   privacy:   ['敏感信息扫描', '脱敏处理', '定时巡检', '审查报告读取'],
 };
@@ -519,7 +528,7 @@ function ApiKeysSection({ product, isGuest }: { product: string; isGuest: boolea
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [justCreated, setJustCreated] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', env: '测试' as '生产' | '测试', expiry: '' });
-  const productLabel = product === 'aigc' ? 'AIGC 内容审核与鉴伪' : product === 'sec' ? '模型数据安全评测' : product === 'privacy' ? '个人敏感信息审查' : '代码漏洞审查';
+  const productLabel = product === 'aigc' ? 'AIGC 内容审核与鉴伪' : product === 'sec' ? '数据集安全评测' : product === 'privacy' ? '个人敏感信息审查' : '代码漏洞审查';
 
   const handleCreate = () => {
     if (!form.name.trim()) return;
@@ -806,14 +815,11 @@ const AIGC_ENDPOINTS = [
 ];
 
 const SEC_ENDPOINTS = [
-  { method: 'POST', path: '/v1/eval/model', desc: '创建模型安全评测任务', tag: '模型评测' },
   { method: 'POST', path: '/v1/eval/dataset', desc: '创建数据集质量与安全评测任务', tag: '数据评测' },
   { method: 'GET',  path: '/v1/eval/tasks/{task_id}', desc: '查询评测任务状态与进度', tag: '任务管理' },
   { method: 'GET',  path: '/v1/eval/tasks', desc: '获取历史评测任务列表', tag: '任务管理' },
   { method: 'DELETE', path: '/v1/eval/tasks/{task_id}', desc: '取消评测任务', tag: '任务管理' },
-  { method: 'GET',  path: '/v1/eval/report/{task_id}', desc: '获取完整评测报告（PDF/JSON）', tag: '评测报告' },
-  { method: 'POST', path: '/v1/harden/suggest', desc: '获取模型加固建议', tag: '安全加固' },
-  { method: 'POST', path: '/v1/harden/apply', desc: '应用加固配置（Auto-Fix）', tag: '安全加固' },
+  { method: 'GET',  path: '/v1/eval/result/{task_id}', desc: '获取评测结果与异常样本信息（JSONL）', tag: '结果管理' },
 ];
 
 const CODEAUDIT_ENDPOINTS = [
@@ -868,6 +874,7 @@ const TEXT_PARAMS = [
 function ApiDocsSection({ product }: { product: string }) {
   const isCodeAudit = product === 'codeaudit';
   const isPrivacy = product === 'privacy';
+  const isSec = product === 'sec';
   const ENDPOINTS = product === 'aigc' ? AIGC_ENDPOINTS : isCodeAudit ? CODEAUDIT_ENDPOINTS : isPrivacy ? PRIVACY_ENDPOINTS : SEC_ENDPOINTS;
   const baseApiUrl = 'api.example.com';
   const [active, setActive] = useState(ENDPOINTS[0]);
@@ -886,6 +893,14 @@ function ApiDocsSection({ product }: { product: string }) {
     "data_type": "text",
     "dimensions": ["身份证号", "手机号码", "银行卡号"],
     "desensitize": true
+  }'`
+    : isSec
+    ? `  -d '{
+    "dataset_path": "./training_data",
+    "task_type": "object_detection",
+    "data_format": "COCO",
+    "data_splits": ["train", "val", "test"],
+    "methods": ["balance", "anomaly", "annotation_correctness", "annotation_completeness", "backdoor_screening"]
   }'`
     : `  -d '{
     "content": "待检测内容...",
@@ -932,6 +947,21 @@ ${postBody}` : ''}`;
   "desensitized_content": "客户姓名：张三，手机号：138****5678，身份证：110101**********34...",
   "latency_ms":     180,
   "request_id":     "req_p4q8r2"
+}` : isSec ? `{
+  "task_id": "<task_id>",
+  "status": "<task_status>",
+  "task_type": "object_detection",
+  "data_format": "COCO",
+  "data_splits": ["train", "val", "test"],
+  "methods": [
+    "balance",
+    "anomaly",
+    "annotation_correctness",
+    "annotation_completeness",
+    "backdoor_screening"
+  ],
+  "result_format": "jsonl",
+  "result_url": "<result_url>"
 }` : `{
   "task_id":    "task_8f3a9c2d",
   "status":     "completed",
@@ -998,6 +1028,14 @@ ${postBody}` : ''}`;
                     { name: 'async_mode', type: 'boolean', required: false, desc: '是否异步执行，大文本推荐 true' },
                     { name: 'callback_url', type: 'string', required: false, desc: '异步回调地址，async_mode=true 时生效' },
                   ]} />
+                ) : isSec ? (
+                  <ParamTable params={[
+                    { name: 'dataset_path', type: 'string', required: true, desc: '待评测数据集路径或已上传数据集标识' },
+                    { name: 'task_type', type: 'string', required: true, desc: 'image_classification | object_detection | llm_text' },
+                    { name: 'data_format', type: 'string', required: true, desc: '与任务类型匹配的数据格式，如 ImageFolder、COCO、JSONL' },
+                    { name: 'data_splits', type: 'string[]', required: false, desc: '需要分析的数据划分，如 train、val、test' },
+                    { name: 'methods', type: 'string[]', required: false, desc: '评测方法：均衡性、异常、标注正确性、标注完整性、后门筛查' },
+                  ]} />
                 ) : (
                   <ParamTable params={TEXT_PARAMS} />
                 )}
@@ -1030,6 +1068,15 @@ ${postBody}` : ''}`;
                 { name: 'finding_types', type: 'object', required: true, desc: '各类型敏感信息的发现数量统计' },
                 { name: 'desensitized_content', type: 'string', required: false, desc: '脱敏后文本，desensitize=true 时返回' },
                 { name: 'latency_ms', type: 'integer', required: true, desc: '实际处理耗时（毫秒）' },
+              ]} />
+            ) : isSec ? (
+              <ParamTable params={[
+                { name: 'task_id', type: 'string', required: true, desc: '评测任务唯一标识' },
+                { name: 'status', type: 'string', required: true, desc: '任务当前状态；具体枚举以正式接口文档为准' },
+                { name: 'task_type', type: 'string', required: true, desc: '本次评测的数据任务类型' },
+                { name: 'data_format', type: 'string', required: true, desc: '系统识别或提交的数据格式' },
+                { name: 'methods', type: 'string[]', required: true, desc: '本次执行的评测方法列表' },
+                { name: 'result_url', type: 'string', required: false, desc: '任务完成后的 JSONL 结果地址' },
               ]} />
             ) : (
               <ParamTable params={[
@@ -1161,7 +1208,7 @@ function SdkSection({ product }: { product: string }) {
   const isSafetyEval = product === 'safetyeval';
   const isAgentEval  = product === 'agenteval';
   const productLabel = isCodeAudit ? '代码漏洞审查'
-    : isSec        ? '模型数据安全评测'
+    : isSec        ? '数据集安全评测'
     : isPrivacy    ? '个人敏感信息审查'
     : isLlmEval    ? '大模型性能评测'
     : isSafetyEval ? '大模型安全评测'
@@ -1176,9 +1223,9 @@ function SdkSection({ product }: { product: string }) {
       if (lang === 'cURL') return `# 提交代码扫描任务\ncurl -X POST "https://api.example.com/v1/audit/scan" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "code": "import sqlite3\\ndef get(uid): query = \\"SELECT * FROM users WHERE id=\\" + uid",\n    "language": "python",\n    "rules": ["sql_injection"]\n  }'`;
     }
     if (isSec) {
-      if (lang === 'Python') return `import aisc_sec\n\nclient = aisc_sec.Client(api_key="sk-test-your-key-here")\n\n# 创建模型安全评测任务\ntask = client.eval.model(\n    model_path="./model.pth",\n    dataset_path="./test_data.zip",\n    attacks=["FGSM", "PGD", "DeepFool"],\n    box_mode="whitebox",\n)\nprint(task.task_id)    # "eval_9f3b2c1d"\nprint(task.status)     # "running"\n\n# 获取评测报告\nreport = client.eval.report(task.task_id)\nprint(report.robustness)  # 72.4`;
-      if (lang === 'Node.js') return `import SecClient from '@aisc/sec-node';\n\nconst client = new SecClient({ apiKey: 'sk-test-your-key-here' });\n\n// 提交数据集安全评测\nconst task = await client.eval.dataset({\n  datasetPath: './dataset.zip',\n  evalDimensions: ['privacy', 'poisoning'],\n});\nconsole.log(task.taskId);  // "eval_9f3b2c1d"\n\n// 轮询任务状态\nconst result = await client.eval.report(task.taskId);\nconsole.log(result.privacyRisk);  // "LOW"`;
-      if (lang === 'cURL') return `# 创建模型评测任务\ncurl -X POST "https://api.example.com/v1/eval/model" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model_url": "https://...", "attacks": ["FGSM", "PGD"], "box_mode": "whitebox"}'`;
+      if (lang === 'Python') return `import aisc_sec\n\nclient = aisc_sec.Client(api_key="sk-test-your-key-here")\n\n# 创建模型数据质量与安全评测任务\ntask = client.eval.dataset(\n    dataset_path="./training_data",\n    task_type="object_detection",\n    data_format="COCO",\n    data_splits=["train", "val", "test"],\n    methods=[\n        "balance", "anomaly", "annotation_correctness",\n        "annotation_completeness", "backdoor_screening"\n    ],\n)\nprint(task.task_id)\nprint(task.status)\n\n# 获取 JSONL 结果\nresult = client.eval.result(task.task_id, format="jsonl")\nprint(result.path)`;
+      if (lang === 'Node.js') return `import SecClient from '@aisc/sec-node';\n\nconst client = new SecClient({ apiKey: 'sk-test-your-key-here' });\n\n// 提交大模型文本数据集评测\nconst task = await client.eval.dataset({\n  datasetPath: './training_data',\n  taskType: 'llm_text',\n  dataFormat: 'JSONL',\n  dataSplits: ['train'],\n  methods: [\n    'balance', 'anomaly', 'annotation_correctness',\n    'annotation_completeness', 'backdoor_screening'\n  ],\n});\nconsole.log(task.taskId);\n\n// 获取 JSONL 结果\nconst result = await client.eval.result(task.taskId, { format: 'jsonl' });\nconsole.log(result.path);`;
+      if (lang === 'cURL') return `# 创建模型数据质量与安全评测任务\ncurl -X POST "https://api.example.com/v1/eval/dataset" \\\n  -H "Authorization: Bearer sk-test-your-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "dataset_path": "./training_data",\n    "task_type": "image_classification",\n    "data_format": "ImageFolder",\n    "data_splits": ["train", "val"],\n    "methods": ["balance", "anomaly", "annotation_correctness", "annotation_completeness", "backdoor_screening"]\n  }'`;
     }
     if (isPrivacy) {
       if (lang === 'Python') return `import aisc_privacy\n\nclient = aisc_privacy.Client(api_key="sk-test-your-key-here")\n\n# 扫描文本中的敏感信息\ntask = client.privacy.scan(\n    content=open("./customer_records.txt").read(),\n    data_type="text",\n    dimensions=["身份证号", "手机号码", "银行卡号"],\n    desensitize=True,\n)\nprint(task.task_id)    # "priv_3e7a2b9c"\nprint(task.status)     # "scanning"\n\n# 获取审查报告\nreport = client.privacy.report(task.task_id)\nprint(report.total_findings)        # 12\nprint(report.risk_level)            # "HIGH"\nprint(report.desensitized_content)  # 脱敏后文本`;
@@ -1377,7 +1424,7 @@ const ENV_OPTIONS = ['生产', '测试'];
 
 const PRODUCTS = [
   { key: 'aigc',      label: 'AIGC 内容审核与鉴伪', color: '#6366f1' },
-  { key: 'sec',       label: '模型数据安全评测',     color: '#3b82f6' },
+  { key: 'sec',       label: '数据集安全评测',     color: '#3b82f6' },
   { key: 'codeaudit', label: '代码漏洞审查',         color: '#06b6d4' },
   { key: 'privacy',   label: '个人敏感信息审查',     color: '#8b5cf6' },
   { key: 'llmeval',   label: '大模型性能评测',       color: '#10b981' },

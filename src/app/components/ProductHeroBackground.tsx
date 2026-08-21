@@ -48,10 +48,10 @@ type ProductConcept =
   | 'help';
 
 const SIDE_THEME: Record<ProductSide, { image: string; tint: string }> = {
-  data: { image: '/hero-data-side.webp', tint: 'rgba(37,99,235,0.18)' },
-  model: { image: '/hero-model-side.webp', tint: 'rgba(79,70,229,0.18)' },
-  system: { image: '/hero-system-side.webp', tint: 'rgba(8,145,178,0.17)' },
-  service: { image: '/hero-service-side.webp', tint: 'rgba(15,159,127,0.16)' },
+  data: { image: '/hero-data-side.png', tint: 'rgba(37,99,235,0.18)' },
+  model: { image: '/hero-model-side.png', tint: 'rgba(79,70,229,0.18)' },
+  system: { image: '/hero-system-side.png', tint: 'rgba(8,145,178,0.17)' },
+  service: { image: '/hero-service-side.png', tint: 'rgba(15,159,127,0.16)' },
 };
 
 const CONCEPT_ICONS: Record<ProductConcept, LucideIcon[]> = {
