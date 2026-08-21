@@ -1,13 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router';
-import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { ScrollReveal } from '../components/ScrollReveal';
 import {
   Award, CheckCircle2, Users, Layers, Building2,
   FlaskConical, Heart, Cpu, ShieldCheck, Code2,
-  BarChart2, Database, Globe, Mail, Phone, MapPin,
-  Star, Trophy, Sparkles, ArrowRight,
+  BarChart2, Database, Globe,
+  Star, Trophy, Sparkles,
 } from 'lucide-react';
 import rongShuLogo from '../../imports/____-_.png';
 import yjyLogo from '../../imports/yjy.png';
@@ -72,8 +70,6 @@ const ZJU_CENTERS = [
 
 // ─────────────────────────────────────────────────────────────────
 export function AboutUs() {
-  const navigate = useNavigate();
-
   return (
     <div className="min-h-screen bg-white">
 
@@ -391,50 +387,6 @@ export function AboutUs() {
                   <div className="text-gray-400 text-[11px] mt-0.5">{s.sub}</div>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-      </ScrollReveal>
-
-      {/* ══ 5. CONTACT CTA ════════════════════════════════════════ */}
-      <ScrollReveal>
-        <section className="py-16 px-4 bg-white border-t border-gray-100">
-          <div className="max-w-3xl mx-auto text-center">
-            <h3 className="text-gray-900 font-black text-2xl mb-3">期待与您携手共进</h3>
-            <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-              无论您是寻求 AI 安全评测服务的企业，还是有意开展科研合作的高校与机构，我们都欢迎联系。
-            </p>
-            <div className="mx-auto mb-8 grid max-w-3xl grid-cols-1 gap-4 text-left md:grid-cols-3">
-              {[
-                { icon: Phone, label: '联系电话', value: '13940451397', color: '#3b82f6' },
-                { icon: Mail,  label: '邮箱',     value: 'contact@hzrongshu.cn', color: '#8b5cf6' },
-                { icon: MapPin,label: '地址',     value: '杭州市滨江区长河街道聚才路239号火炬创新中心2号楼1314室', color: '#10b981' },
-              ].map(c => {
-                const Icon = c.icon;
-                return (
-                  <div key={c.label} className="flex min-w-0 items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 md:min-h-[112px]">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: `${c.color}15` }}>
-                      <Icon className="w-4 h-4" style={{ color: c.color }} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs text-gray-400 font-medium">{c.label}</div>
-                      <div className="mt-1 break-words text-xs font-semibold leading-5 text-gray-700">{c.value}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-3 justify-center">
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-                onClick={() => navigate('/help-docs')}
-              >
-                了解产品服务 <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-              <Button variant="outline" className="px-8" onClick={() => navigate('/developer')}>
-                开发者接入
-              </Button>
             </div>
           </div>
         </section>

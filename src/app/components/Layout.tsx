@@ -105,10 +105,10 @@ const PRODUCT_SERIES: ProductSeries[] = [
     badge: null,
     items: [
       { label: '深度模型可信测评', desc: '大模型全面可信度综合评估', path: '/deep-model-eval', capabilities: ['可创建任务'] },
-      { label: '具身智能可信评测', desc: '物理交互场景可信安全评测', path: '/embodied-intelligence' },
       { label: '智能体安全评测', desc: 'AI智能体行为安全综合评测', path: '/agent-safety', capabilities: ['可创建任务'] },
       { label: '大模型性能评测', desc: '多模态生成与理解能力评测', path: '/llm-evaluation', capabilities: ['可创建任务'] },
       { label: '大模型安全评测', desc: '鲁棒性、隐私、安全与偏见评测', path: '/safety-evaluation', capabilities: ['可创建任务'] },
+      { label: '具身智能可信评测', desc: '物理交互场景可信安全评测', path: '/embodied-intelligence' },
     ],
   },
   {
@@ -145,11 +145,12 @@ const PRODUCT_SERIES: ProductSeries[] = [
 // 功能内容尚在完善时只隐藏导航入口，保留路由与页面代码便于后续恢复。
 const SHOW_ONLINE_EXPERIENCE_IN_HEADER = false;
 const SHOW_HELP_DOCS_IN_HEADER = false;
+const SHOW_DEVELOPER_IN_HEADER = false;
 const SECONDARY_NAV: { label: string; path: string; protected?: boolean }[] = [
   ...(SHOW_ONLINE_EXPERIENCE_IN_HEADER ? [{ label: '在线体验', path: '/online-experience' }] : []),
   ...(SHOW_HELP_DOCS_IN_HEADER ? [{ label: '帮助文档', path: '/help-docs' }] : []),
   { label: '资源中心', path: '/resource-center' },
-  { label: '开发者中心', path: '/developer' },
+  ...(SHOW_DEVELOPER_IN_HEADER ? [{ label: '开发者中心', path: '/developer' }] : []),
   { label: '关于我们', path: '/about' },
 ];
 
