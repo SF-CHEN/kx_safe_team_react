@@ -10,6 +10,8 @@ import { openHashRoute } from '@/utils/hashRoute';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { ProductHeroBackground } from '../components/ProductHeroBackground';
 import { StickySubNav } from '../components/StickySubNav';
+import { toast } from 'sonner';
+import { submitUserContact } from '@/api/contact';
 
 // ── Color theme ───────────────────────────────────────────────────
 const C = {
@@ -644,14 +646,25 @@ function ApplicationScenariosSection({ onStartTask }: { onStartTask: () => void 
 function LeadFormSection() {
   const [form, setForm] = useState({ name: '', phone: '', company: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.company) return;
-    const subject = encodeURIComponent('个人敏感信息审查专家咨询');
-    const body = encodeURIComponent(`姓名：${form.name}\n电话：${form.phone}\n公司：${form.company}`);
-    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
-    setSubmitted(true);
+    try {
+      setLoading(true);
+      await submitUserContact({
+        userName: form.name.trim(),
+        companyName: form.company.trim(),
+        contactInformation: form.phone.trim(),
+        requirementDescription: '【个人敏感信息审查】专家咨询 / 领取合规自查清单',
+      });
+      setSubmitted(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '提交失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -673,9 +686,9 @@ function LeadFormSection() {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             style={{ background: '#fff', border: '2px solid rgba(139,92,246,0.25)', borderRadius: 20, padding: '48px 32px', textAlign: 'center', boxShadow: '0 8px 40px rgba(139,92,246,0.12)' }}>
             <CheckCircle2 size={48} style={{ color: '#8b5cf6', margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>请在邮件客户端确认发送</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>提交成功</h3>
             <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.7, margin: 0 }}>
-              咨询信息已整理至邮件正文；发送后合规顾问会与您联系，并提供相应的合规自查资料。
+              我们已收到您的信息；合规顾问会与您联系，并提供相应的合规自查资料。
             </p>
           </motion.div>
         ) : (
@@ -707,9 +720,9 @@ function LeadFormSection() {
               );
             })}
 
-            <button type="submit"
-              style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <Calendar size={17} /> 预约专家演示
+            <button type="submit" disabled={loading}
+              style={{ width: '100%', padding: '14px', border: 'none', borderRadius: 12, background: loading ? '#94a3b8' : 'linear-gradient(135deg,#8b5cf6,#7c3aed)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 20px rgba(139,92,246,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Calendar size={17} /> {loading ? '提交中…' : '预约专家演示'}
             </button>
             <p style={{ margin: '14px 0 0', fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
               您的信息将受到严格保护，不会用于其他用途 · 符合《个人信息保护法》要求
@@ -782,7 +795,7 @@ export function PrivacyDataAudit() {
         <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
             <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 20, fontSize: 12, color: '#c4b5fd', fontWeight: 700, marginBottom: 20 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', background: 'rgba(124,58,237,0.94)', border: '1px solid rgba(196,181,253,0.9)', borderRadius: 20, fontSize: 12, color: '#ffffff', fontWeight: 700, marginBottom: 20 }}>
                 <Shield size={13} /> 数据智能
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-[2.7rem] font-black" style={{ color: '#fff', margin: '0 0 18px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>

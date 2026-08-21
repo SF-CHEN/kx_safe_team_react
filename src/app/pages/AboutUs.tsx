@@ -150,7 +150,7 @@ export function AboutUs() {
       {/* ══ 2. PARTNERS — two-column ═════════════════════════════ */}
       <ScrollReveal>
         <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg,#f8faff,#f0f4ff)' }}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-14">
               <Badge className="mb-4 bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">合作方介绍</Badge>
               <h2 className="text-gray-900 mb-3" style={{ fontSize: '2rem', fontWeight: 900 }}>

@@ -140,21 +140,9 @@ const USER_ACTIVE_KEY = 'xuanjian-user-session-active';
 const USER_CREDENTIAL_KEY = 'xuanjian-local-credentials-v1';
 
 async function hashPassword(password: string): Promise<string> {
-  // 非安全上下文（非 localhost/HTTPS）下 crypto.subtle 可能不可用，退化为简单摘要，保证原型可登录。
-  try {
-    if (window.crypto?.subtle) {
-      const bytes = new TextEncoder().encode(password);
-      const digest = await window.crypto.subtle.digest('SHA-256', bytes);
-      return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
-    }
-  } catch {
-    // fall through
-  }
-  let hash = 0;
-  for (let i = 0; i < password.length; i += 1) {
-    hash = ((hash << 5) - hash + password.charCodeAt(i)) | 0;
-  }
-  return `fallback-${password.length}-${(hash >>> 0).toString(16)}`;
+  const bytes = new TextEncoder().encode(password);
+  const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(value => value.toString(16).padStart(2, '0')).join('');
 }
 
 function readCredentials(): LocalCredential[] {
@@ -252,29 +240,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch {
       saved = null;
     }
-    // 原型演示：任意未空账号均可登录；未注册则创建凭证，已注册则按本次密码更新，避免本地凭证卡住「点登录进不去」。
+    if (credential && credential.passwordHash !== passwordHash) return false;
+    // 兼容升级前已注册的本地演示账号：首次登录时绑定当前密码。
+    if (!credential && saved?.email !== identifier) return false;
     const target = saved?.email === identifier
       ? normalizeCustomerUser(saved)
-      : {
-          ...mockLoggedInUser,
-          id: credential?.userId || `user-${Date.now()}`,
-          name: getDefaultUserName(identifier),
-          email: identifier,
-          role: 'user' as const,
-          myModels: [],
-          myTasks: [],
-          myEvalSets: [],
-        };
+      : { ...mockLoggedInUser, id: credential!.userId, name: getDefaultUserName(identifier), email: identifier, role: 'user' as const };
     if (getPlatformUsers().some(item => (item.id === target.id || item.contact === identifier) && item.status === '已停用')) return false;
     if (!credential) {
       credentials.push({ userId: target.id, identifier, passwordHash, updatedAt: new Date().toISOString() });
       writeCredentials(credentials);
-    } else if (credential.passwordHash !== passwordHash) {
-      const index = credentials.findIndex(item => item.identifier === identifier);
-      if (index >= 0) {
-        credentials[index] = { ...credentials[index], passwordHash, updatedAt: new Date().toISOString() };
-        writeCredentials(credentials);
-      }
     }
     setUser(target);
     upsertPlatformUser({ id: target.id, name: target.name, contact: target.email });

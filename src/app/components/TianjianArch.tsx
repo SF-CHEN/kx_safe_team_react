@@ -54,7 +54,7 @@ export function TianjianArch() {
   return (
     <ScrollReveal>
       <section className="py-20 px-4" style={{ background: '#fff' }}>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
 
           {/* ── Unified Header ── */}
           <div className="flex items-start justify-between mb-10 gap-6 flex-wrap">

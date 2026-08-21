@@ -13,7 +13,6 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotAccount, setForgotAccount] = useState('');
   const [forgotDone, setForgotDone] = useState(false);
@@ -27,31 +26,19 @@ export function Login() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setFormError(null);
     if (!account || !password) {
-      const msg = '请输入手机号/邮箱和密码';
-      setFormError(msg);
-      toast.error(msg);
+      toast.error('请输入手机号/邮箱和密码');
       return;
     }
     setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 350));
-      const ok = await login(account.trim(), password);
-      if (ok) {
-        toast.success('登录成功');
-        navigate(returnTo && returnTo !== '/login' ? returnTo : '/', { replace: true });
-      } else {
-        const msg = '账号已停用，请联系管理员';
-        setFormError(msg);
-        toast.error(msg);
-      }
-    } catch {
-      const msg = '登录失败，请稍后重试';
-      setFormError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
+    await new Promise(resolve => setTimeout(resolve, 650));
+    const ok = await login(account.trim(), password);
+    setLoading(false);
+    if (ok) {
+      toast.success('登录成功');
+      navigate(returnTo);
+    } else {
+      toast.error('账号未注册、已停用或密码不正确');
     }
   };
 
@@ -106,8 +93,6 @@ export function Login() {
                 <label className="flex items-center gap-2 text-slate-500"><input type="checkbox" className="rounded border-slate-300" />15 天内免登录</label>
                 <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>
               </div>
-
-              {formError && <p className="text-sm font-medium text-red-600">{formError}</p>}
 
               <button type="submit" disabled={loading} className="h-12 w-full rounded-xl bg-blue-600 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-slate-400">
                 {loading ? '登录中…' : '登 录'}

@@ -13,6 +13,8 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { StickySubNav } from '../components/StickySubNav';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
+import { submitUserContact } from '@/api/contact';
 
 // ─── Booking Modal ─────────────────────────────────────────────────
 function BookingModal({ onClose }: { onClose: () => void }) {
@@ -23,14 +25,22 @@ function BookingModal({ onClose }: { onClose: () => void }) {
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    const subject = encodeURIComponent('网络渗透测试预约咨询');
-    const body = encodeURIComponent(`姓名：${form.name}\n公司：${form.company}\n邮箱：${form.email}\n电话：${form.phone}\n关注问题：${form.pain || '未填写'}`);
-    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      setLoading(true);
+      await submitUserContact({
+        userName: form.name.trim(),
+        companyName: form.company.trim(),
+        contactInformation: [form.phone.trim(), form.email.trim()].filter(Boolean).join(' / '),
+        requirementDescription: `【网络渗透测试】关注问题：${form.pain.trim() || '未填写'}；企业邮箱：${form.email.trim()}；手机：${form.phone.trim()}`,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '提交失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -58,17 +68,13 @@ function BookingModal({ onClose }: { onClose: () => void }) {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '2px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
               <CheckCircle2 size={30} style={{ color: '#10b981' }} />
             </div>
-            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>请在邮件客户端确认发送</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>提交成功</h3>
             <p style={{ fontSize: 14, color: '#64748b', lineHeight: 1.75, margin: '0 0 24px' }}>
-              预约信息已整理至邮件正文，发送后我们的安全专家将在工作时间内联系您。<br />
-              如未唤起邮件客户端，请直接联系 contact@hzrongshu.cn。
+              我们已收到您的预约，安全专家将在工作时间内与您联系。
             </p>
-            <a href="mailto:contact@hzrongshu.cn?subject=网络渗透测试预约咨询" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}>
-              <Mail size={15} /> 重新打开邮件
-            </a>
-            <div style={{ marginTop: 16 }}>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 13, cursor: 'pointer' }}>关闭</button>
-            </div>
+            <button onClick={onClose} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 24px', background: 'linear-gradient(135deg,#ef4444,#f97316)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(239,68,68,0.3)' }}>
+              完成
+            </button>
           </div>
         ) : (
           /* ── Form state ── */
@@ -519,8 +525,8 @@ export function PenetrationTest() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                <Badge style={{ background: 'rgba(239,68,68,0.2)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', fontSize: 12 }}>系统安全</Badge>
-                <Badge style={{ background: 'rgba(245,158,11,0.15)', color: '#fde68a', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12 }}>专业渗透测试服务</Badge>
+                <Badge style={{ background: 'rgba(220,38,38,0.94)', color: '#ffffff', border: '1px solid rgba(252,165,165,0.9)', fontSize: 12 }}>系统安全</Badge>
+                <Badge style={{ background: 'rgba(217,119,6,0.94)', color: '#ffffff', border: '1px solid rgba(251,191,36,0.9)', fontSize: 12 }}>专业渗透测试服务</Badge>
               </div>
               <h1 style={{ fontSize: 'clamp(26px,3.2vw,46px)', fontWeight: 900, color: '#fff', margin: '0 0 18px', lineHeight: 1.15 }}>
                 智能化网络<br />

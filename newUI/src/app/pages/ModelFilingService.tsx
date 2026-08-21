@@ -265,7 +265,7 @@ export function ModelFilingService() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-600 border border-blue-300 text-white text-xs font-medium mb-6">
                 <ShieldCheck className="w-4 h-4" />
                 生成式人工智能服务合规支持
               </div>

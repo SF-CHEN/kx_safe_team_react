@@ -77,7 +77,7 @@ export function PlatformFlow() {
   return (
     <ScrollReveal>
       <section style={{ background: `linear-gradient(180deg, ${BG} 0%, #f8faff 60%, #fff 100%)`, padding: '80px 24px 96px' }}>
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
 
           {/* Header */}
           <div className="text-center mb-16">

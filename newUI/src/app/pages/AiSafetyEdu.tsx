@@ -589,7 +589,7 @@ export function AiSafetyEdu() {
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-indigo-300/40 text-indigo-600 text-xs font-semibold mb-5 backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-600 border border-indigo-300 text-white text-xs font-semibold mb-5">
                 <GraduationCap className="w-4 h-4" /> 教育赋能
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-[2.7rem] font-black text-slate-900 leading-tight mb-4">

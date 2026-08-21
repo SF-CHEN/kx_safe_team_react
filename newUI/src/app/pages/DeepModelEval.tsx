@@ -1128,10 +1128,10 @@ export function DeepModelEval() {
         <div style={{ maxWidth: 1160, margin: '0 auto', padding: '0 40px', position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 400px', minWidth: 300 }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              <Badge style={{ background: 'rgba(37,99,235,0.08)', color: '#35638e', border: '1px solid rgba(37,99,235,0.22)', fontSize: 11 }}>
+              <Badge style={{ background: 'rgba(29,78,216,0.94)', color: '#ffffff', border: '1px solid rgba(147,197,253,0.9)', fontSize: 11 }}>
                 <BarChart2 size={10} style={{ marginRight: 4 }} /> 模型评测
               </Badge>
-              <Badge style={{ background: 'rgba(29,78,216,0.2)', color: '#93c5fd', border: '1px solid rgba(29,78,216,0.35)', fontSize: 11 }}>
+              <Badge style={{ background: 'rgba(67,56,202,0.94)', color: '#ffffff', border: '1px solid rgba(165,180,252,0.9)', fontSize: 11 }}>
                 深度模型可信测评
               </Badge>
             </div>

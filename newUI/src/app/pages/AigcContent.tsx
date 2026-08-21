@@ -514,7 +514,7 @@ export function AigcContent() {
             {/* Left: copy + 2 buttons */}
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                <Badge style={{ background: 'rgba(16,185,129,0.15)', color: '#6ee7b7', border: '1px solid rgba(16,185,130,0.3)', fontSize: 12 }}>AIGC 内容安全平台</Badge>
+                <Badge style={{ background: 'rgba(5,150,105,0.94)', color: '#ffffff', border: '1px solid rgba(110,231,183,0.9)', fontSize: 12 }}>AIGC 内容安全平台</Badge>
               </div>
               <h1 style={{ fontSize: 'clamp(26px,3.2vw,46px)', fontWeight: 800, color: '#fff', margin: '0 0 18px', lineHeight: 1.15 }}>
                 AIGC 内容审核<br />

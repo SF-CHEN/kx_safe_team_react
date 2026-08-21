@@ -68,7 +68,7 @@ export function ScenarioSection() {
   return (
     <ScrollReveal>
       <section className="py-20 px-4" style={{ background: 'linear-gradient(180deg,#f8fafc,#fff)' }}>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
 
           {/* Header */}
           <div className="text-center mb-12">

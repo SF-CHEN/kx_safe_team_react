@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Building2, Calendar, CheckCircle2, ChevronDown, Mail, Phone, User, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { submitUserContact } from '@/api/contact';
 
 type ExpertConsultModalProps = {
   open: boolean;
@@ -35,14 +37,22 @@ export function ExpertConsultModal({
     }, 220);
   };
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoading(true);
-    const subject = encodeURIComponent(`${serviceName}专家咨询预约`);
-    const body = encodeURIComponent(`姓名：${form.name}\n企业邮箱：${form.email}\n手机号：${form.phone}\n公司：${form.company}\n咨询主题：${form.topic || '未选择'}`);
-    window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
-    setLoading(false);
-    setSubmitted(true);
+    try {
+      setLoading(true);
+      await submitUserContact({
+        userName: form.name.trim(),
+        companyName: form.company.trim(),
+        contactInformation: [form.phone.trim(), form.email.trim()].filter(Boolean).join(' / '),
+        requirementDescription: `【${serviceName}专家咨询】咨询主题：${form.topic.trim() || '未选择'}；企业邮箱：${form.email.trim()}；手机：${form.phone.trim()}`,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '提交失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100';
@@ -64,9 +74,9 @@ export function ExpertConsultModal({
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50">
               <CheckCircle2 className="h-8 w-8 text-emerald-500" />
             </div>
-            <h3 className="mt-6 text-2xl font-black text-slate-950">请在邮件客户端确认发送</h3>
+            <h3 className="mt-6 text-2xl font-black text-slate-950">提交成功</h3>
             <p className="mt-3 text-sm leading-7 text-slate-500">
-              咨询信息已整理至邮件正文；发送后专家会结合您的业务情况准备针对性的{serviceName}建议。
+              我们已收到您的预约；专家会结合您的业务情况准备针对性的{serviceName}建议，并尽快与您联系。
             </p>
             <button onClick={close} className="mt-7 rounded-xl px-7 py-3 text-sm font-bold text-white" style={{ background: accent }}>
               完成

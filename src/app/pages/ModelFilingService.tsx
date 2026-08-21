@@ -263,10 +263,10 @@ export function ModelFilingService() {
       {/* 1. Hero ──────────────────────────────────────────────── */}
       <section className="product-detail-hero order-[0] relative overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28 min-h-[600px] flex items-center bg-[#060e1d]">
         <ProductHeroBackground side="service" concept="filing" />
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/20 text-blue-300 text-xs font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-600 border border-blue-300 text-white text-xs font-medium mb-6">
                 <ShieldCheck className="w-4 h-4" />
                 生成式人工智能服务合规支持
               </div>
@@ -336,7 +336,7 @@ export function ModelFilingService() {
           </svg>
         </div>
 
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-black text-gray-900 mb-4">别让合规风险成为业务落地的"拦路虎"</h2>
             <p className="text-gray-500 text-lg">AI 狂飙时代，合规先行才能行稳致远</p>
@@ -418,7 +418,7 @@ export function ModelFilingService() {
 
       {/* Service scope and concrete deliverables */}
       <section id="mfs-scope" className="order-[3] border-y border-slate-200 bg-white py-24">
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-[83%] px-6">
           <div className="mb-14 text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
               <FileText className="h-3.5 w-3.5" /> 服务内容与交付物
@@ -457,7 +457,7 @@ export function ModelFilingService() {
 
       {/* 3. 2026 Regulations — redesigned ───────────────────── */}
       <section id="mfs-comparison" className="order-[6] py-24 border-y border-gray-200" style={{ background: '#F0F4FA' }}>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-12 items-start">
 
             {/* Left: old vs new comparison */}
@@ -575,7 +575,7 @@ export function ModelFilingService() {
         <div className="absolute top-0 left-1/4 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'rgba(59,130,246,0.06)', filter: 'blur(80px)' }} />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'rgba(16,185,129,0.06)', filter: 'blur(80px)' }} />
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold mb-4">
               <ShieldCheck className="w-3.5 h-3.5" /> 服务流程
@@ -713,7 +713,7 @@ export function ModelFilingService() {
           <svg className="w-full h-full"><defs><pattern id="dots-light" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cbd5e1" /></pattern></defs><rect width="100%" height="100%" fill="url(#dots-light)" /></svg>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-gray-900 mb-4">技术、材料与项目协同支持</h2>
             <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-emerald-500 mx-auto rounded-full" />
@@ -831,7 +831,7 @@ export function ModelFilingService() {
 
       {/* 7. Case Studies ─────────────────────────────────────── */}
       <section className="hidden order-[8] py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-black text-gray-900 mb-4">他们已成功拿证，开启商业化</h2>
             <p className="text-gray-600 text-lg">跨行业大模型合规备案的成功实践</p>

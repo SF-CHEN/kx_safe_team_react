@@ -440,7 +440,7 @@ function AdvantagesSection() {
 
   return (
     <section className="py-24 bg-slate-50 border-y border-gray-200">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-[83%] mx-auto px-6">
         <div className="text-center mb-14">
           <h2 className="text-3xl font-black text-gray-900 mb-4">平台核心优势</h2>
           <div className="w-16 h-1 bg-gradient-to-r from-indigo-500 to-cyan-500 mx-auto rounded-full" />
@@ -587,10 +587,10 @@ export function AiSafetyEdu() {
             filter: 'blur(42px)',
           }}
         />
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10 w-full">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 border border-indigo-300/40 text-indigo-600 text-xs font-semibold mb-5 backdrop-blur-md">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-600 border border-indigo-300 text-white text-xs font-semibold mb-5">
                 <GraduationCap className="w-4 h-4" /> 教育赋能
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-[2.7rem] font-black text-slate-900 leading-tight mb-4">
@@ -637,7 +637,7 @@ export function AiSafetyEdu() {
 
       {/* ── 2. Stats Bar ────────────────────────────────────── */}
       <div style={{ background: 'linear-gradient(135deg,#1e1b4b,#1e3a5f)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-5">
+        <div className="max-w-[83%] mx-auto px-6 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[{ value:'80余篇', label:'国内外权威期刊论文', icon:'📄' }, { value:'90余项', label:'授权发明专利', icon:'🏅' }, { value:'7大', label:'课程维度体系', icon:'📚' }, { value:'100+', label:'AI安全实战内容', icon:'⚗️' }].map((s, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="flex items-center gap-3">
@@ -659,7 +659,7 @@ export function AiSafetyEdu() {
           <svg className="w-full h-full"><defs><pattern id="light-dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#93c5fd" /></pattern></defs><rect width="100%" height="100%" fill="url(#light-dots)" /></svg>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4"
               style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
@@ -725,7 +725,7 @@ export function AiSafetyEdu() {
 
       {/* ── 4. MOD 3: Platform Modules with real screenshots ─── */}
       <section id="ase-modules" className="py-20 bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold mb-4">
               <Layers className="w-3.5 h-3.5" /> 整体功能
@@ -860,7 +860,7 @@ export function AiSafetyEdu() {
 
       {/* ── 8. Application Scenarios ─────────────────────────── */}
       <section id="ase-scenarios" className="py-20" style={{ background: 'linear-gradient(180deg,#F4F6FA,#ffffff)' }}>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold mb-4">
               <Target className="w-3.5 h-3.5" /> 应用场景

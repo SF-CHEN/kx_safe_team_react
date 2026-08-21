@@ -81,6 +81,59 @@ body {
   .rs-container { width: min(100% - 36px, 1240px); }
 }
 
+/* ===== Large-screen content width system ===== */
+@media (min-width: 1440px) {
+  /* Keep hero copy aligned to the viewport edge on wide desktop displays. */
+  .rongsu-hero {
+    --hero-content-width: 1800px;
+  }
+
+  .product-page-v3 .product-detail-hero > div[style*="max-width"] {
+    width: min(calc(100% - 96px), 1800px) !important;
+    max-width: 1800px !important;
+  }
+
+  .product-page-v3 > section > div[style*="max-width"],
+  .product-page-v3 > div > section > div[style*="max-width"],
+  .product-page-v3 > div > div > section > div[style*="max-width"],
+  .product-overview-v3 > section > div[style*="max-width"],
+  .product-overview-v3 > div > section > div[style*="max-width"] {
+    width: min(calc(100% - 96px), 1600px) !important;
+    max-width: 1600px !important;
+  }
+
+  .home-page-v3 .mx-auto[class*="max-w-"],
+  .home-page-v3 [class*="max-w-7xl"],
+  .home-page-v3 [class*="max-w-6xl"],
+  .home-page-v3 [class*="max-w-5xl"] {
+    max-width: 1600px !important;
+    width: calc(100% - 96px) !important;
+  }
+}
+
+@media (max-width: 1439px) and (min-width: 901px) {
+  .product-page-v3 .product-detail-hero > div[style*="max-width"] {
+    width: calc(100% - 64px) !important;
+    max-width: 1440px !important;
+  }
+
+  .product-page-v3 > section > div[style*="max-width"],
+  .product-page-v3 > div > section > div[style*="max-width"],
+  .product-page-v3 > div > div > section > div[style*="max-width"],
+  .product-overview-v3 > section > div[style*="max-width"],
+  .product-overview-v3 > div > section > div[style*="max-width"] {
+    width: calc(100% - 64px) !important;
+    max-width: 1440px !important;
+  }
+
+  .home-page-v3 .mx-auto[class*="max-w-"],
+  .home-page-v3 [class*="max-w-7xl"],
+  .home-page-v3 [class*="max-w-6xl"],
+  .home-page-v3 [class*="max-w-5xl"] {
+    width: calc(100% - 64px) !important;
+  }
+}
+
 /* ===== Unified formal product-page system ===== */
 .product-page-v3 {
   --product-space: clamp(64px, 6.4vw, 88px);
@@ -1079,5 +1132,24 @@ body {
   html, body, #root {
     max-width: 100%;
     overflow-x: clip;
+  }
+}
+
+/* ===== Hero first-screen left alignment on wide displays =====
+   On 24.5" and larger monitors the homepage hero carousel and the
+   service-side product heroes were capped at 1280px and centered,
+   leaving a large blank to the left of the text. Align them with the
+   other product heroes (e.g. personal sensitive information review)
+   by using the same 1800px content width and viewport-edge gutter. */
+@media (min-width: 1440px) {
+  .rongsu-hero {
+    --hero-content-width: 1800px;
+  }
+
+  .product-page-v3 .product-detail-hero > .max-w-7xl,
+  .product-page-v3 .product-detail-hero > .max-w-6xl,
+  .product-page-v3 .product-detail-hero > [class*="max-w-[1160px]"] {
+    width: min(calc(100% - 96px), 1800px) !important;
+    max-width: 1800px !important;
   }
 }

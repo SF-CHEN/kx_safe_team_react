@@ -436,7 +436,7 @@ export function SafetyEvaluation() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                <Badge style={{ background: 'rgba(16,185,129,0.15)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)', fontSize: 12 }}>大模型安全评测</Badge>
+                <Badge style={{ background: 'rgba(5,150,105,0.94)', color: '#ffffff', border: '1px solid rgba(110,231,183,0.9)', fontSize: 12 }}>大模型安全评测</Badge>
               </div>
               <h1 style={{ fontSize: 'clamp(28px,4vw,52px)', fontWeight: 800, color: '#fff', margin: '0 0 20px', lineHeight: 1.15, maxWidth: 680 }}>
                 大模型<br />

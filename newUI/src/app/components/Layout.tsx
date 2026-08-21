@@ -1126,7 +1126,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       {/* ─── Main Content ────────────────────────────────────────── */}
-      <main className={`flex-1 bg-transparent ${FORMAL_PRODUCT_PATHS.has(location.pathname) ? 'product-page-v3' : ''} ${location.pathname === '/products-overview' ? 'product-overview-v3' : ''}`}>
+      <main className={`flex-1 bg-transparent ${location.pathname === '/' ? 'home-page-v3' : ''} ${FORMAL_PRODUCT_PATHS.has(location.pathname) ? 'product-page-v3' : ''} ${location.pathname === '/products-overview' ? 'product-overview-v3' : ''}`}>
         {children}
       </main>
 

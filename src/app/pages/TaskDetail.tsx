@@ -90,7 +90,7 @@ export function TaskDetail() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <div className="bg-white border-b py-8 px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
           <Button
             variant="ghost"
             size="sm"
@@ -128,7 +128,7 @@ export function TaskDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+      <div className="max-w-[83%] mx-auto px-4 py-12 space-y-12">
         {/* Score Overview */}
         <Card className="p-10">
           <div className="flex items-center justify-between mb-10">

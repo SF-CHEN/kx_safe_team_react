@@ -188,12 +188,6 @@ const PRODUCT_CONTACT_NAMES: Record<string, string> = {
   '/tianche-standard-service': '可信安全标准制定服务',
 };
 
-/** 本轮已对接 POST /temp/user-contact/submit 的产品页 */
-const USER_CONTACT_API_PATHS = new Set([
-  '/privacy-data-audit',
-  '/embodied-intelligence',
-]);
-
 // ── Floating Chat Panel ───────────────────────────────────────────
 function FloatingChatPanel({ onClose }: { onClose: () => void }) {
   const [messages, setMessages] = React.useState([
@@ -1137,10 +1131,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       {PRODUCT_CONTACT_NAMES[location.pathname] && (
-        <ProductContactSection
-          productName={PRODUCT_CONTACT_NAMES[location.pathname]}
-          submitToApi={USER_CONTACT_API_PATHS.has(location.pathname)}
-        />
+        <ProductContactSection productName={PRODUCT_CONTACT_NAMES[location.pathname]} />
       )}
 
       {/* ─── Global Footer ───────────────────────────────────────── */}

@@ -61,7 +61,8 @@ select:disabled,
 }
 
 .rs-container {
-  width: min(1240px, calc(100% - 64px));
+  width: calc(100% - 64px);
+  max-width: calc(1240 / 1920 * 100%);
   margin-inline: auto;
 }
 
@@ -104,7 +105,63 @@ select:disabled,
 }
 
 @media (max-width: 900px) {
-  .rs-container { width: min(100% - 36px, 1240px); }
+  .rs-container {
+    width: calc(100% - 36px);
+    max-width: calc(1240 / 1920 * 100%);
+  }
+}
+
+/* ===== Large-screen content width system ===== */
+@media (min-width: 1440px) {
+  /* Keep hero copy aligned to the viewport edge on wide desktop displays. */
+  .rongsu-hero {
+    --hero-content-width: calc(1800 / 1920 * 100%);
+  }
+
+  .product-page-v3 .product-detail-hero > div[style*="max-width"] {
+    width: calc(100% - 96px) !important;
+    max-width: calc(1800 / 1920 * 100%) !important;
+  }
+
+  .product-page-v3 > section > div[style*="max-width"],
+  .product-page-v3 > div > section > div[style*="max-width"],
+  .product-page-v3 > div > div > section > div[style*="max-width"],
+  .product-overview-v3 > section > div[style*="max-width"],
+  .product-overview-v3 > div > section > div[style*="max-width"] {
+    width: calc(100% - 96px) !important;
+    max-width: calc(1600 / 1920 * 100%) !important;
+  }
+
+  .home-page-v3 .mx-auto[class*="max-w-"],
+  .home-page-v3 [class*="max-w-[83%]"],
+  .home-page-v3 [class*="max-w-[83%]"],
+  .home-page-v3 [class*="max-w-5xl"] {
+    max-width: calc(1600 / 1920 * 100%) !important;
+    width: calc(100% - 96px) !important;
+  }
+}
+
+@media (max-width: 1439px) and (min-width: 901px) {
+  .product-page-v3 .product-detail-hero > div[style*="max-width"] {
+    width: calc(100% - 64px) !important;
+    max-width: calc(1440 / 1920 * 100%) !important;
+  }
+
+  .product-page-v3 > section > div[style*="max-width"],
+  .product-page-v3 > div > section > div[style*="max-width"],
+  .product-page-v3 > div > div > section > div[style*="max-width"],
+  .product-overview-v3 > section > div[style*="max-width"],
+  .product-overview-v3 > div > section > div[style*="max-width"] {
+    width: calc(100% - 64px) !important;
+    max-width: calc(1440 / 1920 * 100%) !important;
+  }
+
+  .home-page-v3 .mx-auto[class*="max-w-"],
+  .home-page-v3 [class*="max-w-[83%]"],
+  .home-page-v3 [class*="max-w-[83%]"],
+  .home-page-v3 [class*="max-w-5xl"] {
+    width: calc(100% - 64px) !important;
+  }
 }
 
 /* ===== Unified formal product-page system ===== */
@@ -347,11 +404,11 @@ select:disabled,
   display: none !important;
 }
 
-.product-page-v3 section[id] [class*="max-w-7xl"],
-.product-page-v3 section[id] [class*="max-w-6xl"],
+.product-page-v3 section[id] [class*="max-w-[83%]"],
+.product-page-v3 section[id] [class*="max-w-[83%]"],
 .product-page-v3 section[id] [class*="max-w-5xl"] {
-  width: min(1240px, calc(100% - 64px));
-  max-width: 1240px !important;
+  width: calc(100% - 64px);
+  max-width: calc(1240 / 1920 * 100%) !important;
   margin-inline: auto;
 }
 
@@ -394,10 +451,11 @@ select:disabled,
     padding-top: 64px !important;
     padding-bottom: 56px !important;
   }
-  .product-page-v3 section[id] [class*="max-w-7xl"],
-  .product-page-v3 section[id] [class*="max-w-6xl"],
+  .product-page-v3 section[id] [class*="max-w-[83%]"],
+  .product-page-v3 section[id] [class*="max-w-[83%]"],
   .product-page-v3 section[id] [class*="max-w-5xl"] {
-    width: min(100% - 36px, 1240px);
+    width: calc(100% - 36px);
+    max-width: calc(1240 / 1920 * 100%);
   }
 }
 
@@ -499,7 +557,7 @@ select:disabled,
 
 /* ===== Rongsu homepage hero carousel ===== */
 .rongsu-hero {
-  --hero-content-width: 1280px;
+  --hero-content-width: calc(1280 / 1920 * 100%);
   position: relative;
   min-height: 638px;
   overflow: hidden;
@@ -543,7 +601,7 @@ select:disabled,
 .rongsu-hero__main {
   position: relative;
   z-index: 2;
-  width: min(var(--hero-content-width), calc(100% - 96px));
+  width:  calc(100% - 96px - 96px);
   min-height: 496px;
   margin: 0 auto;
   display: flex;
@@ -716,7 +774,8 @@ select:disabled,
   position: absolute;
   inset: 0;
   z-index: 5;
-  width: min(var(--hero-content-width), calc(100% - 96px));
+  width: calc(100% - 96px);
+  /* max-width: var(--hero-content-width); */
   min-height: 496px;
   margin: 0 auto;
   pointer-events: none;
@@ -883,7 +942,8 @@ select:disabled,
 }
 
 .rongsu-hero__quick-inner {
-  width: min(var(--hero-content-width), calc(100% - 96px));
+  width: calc(100% - 96px - 80px);
+  /* max-width: var(--hero-content-width); */
   min-height: 122px;
   margin: 0 auto;
   display: grid;
@@ -1105,5 +1165,24 @@ select:disabled,
   html, body, #root {
     max-width: 100%;
     overflow-x: clip;
+  }
+}
+
+/* ===== Hero first-screen left alignment on wide displays =====
+   On 24.5" and larger monitors the homepage hero carousel and the
+   service-side product heroes were capped at 1280px and centered,
+   leaving a large blank to the left of the text. Align them with the
+   other product heroes (e.g. personal sensitive information review)
+   by using the same 1800px content width and viewport-edge gutter. */
+@media (min-width: 1440px) {
+  .rongsu-hero {
+    --hero-content-width: calc(1800 / 1920 * 100%);
+  }
+
+  .product-page-v3 .product-detail-hero > .max-w-[83%],
+  .product-page-v3 .product-detail-hero > .max-w-[83%],
+  .product-page-v3 .product-detail-hero > [class*="max-w-[1160px]"] {
+    width: calc(100% - 96px) !important;
+    max-width: calc(1800 / 1920 * 100%) !important;
   }
 }

@@ -54,7 +54,7 @@ export function TianhengArch() {
         className="py-20 px-4"
         style={{ background: 'linear-gradient(180deg,#eff6ff 0%,#fff 55%)' }}
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
 
           {/* ── Unified Header ── */}
           <div className="flex items-start justify-between mb-10 gap-6 flex-wrap">

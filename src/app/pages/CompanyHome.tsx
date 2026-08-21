@@ -653,7 +653,7 @@ export function CompanyHome() {
       ══════════════════════════════════════════════════════════ */}
       <ScrollReveal>
         <section id="product-matrix" className="scroll-mt-24 py-20 px-4" style={{ background: 'linear-gradient(180deg,#f8faff,#fff)' }}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-12">
               <div className="rongsu-product-matrix__heading">
                 <img src="/xuanjian-brand-logo.png" alt="" aria-hidden="true" />
@@ -694,7 +694,7 @@ export function CompanyHome() {
           style={{ background: 'linear-gradient(135deg,#f0f4ff,#eef2ff,#f5f3ff)' }}
         >
           <div className="absolute inset-0 bg-dot-grid" />
-          <div className="relative max-w-6xl mx-auto">
+          <div className="relative max-w-[83%] mx-auto">
 
             <div className="text-center mb-10">
               <Badge className="mb-3 bg-indigo-50 text-indigo-700 border-indigo-200 text-xs">平台优势</Badge>
@@ -773,7 +773,7 @@ export function CompanyHome() {
       ══════════════════════════════════════════════════════════ */}
       <ScrollReveal>
         <section className="py-20 px-4 bg-white">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
 
             <div className="text-center mb-16">
               <Badge className="mb-3 bg-cyan-50 text-cyan-700 border-cyan-200 text-xs">服务对象</Badge>
@@ -922,7 +922,7 @@ export function CompanyHome() {
       ══════════════════════════════════════════════════════════ */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-10">
               <Badge className="mb-4 bg-blue-50 text-blue-700 border-blue-200 text-xs">合作生态</Badge>
               <h2 className="text-gray-800 mb-3" style={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1.2 }}>
@@ -952,7 +952,7 @@ export function CompanyHome() {
           className="hidden py-12 px-4"
           style={{ background: 'linear-gradient(180deg,#f8faff,#fff)' }}
         >
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             {/* Compact header */}
             <div className="text-center mb-5">
               <Badge className="mb-2 bg-slate-100 text-slate-600 border-slate-200 text-xs">知识库</Badge>

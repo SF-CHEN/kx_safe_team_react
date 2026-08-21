@@ -164,7 +164,7 @@ export function TestSetGeneration() {
       {/* Hero Section */}
       <div className="relative text-white overflow-hidden">
         <TechHeroBg />
-        <div className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+        <div className="max-w-[83%] mx-auto px-4 py-12 relative z-10">
           <div className="flex items-start justify-between">
             <div>
               <Badge className="mb-3 bg-white/20 text-white border-white/30 text-xs">测试集生成</Badge>
@@ -212,7 +212,7 @@ export function TestSetGeneration() {
       {/* Generation Methods - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-10">
               <h2 className="font-bold text-gray-800 text-2xl mb-2">三种生成方式</h2>
               <p className="text-gray-600 text-sm">灵活选择适合您需求的生成策略</p>
@@ -278,7 +278,7 @@ export function TestSetGeneration() {
       {/* Scene Configuration - Blue Tinted */}
       <ScrollReveal>
         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="grid grid-cols-2 gap-10 items-start">
               {/* Left: Scene Selector */}
               <div>
@@ -366,7 +366,7 @@ export function TestSetGeneration() {
       {/* Sample Preview - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="font-bold text-gray-800 text-2xl mb-1">测试样本预览</h2>
@@ -407,7 +407,7 @@ export function TestSetGeneration() {
       {/* Generation Process - Blue Tinted */}
       <ScrollReveal>
         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-bold text-gray-800 text-2xl mb-2">生成流程</h2>
               <p className="text-gray-500 text-sm">五步快速完成测试集智能生成</p>
@@ -450,7 +450,7 @@ export function TestSetGeneration() {
       {/* Advantages - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-10">
               <h2 className="font-bold text-gray-800 text-2xl mb-2">平台优势</h2>
               <p className="text-gray-500 text-sm">为什么选择 AISafePro-LM 智能测试集生成</p>

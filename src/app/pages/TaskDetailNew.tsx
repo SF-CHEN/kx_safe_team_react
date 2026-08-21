@@ -105,7 +105,7 @@ export function TaskDetailNew() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
       <div className="bg-white border-b py-6 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[83%] mx-auto">
           <Button variant="ghost" size="sm" className="mb-4" onClick={() => navigate('/resource-center')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             返回列表
@@ -139,7 +139,7 @@ export function TaskDetailNew() {
 
       {/* System Info Header */}
       <div className="bg-white border-b py-4 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-6 gap-4">
+        <div className="max-w-[83%] mx-auto grid grid-cols-6 gap-4">
           {[
             { label: '操作系统', value: 'Ubuntu 20.04', icon: Shield },
             { label: '编程语言', value: 'Python', icon: FileText },
@@ -162,7 +162,7 @@ export function TaskDetailNew() {
       </div>
 
       {/* Main Tabs */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-[83%] mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="qa">会话性评估模块</TabsTrigger>

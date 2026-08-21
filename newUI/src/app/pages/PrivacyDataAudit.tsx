@@ -781,7 +781,7 @@ export function PrivacyDataAudit() {
         <div style={{ maxWidth: 1160, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
             <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', borderRadius: 20, fontSize: 12, color: '#c4b5fd', fontWeight: 700, marginBottom: 20 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', background: 'rgba(124,58,237,0.94)', border: '1px solid rgba(196,181,253,0.9)', borderRadius: 20, fontSize: 12, color: '#ffffff', fontWeight: 700, marginBottom: 20 }}>
                 <Shield size={13} /> 数据智能
               </div>
               <h1 className="text-3xl sm:text-4xl lg:text-[2.7rem] font-black" style={{ color: '#fff', margin: '0 0 18px', lineHeight: 1.15, letterSpacing: '-0.02em' }}>

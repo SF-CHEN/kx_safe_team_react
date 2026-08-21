@@ -3,13 +3,7 @@ import { ArrowRight, Building2, ContactRound, MessageSquareText, Phone, ShieldCh
 import { toast } from 'sonner';
 import { submitUserContact } from '@/api/contact';
 
-export function ProductContactSection({
-  productName,
-  submitToApi = false,
-}: {
-  productName: string;
-  submitToApi?: boolean;
-}) {
+export function ProductContactSection({ productName }: { productName: string }) {
   const [form, setForm] = useState({ name: '', company: '', contact: '', demand: '' });
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,13 +11,6 @@ export function ProductContactSection({
     event.preventDefault();
     if (!form.name.trim() || !form.company.trim() || !form.contact.trim() || !form.demand.trim()) {
       toast.error('请完整填写姓名、公司、联系方式和需求描述');
-      return;
-    }
-    if (!submitToApi) {
-      const subject = encodeURIComponent(`${productName}产品咨询 - ${form.company.trim()}`);
-      const body = encodeURIComponent(`姓名：${form.name.trim()}\n公司：${form.company.trim()}\n联系方式：${form.contact.trim()}\n咨询产品：${productName}\n需求描述：${form.demand.trim()}`);
-      window.location.href = `mailto:contact@hzrongshu.cn?subject=${subject}&body=${body}`;
-      toast.success('咨询内容已整理，请在邮件客户端确认发送');
       return;
     }
     try {

@@ -519,8 +519,8 @@ export function PenetrationTest() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
             <div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-                <Badge style={{ background: 'rgba(239,68,68,0.2)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', fontSize: 12 }}>系统安全</Badge>
-                <Badge style={{ background: 'rgba(245,158,11,0.15)', color: '#fde68a', border: '1px solid rgba(245,158,11,0.3)', fontSize: 12 }}>专业渗透测试服务</Badge>
+                <Badge style={{ background: 'rgba(220,38,38,0.94)', color: '#ffffff', border: '1px solid rgba(252,165,165,0.9)', fontSize: 12 }}>系统安全</Badge>
+                <Badge style={{ background: 'rgba(217,119,6,0.94)', color: '#ffffff', border: '1px solid rgba(251,191,36,0.9)', fontSize: 12 }}>专业渗透测试服务</Badge>
               </div>
               <h1 style={{ fontSize: 'clamp(26px,3.2vw,46px)', fontWeight: 900, color: '#fff', margin: '0 0 18px', lineHeight: 1.15 }}>
                 智能化网络<br />

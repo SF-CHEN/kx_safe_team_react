@@ -536,22 +536,7 @@ export function CompanyHome() {
                   </strong>
                 </h1>
                 <p>{HERO_SLIDES[activeHeroSlide].desc}</p>
-                {(SHOW_HOME_TRIAL_ACTIONS || SHOW_XUANJIAN_ASSISTANT) && (
                 <div className="rongsu-hero__actions">
-                  {SHOW_HOME_TRIAL_ACTIONS && (
-                  <Button
-                    size="lg"
-                    className="text-white font-semibold px-8 border-0"
-                    style={{ background: HERO_SLIDES[activeHeroSlide].accent, boxShadow: `0 10px 28px ${HERO_SLIDES[activeHeroSlide].glow}` }}
-                    onClick={() => {
-                      if (isGuest) setShowLoginModal(true);
-                      else window.open('/online-experience', '_blank', 'noopener,noreferrer');
-                    }}
-                  >
-                    免费试用
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                  )}
                   {SHOW_XUANJIAN_ASSISTANT && (
                     <Button
                       size="lg"
@@ -563,7 +548,6 @@ export function CompanyHome() {
                     </Button>
                   )}
                 </div>
-                )}
               </article>
 
               {activeHeroSlide === 0 && (

@@ -387,7 +387,7 @@ function HelpLanding() {
     <div className="min-h-screen bg-white">
       <section className="relative overflow-hidden border-b border-blue-100 bg-[#edf6fd]">
         <ProductHeroBackground side="data" concept="help" />
-        <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 text-center md:py-14">
+        <div className="relative z-10 mx-auto max-w-[83%] px-6 py-12 text-center md:py-14">
           <div className="mb-3 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.18em] text-blue-600">
             <BookOpen className="h-4 w-4" /> Xuanjian Help Center
           </div>
@@ -427,7 +427,7 @@ function HelpLanding() {
       </section>
 
       {keyword ? (
-        <section className="mx-auto max-w-6xl px-6 py-12">
+        <section className="mx-auto max-w-[83%] px-6 py-12">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-blue-600">搜索结果</div>
@@ -462,7 +462,7 @@ function HelpLanding() {
         </section>
       ) : (
         <>
-          <main className="mx-auto max-w-6xl px-6 py-11">
+          <main className="mx-auto max-w-[83%] px-6 py-11">
             <div className="space-y-12">
               {PRODUCT_GROUPS.map(group => {
                 return (

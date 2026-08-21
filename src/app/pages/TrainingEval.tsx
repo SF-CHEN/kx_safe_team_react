@@ -144,7 +144,7 @@ export function TrainingEval() {
       {/* Hero Section */}
       <div className="relative text-white overflow-hidden">
         <TechHeroBg />
-        <div className="max-w-6xl mx-auto px-4 py-12 relative z-10">
+        <div className="max-w-[83%] mx-auto px-4 py-12 relative z-10">
           <div className="flex items-start justify-between">
             <div>
               <Badge className="mb-3 bg-white/20 text-white border-white/30 text-xs">训练集评测</Badge>
@@ -192,7 +192,7 @@ export function TrainingEval() {
       {/* Why Training Eval - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-12">
               <h2 style={{ fontSize: '2rem', fontWeight: 800 }} className="text-gray-800 mb-3">为什么训练数据质量至关重要</h2>
               <div className="h-1 w-14 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 mx-auto mb-4" />
@@ -237,7 +237,7 @@ export function TrainingEval() {
       <ScrollReveal>
         <section className="relative bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4 overflow-hidden">
           <div className="absolute inset-0 bg-dot-grid" />
-          <div className="relative max-w-6xl mx-auto">
+          <div className="relative max-w-[83%] mx-auto">
             <div className="text-center mb-10">
               <h2 style={{ fontSize: '2rem', fontWeight: 800 }} className="text-gray-800 mb-3">评测维度模块</h2>
               <div className="h-1 w-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 mx-auto mb-4" />
@@ -327,7 +327,7 @@ export function TrainingEval() {
       {/* Recent Tasks - Blue Tinted */}
       <ScrollReveal>
         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="font-bold text-gray-800 text-2xl mb-1">近期评测任务</h2>
@@ -384,7 +384,7 @@ export function TrainingEval() {
       {/* Supported Formats - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="grid grid-cols-2 gap-12 items-center">
               <div>
                 <Badge className="mb-4 bg-blue-50 text-blue-700 border-blue-200 text-xs">多格式支持</Badge>
@@ -423,7 +423,7 @@ export function TrainingEval() {
       {/* Evaluation Process - Blue Tinted */}
       <ScrollReveal>
         <section className="bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-bold text-gray-800 text-2xl mb-2">评测流程</h2>
               <p className="text-gray-500 text-sm">五步完成训练集质量全面评测</p>
@@ -466,7 +466,7 @@ export function TrainingEval() {
       {/* Advantages - White */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="text-center mb-10">
               <h2 className="font-bold text-gray-800 text-2xl mb-2">平台核心优势</h2>
               <p className="text-gray-500 text-sm">为什么选择 AISafePro-LM 训练集评测</p>

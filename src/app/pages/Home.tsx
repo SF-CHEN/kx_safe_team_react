@@ -161,7 +161,7 @@ export function Home() {
       {/* ═══ 1. Hero ═══ */}
       <section className="relative text-white py-20 px-4 overflow-hidden">
         <TechHeroBg />
-        <div className="max-w-6xl mx-auto text-center relative z-10">
+        <div className="max-w-[83%] mx-auto text-center relative z-10">
           <Badge className="mb-5 bg-white/20 text-white border-white/30 text-xs px-4 py-1.5">
             算法为尺 · 安全为绳 · 引领智能安全新时代
           </Badge>
@@ -201,7 +201,7 @@ export function Home() {
       {/* ═══ 2. Leaderboard + Radar Chart ═══ */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <div className="grid grid-cols-3 gap-10">
               <div className="col-span-2">
                 <div className="flex items-end justify-between mb-6">
@@ -279,7 +279,7 @@ export function Home() {
       <ScrollReveal>
         <section className="relative bg-gradient-to-br from-blue-50 to-indigo-50 py-16 px-4 overflow-hidden">
           <div className="absolute inset-0 bg-dot-grid" />
-          <div className="relative max-w-7xl mx-auto text-center">
+          <div className="relative max-w-[83%] mx-auto text-center">
             <SectionTitle title="平台集成 30+ 种模型，同场竞技" subtitle="支持主流开源与闭源大模型，一键接入即可开始评测" />
             <div className="flex flex-wrap justify-center gap-3 mb-8">
               {PLATFORMS.map(p => (
@@ -301,7 +301,7 @@ export function Home() {
       {/* ═══ 4. Evaluation Process — Frameless ═══ */}
       <ScrollReveal>
         <section className="bg-slate-50 py-20 px-4">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <SectionTitle title="评测流程" subtitle="六步完成专业评测，全程自动化处理，分钟级产出报告" />
             <div className="grid grid-cols-6 gap-4 relative">
               {EVAL_STEPS.map((step, index) => {
@@ -332,7 +332,7 @@ export function Home() {
       <ScrollReveal>
         <section className="relative bg-gradient-to-br from-indigo-50 to-blue-50 py-16 px-4 overflow-hidden">
           <div className="absolute inset-0 bg-dot-grid" />
-          <div className="relative max-w-7xl mx-auto">
+          <div className="relative max-w-[83%] mx-auto">
             <SectionTitle title="数据集评测与生成" subtitle="从训练数据质控到测试集智能构造，打通数据全链路评测能力" />
             <div className="grid grid-cols-2 gap-8">
               <div className="glass-glow rounded-2xl p-8">
@@ -393,7 +393,7 @@ export function Home() {
       <ScrollReveal>
         <section className="relative bg-gradient-to-br from-blue-50 to-indigo-50 py-20 px-4 overflow-hidden">
           <div className="absolute inset-0 bg-dot-grid" />
-          <div className="relative max-w-7xl mx-auto">
+          <div className="relative max-w-[83%] mx-auto">
             <div className="grid grid-cols-5 gap-12 items-start">
               <div className="col-span-2">
                 <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200 text-xs">标准参与制定</Badge>
@@ -482,7 +482,7 @@ export function Home() {
       {/* ═══ 8. Partners — 位于 CTA 下方、页脚上方 ═══ */}
       <ScrollReveal>
         <section className="bg-white py-16 px-4">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-[83%] mx-auto">
             <SectionTitle title="合作团队" subtitle="携手顶尖高校与科研机构，共筑 AI 安全生态" />
             <div className="relative overflow-hidden">
               <div className="partner-carousel mb-0">

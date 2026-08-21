@@ -111,10 +111,10 @@ export function TiancheStandardService() {
       {/* ── 1. Hero ────────────────────────────────────────────── */}
       <section className="product-detail-hero relative overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28 min-h-[600px] flex items-center bg-[#060e1d]">
         <ProductHeroBackground side="service" concept="standards" />
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10 w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-400/20 text-violet-300 text-xs font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-600 border border-violet-300 text-white text-xs font-medium mb-6">
                 <BookOpen className="w-4 h-4" />
                 合规治理
               </div>
@@ -166,7 +166,7 @@ export function TiancheStandardService() {
         <div className="absolute inset-0 pointer-events-none opacity-40">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="std-grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="#dde3ee" strokeWidth="1" /></pattern></defs><rect width="100%" height="100%" fill="url(#std-grid)" /></svg>
         </div>
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-black text-gray-900 mb-4">缺乏标准体系，AI 落地举步维艰</h2>
             <p className="text-gray-500 text-lg">四大痛点制约企业 AI 规模化应用与合规交付</p>
@@ -228,7 +228,7 @@ export function TiancheStandardService() {
 
       {/* ── 3. Standards Landscape ────────────────────────────── */}
       <section id="tss-landscape" className="py-24 border-y border-gray-200" style={{ background: '#F0F4FA' }}>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-xs font-semibold mb-4">
               <Globe className="w-3.5 h-3.5" /> 标准图谱
@@ -338,7 +338,7 @@ export function TiancheStandardService() {
         <div className="absolute inset-0 pointer-events-none opacity-20">
           <svg className="w-full h-full"><defs><pattern id="dots-std" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cbd5e1" /></pattern></defs><rect width="100%" height="100%" fill="url(#dots-std)" /></svg>
         </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-xs font-semibold mb-4">
               <ClipboardCheck className="w-3.5 h-3.5" /> 服务范围
@@ -381,7 +381,7 @@ export function TiancheStandardService() {
         <div className="absolute inset-0 pointer-events-none opacity-30">
           <svg className="w-full h-full"><defs><pattern id="dots-flow2" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#bfdbfe" /></pattern></defs><rect width="100%" height="100%" fill="url(#dots-flow2)" /></svg>
         </div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="max-w-[83%] mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-100 text-violet-600 text-xs font-semibold mb-4">
               <Zap className="w-3.5 h-3.5" /> 服务流程
@@ -424,7 +424,7 @@ export function TiancheStandardService() {
 
       {/* ── 6. Why Us ─────────────────────────────────────────── */}
       <section className="py-24 bg-white border-y border-gray-200">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-[83%] mx-auto px-6">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-black text-gray-900 mb-4">专业研究 + 编制方法，支撑规范文档质量</h2>
             <div className="w-16 h-1 bg-gradient-to-r from-violet-500 to-blue-500 mx-auto rounded-full" />
@@ -462,7 +462,7 @@ export function TiancheStandardService() {
       {/* ── 7. Deliverables ───────────────────────────────────── */}
       <ScrollReveal>
         <section className="py-24" style={{ background: 'linear-gradient(135deg, #f5f3ff, #eff6ff)' }}>
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-[83%] mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-black text-gray-900 mb-4">交付物清单，有形成果可落地</h2>
               <p className="text-gray-500">按约定范围提供书面交付物，供客户内部审议、立项或向相关组织提交时参考</p>

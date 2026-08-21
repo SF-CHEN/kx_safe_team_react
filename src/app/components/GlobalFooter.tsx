@@ -53,7 +53,7 @@ const FOOTER_RESOURCES = [
 export function GlobalFooter() {
   return (
     <footer style={{ background: 'linear-gradient(135deg,#1e3a8a,#2251c2)', color: '#bfdbfe' }}>
-      <div className="mx-auto max-w-[1600px] px-6 pb-8 pt-14 lg:px-16">
+      <div className="mx-auto w-[calc(100%-48px)] px-6 pb-8 pt-14 lg:w-[calc(100%-128px)] lg:px-16">
         <div className="mb-10 grid gap-10 md:grid-cols-2 xl:grid-cols-[200px_1fr_160px_240px] xl:items-start">
           <div>
             <div className="mb-4 flex items-center gap-2">

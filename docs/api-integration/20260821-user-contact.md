@@ -1,25 +1,36 @@
 # 对接纪要：用户联系填报（产品页）
 
 - **日期：** 2026-08-21
-- **范围：** 个人敏感信息审查、具身智能可信评测页底部「联系我们」表单
+- **范围：** 全部产品页底部「联系我们」、专家咨询弹窗、渗透测试预约；个人敏感信息页死代码 LeadForm 同步接线
 - **相关路径：**
   - `src/app/components/ProductContactSection.tsx`
   - `src/app/components/Layout.tsx`
+  - `src/app/components/ExpertConsultModal.tsx`
+  - `src/app/pages/PenetrationTest.tsx`
+  - `src/app/pages/PrivacyDataAudit.tsx`（LeadFormSection，主渲染未挂载）
   - `src/api/contact/userContact.ts`、`src/api/types.ts`
 - **OpenAPI：** `src/api/docs/api.md` / `api.json` → `/temp/user-contact/*`
-- **UI 改动：** 否（仅数据源与提交成功提示；提交中按钮文案为最小 loading）
+- **UI 改动：** 否（仅数据源、成功态文案从 mailto 改为接口成功提示；最小 loading）
 
 ## 变更记录
 
 | 日期 | 说明 |
 | --- | --- |
 | 2026-08-21 | 两页底部联系表单改走 `POST /temp/user-contact/submit`；其余产品页仍 mailto |
+| 2026-08-21 | 全量产品页 `ProductContactSection` 走 submit；专家咨询 / 渗透预约 / LeadForm 同步接 API，去掉 mailto |
 
 ## 已对接（可联调）
 
 | 能力 | 接口 | 前端封装 | 备注 |
 | --- | --- | --- | --- |
-| 前台填报联系信息 | `POST /temp/user-contact/submit` | `submitUserContact` | 仅 `/privacy-data-audit`、`/embodied-intelligence` |
+| 产品页底部联系表单 | `POST /temp/user-contact/submit` | `submitUserContact` | 凡 `PRODUCT_CONTACT_NAMES` 命中的路径（14 个产品页） |
+| 专家咨询预约弹窗 | 同上 | 同上 | `ModelFilingService`、`TiancheStandardService` |
+| 渗透测试预约弹窗 | 同上 | 同上 | `PenetrationTest` BookingModal |
+| LeadFormSection | 同上 | 同上 | 仍未挂载；避免日后恢复仍走 mailto |
+
+### 产品页路径清单
+
+`/privacy-data-audit`、`/model-safety-eval`、`/aigc-content`、`/aigc-content-marking`、`/deep-model-eval`、`/embodied-intelligence`、`/agent-safety`、`/llm-evaluation`、`/safety-evaluation`、`/code-vulnerability-audit`、`/penetration-test`、`/ai-safety-edu`、`/model-filing-service`、`/tianche-standard-service`
 
 ## 关联接口清单（有表单选项 / 外键时必填）
 
@@ -37,8 +48,8 @@
 | --- | --- | --- | --- |
 | 姓名 | `userName` | 已实现 | 必填 |
 | 公司 | `companyName` | 已实现 | SubmitSo 用 `companyName`；实体字段为 `compantName`（OpenAPI 拼写） |
-| 联系方式 | `contactInformation` | 已实现 | 手机号或邮箱，原样提交 |
-| 需求描述 | `requirementDescription` | 已实现 | 提交时加产品名前缀 `【{productName}】`，因 DTO 无产品字段 |
+| 联系方式 | `contactInformation` | 已实现 | 底部表单：手机或邮箱原样；弹窗：`手机 / 邮箱` 拼接 |
+| 需求描述 | `requirementDescription` | 已实现 | 前缀 `【产品/服务名】`；弹窗另附主题/痛点与双联系方式明细 |
 | 咨询产品 | — | 已选定：方案 A | 见 Q1；写入需求描述前缀 |
 
 ## 待确认事项（不阻塞其余对接）
@@ -67,14 +78,23 @@
 
 ### Q3：个人敏感信息页 `LeadFormSection` 未挂载
 
-- **现状：** `PrivacyDataAudit.tsx` 内仍有 `LeadFormSection`（姓名/电话/公司 + mailto），主渲染未调用；页底实际表单是 Layout 的 `ProductContactSection`。
-- **影响：** 本轮对接的是可见的页底表单，不是该死代码。
+- **现状：** `PrivacyDataAudit.tsx` 内 `LeadFormSection` 已接 submit，但主渲染仍未调用；页底实际表单是 Layout 的 `ProductContactSection`。
+- **影响：** 可见表单已走 API；死代码仅防误恢复 mailto。
 - **方案：**
-  1. 保持不挂载，避免与页底表单重复（本轮）
+  1. 保持不挂载（本轮）
   2. 挂载并同样接 `submit`（会多一块 UI）
   3. 删除死代码
 - **建议（仅建议）：** 方案 1 或 3
-- **状态：** 待确认（本轮按方案 1）
+- **状态：** 待确认（本轮按方案 1，逻辑已接线）
+
+### Q4：专家/渗透弹窗双联系方式如何写入单字段
+
+- **现状：** UI 有邮箱 + 手机；DTO 仅 `contactInformation`。
+- **方案：**
+  1. `contactInformation` 用 `手机 / 邮箱` 拼接，明细再写入 `requirementDescription`（本轮）
+  2. 仅提交手机，邮箱只放需求描述
+  3. 等后端拆字段
+- **状态：** 已选定：方案 1
 
 ## 后端缺口（如需同步后端）
 
@@ -87,14 +107,15 @@
 
 | 文案位置 | 处理 | 说明 |
 | --- | --- | --- |
-| 两页提交成功 toast「请在邮件客户端确认发送」 | 已改为「提交成功，我们将尽快与您联系」 | 已走真实接口 |
-| 其余产品页 mailto 成功提示 | 保留 | 本轮未对接 |
+| 产品页 / 弹窗成功态「请在邮件客户端确认发送」 | 已改为「提交成功…」 | 已走真实接口 |
+| mailto 回退分支 | 已删除 | `ProductContactSection` 不再保留 mailto |
 
 ## 验收要点
 
-- [ ] Network：在 `/#/privacy-data-audit`、`/#/embodied-intelligence` 提交可见 `POST /temp/user-contact/submit`
+- [ ] Network：任意命中 `PRODUCT_CONTACT_NAMES` 的产品页提交可见 `POST /temp/user-contact/submit`
+- [ ] 备案服务 / 天测标准「预约专家咨询」弹窗提交同上
+- [ ] 渗透测试预约弹窗提交同上
 - [ ] 请求体含 `userName` / `companyName` / `contactInformation` / `requirementDescription`
-- [ ] 其它产品页联系表单仍为 mailto，不发该接口
 - [ ] 样式未改布局
 - [ ] 待确认项未擅自拼接管理端 CRUD
 - [ ] 失败走现有 toast

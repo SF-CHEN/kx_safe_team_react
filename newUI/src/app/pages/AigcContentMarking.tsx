@@ -144,7 +144,7 @@ export function AigcContentMarking() {
       <ProductHeroBackground side="data" concept="aigc" />
       <div className="relative z-10 mx-auto grid max-w-[1160px] items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
         <div>
-          <Badge className="mb-5 border-blue-200 bg-blue-50 text-blue-700"><Tags className="mr-1.5 h-3.5 w-3.5" />数据侧</Badge>
+          <Badge className="mb-5 border-blue-500 bg-blue-600 text-white"><Tags className="mr-1.5 h-3.5 w-3.5" />数据侧</Badge>
           <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">AIGC内容<br /><span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">标识与检测</span></h1>
           <p className="mt-6 max-w-xl text-base leading-8 text-slate-600">面向文本、图像、音频和视频，为AI生成合成内容提供显式标识、隐式元数据写入、标准检测与审计追溯能力。</p>
           <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => document.getElementById('acm-preview')?.scrollIntoView({ behavior: 'smooth' })} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200"><Eye className="h-4 w-4" />查看效果预览</button><button onClick={() => navigate('/help-docs/aigc-marking-overview')} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white/80 px-6 py-3 text-sm font-bold text-slate-700"><BookOpen className="h-4 w-4" />查看帮助文档</button></div>
