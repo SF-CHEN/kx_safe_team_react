@@ -77,6 +77,18 @@ export interface ModelDataSafetyEvaluationTask {
   updatedAt?: string;
 }
 
+export interface AgentSafetyEvaluationTask {
+  id?: number;
+  userId?: number;
+  fileId?: number;
+  evaluationRequirement?: string;
+  status?: string;
+  emailStatus?: string;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /** 大模型性能 / 安全等通用评测任务（evaluation-task） */
 export type EvaluationUseModelType = 'BUILT_IN' | 'CUSTOM' | 'USER_MODEL';
 export type EvaluationDimensionType = 'PRESET_SCENE' | 'CUSTOM';
@@ -214,12 +226,13 @@ export interface SysFile {
   updatedAt?: string;
 }
 
-/** 评测任务总表（统一管理四种评测任务） */
+/** 评测任务总表（统一管理各产品评测任务） */
 export type EvaluationTaskMasterProductType =
   | 'PERFORMANCE'
   | 'SAFETY'
   | 'DATA_SAFETY'
-  | 'TRUST';
+  | 'TRUST'
+  | 'AGENT_SAFETY';
 
 export type EvaluationTaskMasterSubmitType = 'LOCAL_PROJECT_FILE' | 'USER_MODEL';
 

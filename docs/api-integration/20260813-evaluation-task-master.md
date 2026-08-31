@@ -14,12 +14,14 @@
   - [20260807-eval-tasks.md](./20260807-eval-tasks.md)
   - [20260807-llm-eval-tasks.md](./20260807-llm-eval-tasks.md)
 
-> **后续：** 管理端任务运维已按新 OpenAPI 重接，见 [20260814-admin-task-ops.md](./20260814-admin-task-ops.md)（`update` 已废弃，改 `adminReply` / `deliver`）。
+> **后续：** 管理端任务运维已按新 OpenAPI 重接，见 [20260814-admin-task-ops.md](./20260814-admin-task-ops.md)（`update` 已废弃，改 `adminReply` / `deliver`）。  
+> **智能体安全：** 总表已有 `AGENT_SAFETY`，创建对接见 [20260828-agent-safety.md](./20260828-agent-safety.md)。
 
 ## 变更记录
 
 | 日期 | 说明 |
 | --- | --- |
+| 2026-08-28 | 智能体安全创建与总表映射改走独立纪要；本文件「枚举无 AGENT」已过时 |
 | 2026-08-14 | 链到任务运维 v2 纪要；本文件中「改状态走 update」描述已过时 |
 | 2026-08-13 | 资源中心、管理端任务列表不再并行打三个 `page`，改走 `evaluation-task-master/page`；改状态走总表 `update` |
 
@@ -41,7 +43,7 @@
 | 改状态 | `evaluation-task-master/update` | 已接 | 替代可信/数据安全分表 `update`；大模型分表原本无 update |
 | 用户提交材料 | 分表 `getDetailById`（`taskRefId`） | 已接 | 仅 `TRUST` / `DATA_SAFETY` |
 | 报告上传 / 推送 | — | 无接口 | 仍 toast |
-| 智能体安全 | 总表 `productType` 无对应枚举 | 无接口 | 列表不展示 |
+| 智能体安全 | 总表 `productType=AGENT_SAFETY` | 已接 | 见 [20260828-agent-safety.md](./20260828-agent-safety.md) |
 
 ## 字段映射
 
@@ -66,6 +68,7 @@
 | `SAFETY` | 大模型安全评测 | 大模型安全评测 |
 | `DATA_SAFETY` | 模型数据安全评测 | 模型数据安全评测 |
 | `TRUST` | 深度模型可信测评 | 深度模型可信测评 |
+| `AGENT_SAFETY` | 智能体安全评测 | 智能体安全评测 |
 
 ### 状态映射
 
@@ -114,7 +117,7 @@
 | 报告独立上传 | 无 | toast |
 | 报告推送 | 无 | toast |
 | 任务终止专用语义 | 仅有 `FAILED` | 终止按钮仍 toast，未写 `FAILED` |
-| 智能体任务 | 枚举无 AGENT | 列表不展示 |
+| 智能体任务 | 已有 `AGENT_SAFETY` | 列表可筛选；创建见 20260828 纪要 |
 | 列表分页 UI | 资源中心已接 `pageCurrent` / `pageSize` | 管理端任务运维仍一次拉 200 再前端切片 |
 
 ## 过时文案清理

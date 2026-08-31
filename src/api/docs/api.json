@@ -268,6 +268,37 @@
         }
       }
     },
+    "/temp/agent-safety-evaluation-task/update": {
+      "put": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "修改智能体安全评测任务表",
+        "operationId": "update_8",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSafetyEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/user-contact/submit": {
       "post": {
         "tags": [
@@ -1175,6 +1206,68 @@
         }
       }
     },
+    "/temp/agent-safety-evaluation-task/page": {
+      "post": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "分页查询智能体安全评测任务表",
+        "operationId": "findPage_11",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/分页查询实体类"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageAgentSafetyEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/agent-safety-evaluation-task/add": {
+      "post": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "新增智能体安全评测任务表",
+        "operationId": "add_9",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSafetyEvaluationTask"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAgentSafetyEvaluationTask"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/temp/user-contact/getDetailById": {
       "get": {
         "tags": [
@@ -1808,6 +1901,38 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ResultListBaseDropDepthModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/agent-safety-evaluation-task/getDetailById": {
+      "get": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "获取智能体安全评测任务表",
+        "operationId": "getDetailById_11",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAgentSafetyEvaluationTask"
                 }
               }
             }
@@ -2551,6 +2676,73 @@
           }
         }
       }
+    },
+    "/temp/agent-safety-evaluation-task/deleteOne": {
+      "delete": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "删除智能体安全评测任务表",
+        "operationId": "deleteOne_11",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temp/agent-safety-evaluation-task/batchDel": {
+      "delete": {
+        "tags": [
+          "智能体安全评测任务表"
+        ],
+        "summary": "批量删除智能体安全评测任务表",
+        "operationId": "batchDel_11",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultBoolean"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2838,7 +3030,7 @@
           },
           "deleted": {
             "type": "boolean",
-            "description": "软删��标记"
+            "description": "软删除标记"
           },
           "createdAt": {
             "type": "string",
@@ -2950,6 +3142,53 @@
             "type": "string",
             "format": "date-time",
             "description": "更新时间"
+          }
+        }
+      },
+      "AgentSafetyEvaluationTask": {
+        "type": "object",
+        "description": "智能体安全评测任务表",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "自增主键ID"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户ID，关联sys_user.id"
+          },
+          "fileId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "用户上传的ZIP文件ID，关联sys_file.id"
+          },
+          "evaluationRequirement": {
+            "type": "string",
+            "description": "评测诉求"
+          },
+          "status": {
+            "type": "string",
+            "description": "任务状态：PENDING-待执行、QUEUED-排队中、RUNNING-执行中、SUCCESS-执行成功、FAILED-执行失败"
+          },
+          "emailStatus": {
+            "type": "string",
+            "description": "邮件发送状态，默认NOT_SENT-未发送"
+          },
+          "deleted": {
+            "type": "boolean",
+            "description": "软删除标记：false-未删除、true-已删除"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间，由应用更新时维护"
           }
         }
       },
@@ -3994,12 +4233,13 @@
           },
           "productType": {
             "type": "string",
-            "description": "所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测",
+            "description": "所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测、AGENT_SAFETY-智能体安全评测",
             "enum": [
               "PERFORMANCE",
               "SAFETY",
               "DATA_SAFETY",
-              "TRUST"
+              "TRUST",
+              "AGENT_SAFETY"
             ]
           },
           "targetObject": {
@@ -4356,9 +4596,95 @@
           }
         }
       },
+      "PageAgentSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentSafetyEvaluationTask"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "current": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            },
+            "writeOnly": true
+          },
+          "optimizeCountSql": {
+            "$ref": "#/components/schemas/PageAgentSafetyEvaluationTask",
+            "writeOnly": true
+          },
+          "searchCount": {
+            "$ref": "#/components/schemas/PageAgentSafetyEvaluationTask",
+            "writeOnly": true
+          },
+          "optimizeJoinOfCountSql": {
+            "type": "boolean",
+            "writeOnly": true
+          },
+          "maxLimit": {
+            "type": "integer",
+            "format": "int64",
+            "writeOnly": true
+          },
+          "countId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "deprecated": true
+          }
+        }
+      },
+      "ResultPageAgentSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageAgentSafetyEvaluationTask"
+          }
+        }
+      },
+      "ResultAgentSafetyEvaluationTask": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AgentSafetyEvaluationTask"
+          }
+        }
+      },
       "PresetSceneVo": {
         "type": "object",
-        "description": "预置���景VO",
+        "description": "预置场景VO",
         "properties": {
           "sceneId": {
             "type": "integer",

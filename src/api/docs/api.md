@@ -82,7 +82,7 @@ interface ModelDataSafetyEvaluationTask { // 模型数据安全评测任务表
   evaluationRequirement?: string; // 评测诉求
   status?: string; // 状态
   emailStatus?: string; // 邮件发送状态
-  deleted?: boolean; // 软删��标记
+  deleted?: boolean; // 软删除标记
   createdAt?: string; // 创建时间
   updatedAt?: string; // 更新时间
   id?: number; // id
@@ -109,6 +109,18 @@ interface DepthModel {
   deleted?: boolean; // 软删除标记
   createdAt?: string; // 创建时间
   updatedAt?: string; // 更新时间
+}
+
+interface AgentSafetyEvaluationTask { // 智能体安全评测任务表
+  id?: number; // 自增主键ID
+  userId?: number; // 用户ID，关联sys_user.id
+  fileId?: number; // 用户上传的ZIP文件ID，关联sys_file.id
+  evaluationRequirement?: string; // 评测诉求
+  status?: string; // 任务状态：PENDING-待执行、QUEUED-排队中、RUNNING-执行中、SUCCESS-执行成功、FAILED-执行失败
+  emailStatus?: string; // 邮件发送状态，默认NOT_SENT-未发送
+  deleted?: boolean; // 软删除标记：false-未删除、true-已删除
+  createdAt?: string; // 创建时间
+  updatedAt?: string; // 更新时间，由应用更新时维护
 }
 
 interface UserContactSubmitSo { // 用户联系填报
@@ -406,7 +418,7 @@ interface SupplementMaterialSo { // 用户补充评测材料请求参数
 interface EvaluationTaskMaster { // 评测任务总表（统一管理四种评测任务）
   id?: number; // 主键id
   name?: string; // 任务名称
-  productType?: 'PERFORMANCE' | 'SAFETY' | 'DATA_SAFETY' | 'TRUST'; // 所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测
+  productType?: 'PERFORMANCE' | 'SAFETY' | 'DATA_SAFETY' | 'TRUST' | 'AGENT_SAFETY'; // 所属产品：PERFORMANCE-大模型性能评测、SAFETY-大模型安全评测、DATA_SAFETY-模型数据安全评测、TRUST-模型可信评测、AGENT_SAFETY-智能体安全评测
   targetObject?: string; // 被测对象
   configSummary?: string; // 配置摘要
   submitType?: 'LOCAL_PROJECT_FILE' | 'USER_MODEL'; // 提交方式：LOCAL_PROJECT_FILE-本地工程文件、USER_MODEL-用户模型
@@ -503,7 +515,33 @@ interface ResultDepthModel {
   data?: DepthModel;
 }
 
-interface PresetSceneVo { // 预置���景VO
+interface PageAgentSafetyEvaluationTask {
+  records?: AgentSafetyEvaluationTask[];
+  total?: number;
+  size?: number;
+  current?: number;
+  orders?: OrderItem[];
+  optimizeCountSql?: PageAgentSafetyEvaluationTask;
+  searchCount?: PageAgentSafetyEvaluationTask;
+  optimizeJoinOfCountSql?: boolean;
+  maxLimit?: number;
+  countId?: string;
+  pages?: number;
+}
+
+interface ResultPageAgentSafetyEvaluationTask {
+  message?: string;
+  code?: number;
+  data?: PageAgentSafetyEvaluationTask;
+}
+
+interface ResultAgentSafetyEvaluationTask {
+  message?: string;
+  code?: number;
+  data?: AgentSafetyEvaluationTask;
+}
+
+interface PresetSceneVo { // 预置场景VO
   sceneId?: number; // 场景id
   sceneName?: string; // 场景名称
   dimensionNames?: string[]; // 场景下的所有子维度名称集合
@@ -1180,6 +1218,65 @@ interface ResultListBaseDropDepthModel {
 
 - **Method**: `DELETE`
 - **URL**: `/temp/evaluation-dimension/batchDel`
+- **Query / Path Parameters**:
+  - `ids` (query): number[] (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 📂 智能体安全评测任务表
+
+### 修改智能体安全评测任务表
+
+- **Method**: `PUT`
+- **URL**: `/temp/agent-safety-evaluation-task/update`
+- **Request Body**: `AgentSafetyEvaluationTask`
+- **Response**: `ResultBoolean`
+
+---
+
+### 分页查询智能体安全评测任务表
+
+- **Method**: `POST`
+- **URL**: `/temp/agent-safety-evaluation-task/page`
+- **Request Body**: `PageQuerySo`
+- **Response**: `ResultPageAgentSafetyEvaluationTask`
+
+---
+
+### 新增智能体安全评测任务表
+
+- **Method**: `POST`
+- **URL**: `/temp/agent-safety-evaluation-task/add`
+- **Request Body**: `AgentSafetyEvaluationTask`
+- **Response**: `ResultAgentSafetyEvaluationTask`
+
+---
+
+### 获取智能体安全评测任务表
+
+- **Method**: `GET`
+- **URL**: `/temp/agent-safety-evaluation-task/getDetailById`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultAgentSafetyEvaluationTask`
+
+---
+
+### 删除智能体安全评测任务表
+
+- **Method**: `DELETE`
+- **URL**: `/temp/agent-safety-evaluation-task/deleteOne`
+- **Query / Path Parameters**:
+  - `id` (query): number (Required) 
+- **Response**: `ResultBoolean`
+
+---
+
+### 批量删除智能体安全评测任务表
+
+- **Method**: `DELETE`
+- **URL**: `/temp/agent-safety-evaluation-task/batchDel`
 - **Query / Path Parameters**:
   - `ids` (query): number[] (Required) 
 - **Response**: `ResultBoolean`

@@ -1,4 +1,5 @@
 export * from './adminList';
+export * from './agentSafety';
 export * from './evaluationTask';
 export * from './evaluationTaskMaster';
 export * from './evaluationTaskMasterCommunication';
@@ -6,6 +7,7 @@ export * from './modelDataSafety';
 export * from './modelTrust';
 export * from './myList';
 export type {
+  AgentSafetyEvaluationTask,
   EvaluationTask,
   EvaluationTaskMaster,
   EvaluationTaskMasterCommunication,

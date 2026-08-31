@@ -189,16 +189,18 @@ export function mapMasterProductLabel(
   if (productType === 'SAFETY') return '大模型安全评测';
   if (productType === 'DATA_SAFETY') return '模型数据安全评测';
   if (productType === 'TRUST') return '深度模型可信测评';
+  if (productType === 'AGENT_SAFETY') return '智能体安全评测';
   return productType?.trim() || '—';
 }
 
 /** 资源中心 evalType：性能走「大模型评测」，由页面 productLabel 再显示为性能评测 */
 export function mapMasterEvalType(
   productType?: string,
-): '模型数据安全评测' | '深度模型可信测评' | '大模型评测' | '大模型安全评测' {
+): '模型数据安全评测' | '深度模型可信测评' | '大模型评测' | '大模型安全评测' | '智能体安全评测' {
   if (productType === 'SAFETY') return '大模型安全评测';
   if (productType === 'DATA_SAFETY') return '模型数据安全评测';
   if (productType === 'TRUST') return '深度模型可信测评';
+  if (productType === 'AGENT_SAFETY') return '智能体安全评测';
   return '大模型评测';
 }
 
@@ -226,7 +228,8 @@ export function isMasterProductType(
     value === 'PERFORMANCE' ||
     value === 'SAFETY' ||
     value === 'DATA_SAFETY' ||
-    value === 'TRUST'
+    value === 'TRUST' ||
+    value === 'AGENT_SAFETY'
   );
 }
 

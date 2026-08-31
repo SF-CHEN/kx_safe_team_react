@@ -74,12 +74,12 @@ function fileStub(id: number | undefined, category: StoredAttachment['category']
   }];
 }
 
-function productTypeFromLabel(product: string): EvaluationTaskMasterProductType | 'unsupported' | undefined {
+function productTypeFromLabel(product: string): EvaluationTaskMasterProductType | undefined {
   if (product === '数据集安全评测' || product === '模型数据安全评测') return 'DATA_SAFETY';
   if (product === '深度模型可信测评') return 'TRUST';
   if (product === '大模型性能评测') return 'PERFORMANCE';
   if (product === '大模型安全评测') return 'SAFETY';
-  if (product === '智能体安全评测') return 'unsupported';
+  if (product === '智能体安全评测') return 'AGENT_SAFETY';
   return undefined;
 }
 
@@ -172,13 +172,6 @@ export function ResourceCenter() {
       return;
     }
     const productType = productTypeFromLabel(product);
-    if (productType === 'unsupported') {
-      taskRequestSeq.current += 1;
-      setFormalTasks([]);
-      setTotal(0);
-      setLoading(false);
-      return;
-    }
     const seq = ++taskRequestSeq.current;
     setLoading(true);
     try {

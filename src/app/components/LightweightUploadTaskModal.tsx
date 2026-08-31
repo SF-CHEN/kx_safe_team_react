@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, FileArchive, FileText, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  addAgentSafetyEvaluationTask,
   addModelDataSafetyEvaluationTask,
   addModelTrustEvaluationTask,
 } from '@/api/evaluation';
@@ -81,10 +82,6 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       return;
     }
     if (submitting) return;
-    if (variant === 'agent-safety') {
-      toast.error('智能体安全评测创建接口尚未开放');
-      return;
-    }
 
     const requirement = request.trim();
     const userId = Number(user.id);
@@ -105,7 +102,9 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
       const created =
         variant === 'deep-model'
           ? await addModelTrustEvaluationTask(payload)
-          : await addModelDataSafetyEvaluationTask(payload);
+          : variant === 'agent-safety'
+            ? await addAgentSafetyEvaluationTask(payload)
+            : await addModelDataSafetyEvaluationTask(payload);
 
       const attachment = await fileToStoredAttachment(file, 'input');
       const createdAt =

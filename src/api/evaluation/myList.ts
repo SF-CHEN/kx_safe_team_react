@@ -24,7 +24,8 @@ export interface MyResourceTask {
     | '深度模型可信测评'
     | '大模型评测'
     | '大模型安全评测'
-    | '多模态大模型安全评测';
+    | '多模态大模型安全评测'
+    | '智能体安全评测';
   status: string;
   createdAt: string;
   requirement?: string;
@@ -91,7 +92,6 @@ function compactEntity(
 
 /**
  * 资源中心：按当前用户分页拉取评测任务总表。
- * 智能体安全等尚无专用产品类型，本接口不包含。
  */
 export async function fetchMyResourceTasks(
   query: FetchMyResourceTasksQuery,
