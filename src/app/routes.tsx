@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, type ComponentType } from 'react'
 import { createHashRouter, Navigate, Outlet } from 'react-router'
 
-import { Layout } from '@/components/Layout'
 import { ScrollToTop } from '@/components/ScrollToTop'
+import { MainLayout } from '@/layouts/MainLayout'
+import { AppErrorBoundary } from './ErrorBoundary'
 
 function lazyPage(
   loader: () => Promise<{ [key: string]: ComponentType }>,
@@ -93,10 +94,10 @@ function withSuspense(Component: ComponentType) {
 
 function Root() {
   return (
-    <Layout>
+    <MainLayout>
       <ScrollToTop />
       <Outlet />
-    </Layout>
+    </MainLayout>
   )
 }
 
@@ -122,6 +123,7 @@ export const router = createHashRouter([
   {
     path: '/',
     Component: Root,
+    errorElement: <AppErrorBoundary />,
     children: [
       { index: true, Component: withSuspense(CompanyHome) },
       { path: 'about', Component: withSuspense(AboutUs) },
@@ -157,6 +159,7 @@ export const router = createHashRouter([
   },
   {
     Component: AuthLayout,
+    errorElement: <AppErrorBoundary />,
     children: [
       { path: 'login', Component: withSuspense(Login) },
       { path: 'register', Component: withSuspense(Register) },
@@ -164,6 +167,7 @@ export const router = createHashRouter([
   },
   {
     Component: StandaloneLayout,
+    errorElement: <AppErrorBoundary />,
     children: [
       { path: 'developer', Component: withSuspense(DeveloperCenter) },
       { path: 'admin/:section?', Component: withSuspense(AdminDashboard) },
