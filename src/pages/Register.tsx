@@ -45,9 +45,8 @@ export function Register() {
     setLoading(true);
     try {
       const displayName = getDefaultUserName(normalizedIdentifier);
-      const username = isPhone
-        ? normalizedIdentifier
-        : (normalizedIdentifier.split('@')[0].trim() || normalizedIdentifier);
+      // 后端注册/登录当前都使用 username 字段，必须保存同一个完整账号标识，不能注册时截断邮箱、登录时再提交完整邮箱。
+      const username = normalizedIdentifier;
       const email = isEmail ? normalizedIdentifier : '';
       await register(username, email, password, displayName);
       toast.success('注册成功，欢迎使用玄鉴平台');
