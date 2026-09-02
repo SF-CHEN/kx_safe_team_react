@@ -3,7 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
 
-import { UserProvider } from './context/UserContext'
+import { UserProvider } from '@/context/UserContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
