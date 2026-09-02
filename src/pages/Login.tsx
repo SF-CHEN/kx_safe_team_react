@@ -4,6 +4,7 @@ import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUser } from '../context/UserContext';
 import { AuthBrandPanel } from '../components/AuthBrandPanel';
+import { mockForgotPasswordRequest } from '@/mocks/auth/forgotPassword.mock';
 
 export function Login() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export function Login() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotAccount, setForgotAccount] = useState('');
   const [forgotDone, setForgotDone] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const returnTo = (location.state as { from?: string } | null)?.from || '/';
   const inputClass = 'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100';
@@ -48,6 +50,18 @@ export function Login() {
       toast.error(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const submitForgotPassword = async () => {
+    setForgotLoading(true);
+    try {
+      await mockForgotPasswordRequest({ account: forgotAccount });
+      setForgotDone(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '提交失败，请重试');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -133,11 +147,11 @@ export function Login() {
 
       {forgotOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
         <div className="relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
-          <button onClick={() => { setForgotOpen(false); setForgotDone(false); }} className="absolute right-5 top-5 text-slate-400"><X className="h-4 w-4" /></button>
+          <button onClick={() => { setForgotOpen(false); setForgotDone(false); setForgotLoading(false); }} className="absolute right-5 top-5 text-slate-400"><X className="h-4 w-4" /></button>
           {forgotDone ? (
             <div className="py-5 text-center"><CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" /><h3 className="mt-4 text-xl font-black text-slate-900">重置申请已提交</h3><p className="mt-2 text-sm leading-6 text-slate-500">平台管理员将在核验账号后协助您重置密码。</p></div>
           ) : (
-            <><h3 className="text-xl font-black text-slate-900">申请重置密码</h3><p className="mt-2 text-sm text-slate-500">输入注册手机号或邮箱，提交后由管理员协助处理</p><input value={forgotAccount} onChange={event => setForgotAccount(event.target.value)} className={`${inputClass} mt-6`} placeholder="手机号或邮箱" /><button onClick={() => { if (!forgotAccount) toast.error('请输入账号'); else setForgotDone(true); }} className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white">提交重置申请</button></>
+            <><h3 className="text-xl font-black text-slate-900">申请重置密码</h3><p className="mt-2 text-sm text-slate-500">输入注册手机号或邮箱，提交后由管理员协助处理</p><input value={forgotAccount} onChange={event => setForgotAccount(event.target.value)} className={`${inputClass} mt-6`} placeholder="手机号或邮箱" /><button disabled={forgotLoading} onClick={() => void submitForgotPassword()} className="mt-4 h-11 w-full rounded-xl bg-blue-600 text-sm font-bold text-white disabled:bg-slate-400">{forgotLoading ? '提交中…' : '提交重置申请'}</button></>
           )}
         </div>
       </div>}
