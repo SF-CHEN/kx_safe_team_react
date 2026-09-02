@@ -1,111 +1,176 @@
-# AGENTS.md — 玄鉴可信安全平台
+# 玄鉴 React 项目 AI / Agent 开发规范
 
-面向 Cursor / Agent 的工作指引。细节以对应 Skill 与 `docs/` 为准，本文件只定方向与硬约束。
+本仓库以 `SF-CHEN/react-ai-template` 为唯一工程规范基准，用于 **AI 辅助开发 + 人工长期维护**。
 
-## 项目速览
+默认优先级：
 
-| 项 | 说明 |
-| --- | --- |
-| 产品 | 玄鉴可信安全平台门户（营销页 + 在线体验 + 评测 + 后台） |
-| 栈 | Vite 6 · React 18 · React Router 7 · Tailwind 4 · shadcn/ui · axios |
-| 入口 | `src/main.tsx` → `src/app/App.tsx` → `src/app/routes.tsx` |
-| 路由 | **`createHashRouter`（`/#/path`）**，禁止改成 BrowserRouter |
-| 原型 | `newUI/` 为 Figma Make 视觉参考；**主站可运行代码在 `src/`** |
-| 别名 | `@` → `src` |
+> **清晰 > 易找 > 可维护 > 一致 > 简洁 > 炫技式抽象**
 
-常用命令：`npm i` · `npm run dev` · `npm run build`
+## 1. 项目级不可破坏约束
 
-## 接到任务先选 Skill
+- 产品：玄鉴可信安全平台门户（营销页 + 在线体验 + 评测 + 资源中心 + 管理后台）。
+- 运行时框架当前保留 React 18 + Vite 6，工程规范按模板执行；不要为了普通业务改动顺手升级 React/Vite。
+- 路由必须继续使用 **`createHashRouter`**，保留现有 `/#/path` URL，不切 BrowserRouter。
+- 当前页面 DOM、className、CSS、inline style、动画和响应式效果是视觉真源；未明确要求改 UI 时禁止借重构改样式。
+- `src/components/ui/**` 使用当前 Radix/shadcn 源码，迁移期间不要用 Base UI 或 shadcn CLI 批量覆盖。
+- `newUI/` 仅为视觉参考；运行时代码在 `src/`。可以参考视觉，不得用 newUI 的 mock/localStorage 覆盖已经接通的真实 API。
+- 当前 Vite 中的 Figma asset resolver、API proxy、base、manualChunks、assetsInclude 必须保留。
+- 默认继续当前分支。除非用户明确要求，不创建新分支或 PR。
 
-| 用户意图 | 必读 Skill | 要点 |
-| --- | --- | --- |
-| 对接接口 / 联调 / 换 mock | `.agents/skills/api-integration/SKILL.md` | **只改数据层，不改样式**；**主接口 + 关联下拉/字典同轮闭环**；疑问写入 `docs/api-integration/` |
-| 同步原型 / 对齐 newUI / 设计落地 | `.agents/skills/newui-prototype-sync/SKILL.md` | 先 diff 再改；保留 Hash、API、ScrollToTop、cursor、dialog 关闭钮 |
-| 写/改 React 性能相关代码 | `.agents/skills/vercel-react-best-practices/SKILL.md` | 按规则选适用条目，勿整包照搬 Next 专属项 |
+## 2. 技术栈与目标能力
 
-未命中上表时：先读本文件 + 相关 `docs/`，再动手。
+- React + TypeScript + Vite
+- React Router（Hash Router）
+- Tailwind CSS
+- 当前 Radix/shadcn UI 源码
+- TanStack Query
+- Zustand
+- React Hook Form + Zod
+- Axios
+- Recharts（现有页面继续使用）；新增通用复杂图表可按模板使用 ECharts
+- Day.js / date-fns 按现有模块需要使用，不为了统一强制重写
+- unplugin-auto-import
+- unplugin-icons + Lucide Iconify
+- lucide-react（现有 UI 源码兼容）
+- ESLint + Prettier
+- Vitest
+- Knip
 
-## 硬约束（勿违背）
+没有明确需求时，不引入职责重复的第二套 UI、状态、请求或表单方案。
 
-1. **Hash 路由**：站内用 `<Link to>` / `navigate()`；外链新开页用 `@/utils/hashRoute` 的 `openHashRoute` / `hashHref`。禁止把原型里的 `<a href="/path">`、`window.open('/path')` 原样拷进主站。
-2. **双源边界**：`newUI/` 可抄视觉与结构；`src/api/`、`src/hooks/`、登录态/`UserContext` 以主站为准，禁止整文件被原型覆盖冲掉。**已接通的页面接口须保留或接回**，不得为对齐原型改成 `workflowStore` / localStorage。
-3. **接口对接默认零 UI 改动**：未点名改样式 = 不改 className / 布局 / 文案风格。
-4. **前端守卫 ≠ 安全边界**：可加 `RequireAuth` / `RequireAdmin`；权限最终以服务端为准。
-5. **改动最小化**：只改任务所需文件；不顺手大重构、不擅自扩 scope、不主动写无关 markdown。
-6. **中文沟通**：对用户回复用简体中文。
+## 3. Skill 路由
 
-## 目录心智模型
+| 场景 | 必读 Skill |
+|---|---|
+| 页面、组件、路由、表单、TypeScript、目录调整 | `skills/react-app/SKILL.md` |
+| API、CRUD、TanStack Query、Zustand、Mock、OpenAPI | `skills/react-data/SKILL.md` |
+| 页面视觉、shadcn/ui、状态、响应式、可访问性 | `skills/react-ui/SKILL.md` |
+| 网络瀑布、重渲染、大列表、Bundle、昂贵计算 | `skills/react-performance/SKILL.md` |
 
-**当前（过渡中）**
+## 4. 目录原则
+
+项目采用 **页面优先 + 渐进式分层**：
 
 ```text
 src/
-  app/          # App、routes、pages、components、context
-  api/          # 网络层（与 UI 解耦）
-  hooks/ utils/ styles/ imports/
-newUI/          # 原型（非生产入口）
-docs/           # 结构规划、优化审查、接口对接纪要
-.agents/skills/ # 可复用工作流
+├── api/              后端接口、请求模型、HTTP 基础设施
+├── app/              Provider、Hash Router、路由元数据、守卫、应用基础设施
+├── pages/            路由页面和页面私有代码
+├── components/
+│   ├── ui/           当前 shadcn/Radix 基础组件源码
+│   ├── common/       跨页面通用组件
+│   └── charts/       图表基础封装
+├── layouts/          页面布局
+├── hooks/            真正跨页面通用 Hook
+├── store/            全局客户端状态
+├── mocks/            明确没有真实接口能力的 Mock
+├── styles/           全局样式
+├── types/            真正跨业务公共类型
+└── utils/            通用纯函数
 ```
 
-**目标结构**（按域拆分，尚未全面落地）：见 [`docs/project-structure.md`](docs/project-structure.md)。
+规则：
 
-依赖方向（迁移时遵守）：`app → features → shared / api`；features 之间尽量不互相 import。
+- 不使用 `features/`、`modules/` 作为默认业务根目录。
+- 所有后端 API 统一放 `src/api`。
+- 简单页面保持扁平，不预先创建 components/hooks/query/types/schema 全家桶。
+- 页面私有代码优先就近放；真实跨页面复用后再提升。
+- 不为了“架构完整”创建只有一个文件的目录。
+- 路由页面和导航元数据以 `src/app/routes.tsx` 为单一来源。
 
-放代码时：
+## 5. 数据源硬规则
 
-| 改什么 | 放哪 |
-| --- | --- |
-| 页面 | `src/app/pages/`（迁移后 → `features/*/pages`） |
-| 布局 / 通用 UI | `src/app/components/`（ui 属 shadcn） |
-| 请求与 DTO | `src/api/`，不依赖 React |
-| 纯函数 | `src/utils/` |
-| 对接疑问 / 字段映射 | `docs/api-integration/YYYYMMDD-<模块>.md` |
+同一份状态只保留一个真实来源：
 
-## 常见工作流（摘要）
+- 服务端状态：TanStack Query
+- 全局客户端状态：Zustand
+- 局部 UI / 普通筛选：React state
+- 表单：React Hook Form
+- 没有完整后端能力：明确 Mock
 
-### A. 接口对接
+### 真实 API
 
-1. 读 `api-integration` Skill + 复制 `_template.md` 写本轮纪要。
-2. 明确字段直接接线；不清的写入「待确认」+ 2～3 方案，**不擅自猜字段顶替**。
-3. 验收看 Network 路径与角色，不要靠改 UI「看起来像接上了」。
+- Axios 只允许在 `src/api` 使用。
+- 请求基础设施统一收口到 `src/api/request.ts`。
+- 页面不在 `useEffect` 中手写 TanStack Query 已提供的请求、缓存、竞态控制、去重和刷新。
+- 服务端任务、模型、报告、用户列表不得复制到 Zustand / localStorage 作为第二份正式数据。
 
-### B. 原型同步
+### Mock
 
-1. 确认范围与接口页策略（默认：**样式对齐，保留主站 API**）。
-2. 跑 `node .agents/skills/newui-prototype-sync/scripts/diff-newui.mjs`。
-3. 按 Skill 清单同步；覆盖后核「主站必保留清单」（Hash / ScrollToTop / cursor / dialog `showCloseButton` / 换行 class / **已接 API**）。
-4. `npm run build` + 关键跳转与弹窗自测。
+允许在没有接口或接口字段无法覆盖现有业务时继续使用假数据，但必须：
 
-### C. 结构 / 性能治理
+- 放 `src/mocks/**` 或页面私有 `*.mock.ts`；
+- 命名明确包含 `mock`；
+- 通过 mock service / adapter 给页面；
+- 不在真实 API 失败后偷偷写本地数据并显示为真实成功；
+- 纯营销演示、雷达图、场景示意可以长期使用静态数据。
 
-优先参考 [`docs/react-project-optimization-review.md`](docs/react-project-optimization-review.md)：
+## 6. React / TypeScript / 表单
 
-- P0：路由懒加载、Admin/Auth 守卫、生产 SEO
-- P1：资源体积、大文件拆分、样式令牌
-- 迁移按 `project-structure.md` 分阶段（M0→M5），每阶段可运行可回滚
+- 页面入口负责布局、筛选、业务流程和组件组合，不把大型表单、表格列、重型图表全部继续堆进去。
+- 派生值直接计算，不用 `useEffect + useState` 保存第二份状态。
+- 用户交互逻辑优先放事件处理函数。
+- 不机械添加 memo / useMemo / useCallback / useRef。
+- 不在组件内部定义 React 组件。
+- 动态列表有稳定 ID 时不用数组索引 key。
+- 不直接修改 props / state。
+- 禁止新增 `any` 绕过类型问题；未知外部数据用 `unknown` 后收窄。
+- API Input 与 Response 分开建模，不用一个“所有字段可选”的 DTO 同时承担创建、查询和返回。
+- 表单字段与 API Input 一致时直接复用 Input 类型并提交整个 `values`。
+- 只有字段改名、转换、过滤或 DTO 结构不同时才构造 payload。
+- 优先字面量联合、`as const`、`satisfies`，无运行时需求不滥用 enum。
 
-## 编码约定
+## 7. UI 规则
 
-- 函数组件 + 现有项目模式；新 UI 优先复用 `src/app/components/ui/*`（shadcn）。
-- 样式跟现有 Tailwind / CSS 变量；对接任务禁止借机换皮肤。
-- 单文件过大（≳500 行）时，新改动优先按区块/hooks 拆，而不是继续堆。
-- 静态大图/PDF 倾向 `public/`，避免再往 `src/imports/` 塞进 bundle。
-- 不引入与任务无关的新依赖；需要时先说明理由。
+- 现有视觉优先级高于模板默认视觉。
+- 基础 UI 优先复用 `src/components/ui`；已有 Button/Dialog/Select/AlertDialog 等能力时不要维护第二套。
+- 迁移目录时移动源码而不是重新生成 UI 组件。
+- Loading / Empty / Error 必须明确处理；不只实现成功态。
+- 危险操作优先统一 AlertDialog，不使用 `window.confirm` 作为正式实现。
+- 图标按钮提供 aria-label；Dialog 保留语义标题。
+- 动画只用于状态表达；已有营销动画可以保留。
 
-## 不要做的事
+## 8. 注释
 
-- 不为「整齐」做一次性全站目录大挪移。
-- 不把 shadcn `ui` 与业务弹窗/页面逻辑混成一团后整文件覆盖。
-- 不提交密钥、`.env` 生产机密；不擅自 `git push` / 强推。
-- 不在未要求时写测试/文档/重构周边代码。
-- 不默默保留「演示版 / 待后端」类误导文案（真实接口已通则删掉或改准）。
+复杂公共基础设施可使用精简 L3：
 
-## 文档索引
+```ts
+/**
+ * [INPUT]: 依赖什么
+ * [OUTPUT]: 对外提供什么
+ * [POS]: 项目中的职责
+ */
+```
 
-| 文档 | 用途 |
-| --- | --- |
-| [`docs/project-structure.md`](docs/project-structure.md) | 目标目录、分层、迁移阶段 |
-| [`docs/react-project-optimization-review.md`](docs/react-project-optimization-review.md) | P0/P1/P2 优化清单 |
-| [`docs/api-integration/`](docs/api-integration/) | 每轮接口对接纪要 |
-| [`.agents/skills/`](.agents/skills/) | 可执行工作流 Skill |
+普通页面、简单 Hook、页面私有组件不机械加 L3。
+
+正文注释使用简体中文，解释 Why、业务流程、特殊状态、数据转换、第三方限制和性能取舍；不要逐行翻译代码。
+
+## 9. Git 与校验
+
+- commit message 默认简体中文，简短描述真实修改目的。
+- 一个提交尽量对应一个逻辑修改。
+- 不提交密钥和真实敏感环境变量。
+- 不修改 Git 全局配置，不 force push / hard reset。
+- 暂不引入 Husky / lint-staged。
+
+默认 AI 不主动执行 build / lint / typecheck / test / knip，除非用户明确要求。若未执行，最终回复说明。
+
+## 10. 禁止模式
+
+不要生成：
+
+- 页面直接调用 Axios；
+- 服务端列表放进 Zustand；
+- 真实 API 失败后落 localStorage 并假装成功；
+- 没有接口的 mock 散落在页面 JSX；
+- 可派生状态使用 effect 同步；
+- 无意义 memo；
+- 一个简单页面拆七八层目录；
+- 重复定义 API DTO / FormData；
+- 表单字段完全一致却逐字段重新组装 payload；
+- 为了迁移目录改动现有视觉；
+- 批量重生成当前 shadcn/Radix UI；
+- 将 Hash Router 改成 Browser Router；
+- 把 `newUI/` 当运行时数据源；
+- 未经用户要求创建新分支或 PR。
