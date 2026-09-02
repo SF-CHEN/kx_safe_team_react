@@ -1,12 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   Activity, Bell, ChartNoAxesCombined, ChevronRight, ClipboardCheck, ClipboardList,
   FileCheck2, History, KeyRound, Layers, LogOut, Mail, Search, User, Users, X,
 } from 'lucide-react';
-import { fetchAdminEvaluationTasks } from '@/api/evaluation';
-import { fetchOperationalOverview } from '@/api/overview';
 import type { OverviewVo } from '@/api/types';
 import {
   ADMIN_REMOTE_EVENT,
@@ -20,6 +19,7 @@ import {
   TERMINAL_WORKFLOW_STATUSES,
   type WorkflowTask,
 } from '../data/workflowStore';
+import { adminDashboardQueryOptions } from './AdminDashboard.query';
 
 type AdminSection = 'overview' | 'users' | 'fields' | 'tasks' | 'logs';
 
@@ -34,34 +34,27 @@ function parseAdminSection(value?: string): AdminSection {
 }
 
 function useAdminData(enabled: boolean) {
-  const [tasks, setTasks] = useState<WorkflowTask[]>([]);
-  const [overview, setOverview] = useState<OverviewVo | null>(null);
+  const query = useQuery(adminDashboardQueryOptions(enabled));
+  const tasks = useMemo(
+    () => (query.data?.evalRows ?? []).map(mapEvalRowToWorkflow),
+    [query.data?.evalRows],
+  );
 
-  const load = useCallback(async () => {
-    if (!enabled) return;
-    try {
-      const [evalRows, overviewData] = await Promise.all([
-        // 运营总览「最近任务」只需少量明细，不拉 200
-        fetchAdminEvaluationTasks({ pageSize: 10, pageCurrent: 1 }),
-        fetchOperationalOverview(),
-      ]);
-      setTasks(evalRows.map(mapEvalRowToWorkflow));
-      setOverview(overviewData);
-    } catch (err) {
-      toast.error(err instanceof Error && err.message.trim() ? err.message : '管理后台数据加载失败');
-      setTasks([]);
-      setOverview(null);
-    }
-  }, [enabled]);
-
-  useEffect(() => { void load(); }, [load]);
   useEffect(() => {
-    const refreshRemote = () => { void load(); };
+    if (!query.error) return;
+    toast.error(query.error instanceof Error && query.error.message.trim()
+      ? query.error.message
+      : '管理后台数据加载失败');
+  }, [query.error]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const refreshRemote = () => { void query.refetch(); };
     window.addEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
     return () => window.removeEventListener(ADMIN_REMOTE_EVENT, refreshRemote);
-  }, [load]);
+  }, [enabled, query.refetch]);
 
-  return { tasks, overview };
+  return { tasks, overview: query.data?.overview ?? null };
 }
 
 function AdminLogin() {
@@ -301,7 +294,6 @@ function AdminOverview({
   const weeklyNewUsers = overview?.weeklyNewUserCount ?? 0;
   const processingTasks = overview?.processingTaskCount ?? pending.length;
   const inProcessingTasks = overview?.inProcessingTaskCount ?? processingFromList;
-  // 无「活跃用户」字段：用近 7 天新增任务数展示（见对接纪要 Q1）
   const recent7DaysNewTasks = overview?.recent7DaysNewTaskCount;
   const totalDelivered = overview?.totalDeliveredCount ?? deliveredFromList;
   const weeklyDelivered = overview?.weeklyDeliveredCount ?? weeklyDeliveredFromList;
@@ -313,7 +305,6 @@ function AdminOverview({
       note: `本周新增 ${weeklyNewUsers} 位`,
       icon: Users,
       iconTone: 'bg-blue-100 text-blue-700',
-      // 侧栏已停拉用户 page；无按日序列时 sparkline 置空
       bars: days.map(() => 0),
       bar: 'bg-blue-500',
     },
@@ -595,7 +586,7 @@ export function AdminDashboard() {
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string>();
   const [selectedTaskGroup, setSelectedTaskGroup] = useState<TaskGroup>();
-  const [selectedUserId, setSelectedUserId] = useState<string>();
+  const [selectedUserId] = useState<string>();
   const data = useAdminData(sessionReady && isAdmin);
   const pendingTasks = useMemo(
     () => data.tasks.filter((task) => !TERMINAL.has(task.status)),
