@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
@@ -149,7 +149,11 @@ export function ResourceCenter() {
   const overviewQuery = useQuery(resourceOverviewQueryOptions(userId, canLoadServerData));
   const modelsQuery = useQuery(resourceModelsQueryOptions(userId, modelsOpen && canLoadServerData));
 
-  const formalTasks = (tasksQuery.data?.items ?? []).map(toEvalTask);
+  // 选中详情依赖任务对象引用；仅在 Query 数据真正变化时重建数组，避免 effect 因每次 render 的新数组反复 setState。
+  const formalTasks = useMemo(
+    () => (tasksQuery.data?.items ?? []).map(toEvalTask),
+    [tasksQuery.data?.items],
+  );
   const total = tasksQuery.data?.total ?? 0;
   const taskOverview = overviewQuery.data ?? null;
   const apiModels = modelsQuery.data ?? [];
