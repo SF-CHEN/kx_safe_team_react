@@ -27,10 +27,28 @@ export interface CreateEvaluationTaskInput {
   demandSupplement?: string
 }
 
+function normalizeCreateInput(payload: EvaluationTask | CreateEvaluationTaskInput): CreateEvaluationTaskInput {
+  if (!payload.type) throw new Error('创建评测任务缺少 type')
+  if (!payload.name?.trim()) throw new Error('创建评测任务缺少 name')
+  if (!payload.useModelType) throw new Error('创建评测任务缺少 useModelType')
+
+  return {
+    ...payload,
+    type: payload.type,
+    name: payload.name.trim(),
+    useModelType: payload.useModelType,
+  }
+}
+
+/**
+ * 旧页面仍可能持有宽松的 EvaluationTask DTO，因此这里保留兼容输入并在 API 边界做运行时收窄。
+ * 新代码必须直接使用 CreateEvaluationTaskInput。
+ */
 export async function addEvaluationTask(
-  payload: CreateEvaluationTaskInput,
+  payload: CreateEvaluationTaskInput | EvaluationTask,
 ): Promise<EvaluationTask> {
-  const { data } = await tempRequest.post('/temp/evaluation-task/add', payload, {
+  const input = normalizeCreateInput(payload)
+  const { data } = await tempRequest.post('/temp/evaluation-task/add', input, {
     headers: { 'Content-Type': 'application/json' },
   })
   return unwrapGatewayData<EvaluationTask>(data)
