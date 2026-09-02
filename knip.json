@@ -3,7 +3,6 @@
   "entry": [
     "src/main.tsx",
     "src/components/ui/**/*.tsx",
-    "src/app/components/ui/**/*.tsx",
     "src/hooks/**/*.ts",
     "vite.config.ts",
     "script/*.cjs"
