@@ -7,11 +7,10 @@ import {
   addModelTrustEvaluationTask,
 } from '@/api/evaluation';
 import { uploadSysFile } from '@/api/file';
-import { useUser, type EvalTask } from '../context/UserContext';
+import { useUser } from '../context/UserContext';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { Label } from './ui/label';
-import { fileToStoredAttachment } from '../data/workflowStore';
 
 type Variant = 'model-data' | 'deep-model' | 'agent-safety';
 
@@ -29,8 +28,6 @@ const COPY = {
     uploadHint: '支持压缩包、CSV、TSV、JSON、JSONL、TXT、NPZ、NPY、XML 等材料',
     accept: '.zip,.rar,.7z,.tar,.gz,.csv,.tsv,.json,.jsonl,.txt,.npz,.npy,.xml,.yaml,.yml,.docx',
     placeholder: '请描述数据任务类型、数据格式、数据划分及评测重点。例如：图像分类任务，ImageFolder 格式，包含 train / val，希望重点检查异常样本、标注质量和类别分布。',
-    evalType: '数据集安全评测' as const,
-    model: '用户上传的数据工程',
   },
   'deep-model': {
     title: '创建深度模型可信评测任务',
@@ -39,8 +36,6 @@ const COPY = {
     uploadHint: '支持工程压缩包及 PyTorch、TensorFlow、Keras、MindSpore 相关模型文件',
     accept: '.zip,.rar,.7z,.tar,.gz,.pt,.pth,.pb,.h5,.keras,.ckpt,.mindir',
     placeholder: '请说明模型框架、接入方式和评测诉求。例如：PyTorch 本地模型，希望执行对抗攻击、性能和量化评估，重点比较攻击前后输出及量化前后的精度变化。',
-    evalType: '深度模型可信测评' as const,
-    model: '用户上传的模型工程',
   },
   'agent-safety': {
     title: '创建智能体安全评测任务',
@@ -49,13 +44,11 @@ const COPY = {
     uploadHint: '支持 ZIP、RAR、7Z、TAR、GZ 等工程压缩包，以及 JSON、YAML、YML、TXT 等配置材料',
     accept: '.zip,.rar,.7z,.tar,.gz,.json,.yaml,.yml,.txt,.md',
     placeholder: '请描述智能体用途、主要功能、工具或知识库接入情况，以及希望重点检测的安全问题。例如：企业知识库问答智能体，包含 RAG 与文件读取能力，希望重点检查提示词泄露、RAG 泄露和工具恶意调用风险。',
-    evalType: '智能体安全评测' as const,
-    model: '用户上传的智能体工程',
   },
 };
 
 export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
-  const { user, addTask } = useUser();
+  const { user } = useUser();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [request, setRequest] = useState('');
@@ -89,9 +82,7 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
     setSubmitting(true);
     try {
       const uploaded = await uploadSysFile(file);
-      if (uploaded.id == null) {
-        throw new Error('文件上传成功但未返回文件 ID');
-      }
+      if (uploaded.id == null) throw new Error('文件上传成功但未返回文件 ID');
 
       const payload = {
         ...(Number.isFinite(userId) ? { userId } : {}),
@@ -99,32 +90,16 @@ export function LightweightUploadTaskModal({ open, onClose, variant }: Props) {
         fileId: uploaded.id,
       };
 
-      const created =
-        variant === 'deep-model'
-          ? await addModelTrustEvaluationTask(payload)
-          : variant === 'agent-safety'
-            ? await addAgentSafetyEvaluationTask(payload)
-            : await addModelDataSafetyEvaluationTask(payload);
+      // 三种轻量任务都已有与当前表单字段完全匹配的真实接口。
+      // 创建成功后不再写 UserContext/workflowStore，正式任务统一由资源中心从后端任务总表读取。
+      if (variant === 'deep-model') {
+        await addModelTrustEvaluationTask(payload);
+      } else if (variant === 'agent-safety') {
+        await addAgentSafetyEvaluationTask(payload);
+      } else {
+        await addModelDataSafetyEvaluationTask(payload);
+      }
 
-      const attachment = await fileToStoredAttachment(file, 'input');
-      const createdAt =
-        created.createdAt ||
-        new Date().toLocaleString('zh-CN', { hour12: false });
-      const task: EvalTask = {
-        id: created.id != null ? String(created.id) : `${variant}-${Date.now()}`,
-        name: `${file.name}评测任务`,
-        model: copy.model,
-        modelType: '本地工程文件',
-        evalSet: requirement,
-        evalType: copy.evalType,
-        status: '待受理',
-        score: null,
-        createdAt,
-        plan: 'paid',
-        requirement,
-        attachments: [attachment],
-      };
-      addTask(task);
       setSuccess(true);
       toast.success('任务已提交，等待平台受理');
     } catch (err) {
