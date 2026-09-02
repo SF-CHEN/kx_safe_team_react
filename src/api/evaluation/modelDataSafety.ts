@@ -1,66 +1,59 @@
-import { createTempClient } from '@/api/client';
+import { tempRequest } from '@/api/request'
 import type {
   ModelDataSafetyEvaluationTask,
   PageQuery,
   PageResult,
-} from '@/api/types';
-import { unwrapGatewayData } from '@/utils/gateway';
+} from '@/api/types'
+import { unwrapGatewayData } from '@/utils/gateway'
+import type { CreateFileEvaluationTaskInput } from './fileTask.types'
 
 export async function addModelDataSafetyEvaluationTask(
-  payload: ModelDataSafetyEvaluationTask,
+  payload: CreateFileEvaluationTaskInput,
 ): Promise<ModelDataSafetyEvaluationTask> {
-  const client = createTempClient();
-  const { data } = await client.post('/temp/model-data-safety-evaluation-task/add', payload, {
+  const { data } = await tempRequest.post('/temp/model-data-safety-evaluation-task/add', payload, {
     headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data);
+  })
+  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data)
 }
 
 export async function updateModelDataSafetyEvaluationTask(
   payload: ModelDataSafetyEvaluationTask,
 ): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.put('/temp/model-data-safety-evaluation-task/update', payload, {
+  const { data } = await tempRequest.put('/temp/model-data-safety-evaluation-task/update', payload, {
     headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<boolean>(data);
+  })
+  return unwrapGatewayData<boolean>(data)
 }
 
 export async function getModelDataSafetyEvaluationTaskById(
   id: number,
 ): Promise<ModelDataSafetyEvaluationTask> {
-  const client = createTempClient();
-  const { data } = await client.get('/temp/model-data-safety-evaluation-task/getDetailById', {
+  const { data } = await tempRequest.get('/temp/model-data-safety-evaluation-task/getDetailById', {
     params: { id },
-  });
-  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data);
+  })
+  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data)
 }
 
 export async function pageModelDataSafetyEvaluationTasks(
   query: PageQuery<ModelDataSafetyEvaluationTask>,
 ): Promise<PageResult<ModelDataSafetyEvaluationTask>> {
-  const client = createTempClient();
-  const { data } = await client.post('/temp/model-data-safety-evaluation-task/page', query, {
+  const { data } = await tempRequest.post('/temp/model-data-safety-evaluation-task/page', query, {
     headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<PageResult<ModelDataSafetyEvaluationTask>>(data);
+  })
+  return unwrapGatewayData<PageResult<ModelDataSafetyEvaluationTask>>(data)
 }
 
 export async function deleteModelDataSafetyEvaluationTask(id: number): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.delete('/temp/model-data-safety-evaluation-task/deleteOne', {
+  const { data } = await tempRequest.delete('/temp/model-data-safety-evaluation-task/deleteOne', {
     params: { id },
-  });
-  return unwrapGatewayData<boolean>(data);
+  })
+  return unwrapGatewayData<boolean>(data)
 }
 
-export async function batchDeleteModelDataSafetyEvaluationTasks(
-  ids: number[],
-): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.delete('/temp/model-data-safety-evaluation-task/batchDel', {
+export async function batchDeleteModelDataSafetyEvaluationTasks(ids: number[]): Promise<boolean> {
+  const { data } = await tempRequest.delete('/temp/model-data-safety-evaluation-task/batchDel', {
     params: { ids },
     paramsSerializer: { indexes: null },
-  });
-  return unwrapGatewayData<boolean>(data);
+  })
+  return unwrapGatewayData<boolean>(data)
 }
