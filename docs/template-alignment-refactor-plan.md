@@ -1,453 +1,216 @@
-# 玄鉴 React 项目模板规范迁移与业务代码整改方案
+# 玄鉴 React 模板化迁移执行计划
 
-> 目标分支：`refactor/template-alignment`
+> 工作分支：`refactor/template-alignment`
 >
-> 基准项目：`SF-CHEN/react-ai-template`
+> 唯一工程基准：`SF-CHEN/react-ai-template`
 >
-> 当前项目：`SF-CHEN/kx_safe_team_react`
+> 业务与视觉来源：`SF-CHEN/kx_safe_team_react`
 
-## 1. 改造目标
+## 1. 最终目标
 
-本次改造不以“把当前项目搬进模板”为目标，而是保留当前项目已经完成的产品页面、视觉样式、路由与业务能力，将 `react-ai-template` 中更适合 AI 协作和长期维护的工程规范逐步应用到当前项目。
+本次不再以“修补旧项目结构”为目标，而是直接把当前项目实现成 `react-ai-template` 的工程形态：
 
-核心原则：
+- **工程结构、代码规范、数据层、状态管理、Skills、工具链：以 `react-ai-template` 为标准。**
+- **现有业务、路由地址、页面 DOM、className、CSS、动画与视觉效果：以当前玄鉴项目为标准。**
+- **已有并能覆盖业务的接口继续使用真实 API；没有接口或接口能力不足的功能继续使用 mock。**
+- **mock 必须显式放在 `src/mocks` 或页面私有 `*.mock.ts`，不能伪装成真实后端成功。**
 
-1. **页面视觉完全以当前项目为准**：不主动修改现有 DOM 结构、className、颜色、间距、动画、响应式表现和组件视觉。
-2. **真实接口优先**：已经存在且能覆盖当前业务语义的接口，页面必须使用真实接口。
-3. **没有真实接口时允许继续使用假数据**：但 mock 必须有明确边界，集中放到 mock/data adapter 中，不能散落在页面 JSX 和事件处理器里。
-4. **接口存在但能力不完整时不强接**：先判断接口字段是否真正覆盖页面当前交互；不匹配时保留 mock，并在代码与文档中记录缺失能力。
-5. **不能用 mock 伪装真实接口成功**：例如真实接口调用失败后，不应偷偷写一份本地数据再显示为“后端创建成功”。如果该功能本身就是 mock 模式，则应从 mock service 完整模拟，而不是和真实数据混写。
-6. **同一份正式业务数据只保留一个真实来源**：正式任务、模型、报告、用户资料等一旦已有后端来源，不再同时使用 localStorage/workflowStore 作为另一套正式数据源。
-7. **渐进式迁移**：先修业务正确性与数据边界，再做目录迁移、TanStack Query、Zustand、strict TypeScript 等工程升级。
-
----
-
-## 2. 数据源判定规则
-
-每个页面功能在整改前先归入以下四类之一。
-
-### A. 已有完整真实接口
-
-条件：
-
-- 已有后端接口；
-- 请求/返回字段能覆盖当前页面真实业务；
-- 能完成创建、查询、更新或删除所需闭环。
-
-处理：
-
-- 使用真实 API；
-- 页面不再维护重复 mock 数据；
-- 服务端状态后续统一交给 TanStack Query；
-- 页面仅保留筛选、弹窗开关等局部 UI state。
-
-### B. 已有接口，但与当前 UI 业务不完全匹配
-
-例如接口只接受 `fileId + evaluationRequirement`，而当前 UI 是“模型 + 算法指标 + API 接入配置”。
-
-处理：
-
-- 不因为“接口名字看起来类似”就强行接入；
-- 在本方案的接口缺口清单中记录缺失字段；
-- 当前页面可以继续走 mock；
-- 等后端契约确认后再切真实接口。
-
-### C. 完全没有接口
-
-处理：
-
-- 保留假数据和模拟交互；
-- 假数据放在 `src/mocks/**` 或页面私有 `*.mock.ts`；
-- 页面通过 mock service / adapter 获取数据，避免 JSX 内写大段业务假数据；
-- 将来有接口时只替换 data source，不改页面视觉。
-
-### D. 纯展示 / 官网演示区域
-
-例如能力介绍、场景示意图、演示雷达图、行业 mock dashboard。
-
-处理：
-
-- 可以长期保留静态数据；
-- 静态数据应与真实任务、真实报告、真实用户数据明显分层；
-- 不需要为了“全接口化”把营销展示内容也改成请求后端。
-
----
-
-## 3. 当前项目已发现的重点问题
-
-### P0-1 `TaskDetailNew` 真实任务与假结果混在一个页面
-
-当前任务本身来自 `UserContext.myTasks`，评测问答、风险、系统环境等结果使用硬编码数据。
-
-整改目标：
-
-- 保留当前页面样式；
-- 将 `QA_SAMPLES`、环境信息、统计数据移动到 `src/mocks/evaluation/` 或页面私有 mock 文件；
-- 如果后端后续提供真实评测结果详情接口，新增 adapter 将真实结果转换为同一个 ViewModel；
-- 页面只消费 `TaskDetailViewModel`，不关心数据来自真实 API 还是 mock。
-
-建议结构：
+最终结果可以概括为：
 
 ```text
-src/pages/TaskDetail/
-├── index.tsx
-├── taskDetail.types.ts
-├── taskDetail.mapper.ts
-└── taskDetail.mock.ts
+react-ai-template 的骨架
++
+kx_safe_team_react 的完整业务
++
+kx_safe_team_react 的现有视觉
 ```
 
-当前阶段如果没有结果详情接口，则继续使用 mock，不删除现有展示效果。
+## 2. 不变项
 
-### P0-2 `DeepModelEval` 创建成功逻辑需要重新判定接口能力
+迁移过程中以下内容默认冻结：
 
-项目中已经存在 `model-trust-evaluation-task` 接口，但当前 DTO 主要是：
+1. `createHashRouter` 与当前 URL；不切 BrowserRouter。
+2. 当前页面 className、inline style、全局 CSS、动画、响应式表现。
+3. 当前 Radix/shadcn UI 源码；不强制切换 Base UI。
+4. 当前 Vite 的 Figma asset resolver、代理、base、manualChunks、assetsInclude。
+5. 已接通的真实 API、鉴权头、上传下载、管理员交付等真实业务能力。
+6. `newUI/` 继续作为只读视觉参考，不作为运行时业务数据源。
 
-- `userId`
-- `fileId`
-- `evaluationRequirement`
-- `status`
-- `emailStatus`
-
-而当前 `DeepModelEval` UI 包含：
-
-- 目标模型；
-- 白盒 / 黑盒；
-- 多组评测指标；
-- API 接入模型；
-- 邮箱；
-- 配置文件等。
-
-两者业务字段当前并不完全一致，因此不能直接为了“去 mock”强接该接口。
-
-整改策略：
-
-1. 先把当前提交逻辑抽到 `deepModelEval.service.ts`；
-2. 在 service 中明确当前实现为 mock；
-3. 不在页面组件中直接构造 `Date.now()` 本地任务；
-4. 后端接口补齐模型/指标等字段后，只替换 service；
-5. UI 不改。
-
-### P0-3 正式任务存在多套数据源
-
-当前同时存在：
-
-- 后端评测任务 / 任务总表；
-- `UserContext.myTasks`；
-- localStorage workspace；
-- `workflowStore`。
-
-整改原则：
-
-- 后端已存在的正式任务：以后端为唯一数据源；
-- `workflowStore` 仅保留真正没有接口的模拟工作流；
-- mock 任务与正式任务不能混成同一个持久化列表；
-- ResourceCenter / Admin / TaskDetail 最终统一围绕任务总表和详情 API。
-
-### P0-4 注册登录账号规则需要和后端保持一致
-
-当前注册页面允许“手机号或邮箱”，但注册 API 实际只提交 `username + password`；邮箱注册时页面会将 `xxx@example.com` 截成 `xxx` 作为 username，而登录又直接把用户输入的完整邮箱作为 username 提交。
-
-整改前必须确认后端真实规则：
-
-- 如果后端只支持 username：前端不能继续宣称支持邮箱直接登录；
-- 如果产品必须支持邮箱登录：后端需要提供 account/email 登录能力；
-- 在后端规则未确认前，不通过前端字符串截断制造“伪邮箱账号”。
-
-### P0-5 忘记密码当前属于 mock 功能
-
-当前没有重置申请真实接口，但页面会显示“申请已提交”。
-
-按用户要求，本功能可以继续保留 mock，但必须：
-
-- 抽到 mock service；
-- 不与真实用户 API 混写；
-- 后续出现真实接口时替换 data source。
-
-### P1-1 `TaskCreationModal` 模型保存失败后仍写入本地模型
-
-当前 `addDepthModel()` 失败会被吞掉，但随后仍执行本地 `addModel()`。
-
-应调整为：
-
-- 保存后端成功：才加入真实“我的模型”；
-- 后端保存失败但允许以 CUSTOM 创建任务：只用于当前任务，不写入正式模型列表；
-- 避免刷新后模型消失造成数据不一致。
-
-### P1-2 ResourceCenter 手写了大量请求状态与竞态控制
-
-当前页面自行维护：
-
-- loading；
-- request sequence；
-- total；
-- 列表；
-- overview；
-- models loading；
-- 多组 useEffect。
-
-后续引入 TanStack Query 后：
-
-- Query 管服务端状态、请求去重、缓存、错误和失效；
-- 页面仅保留 page/pageSize/search/product/status 等 UI 查询条件。
-
-### P1-3 API 层存在手写请求去重 / 失败冷却
-
-`evaluationTaskMaster.ts` 当前存在 `pageInflight`、`pageFailAt`、4 秒失败冷却。
-
-后续由 TanStack Query 负责服务端缓存后应删除该逻辑，避免用户点击“重试”时 4 秒内根本没有再次访问服务器。
-
-### P1-4 Axios client 重复创建
-
-当前大量 API 函数都会调用 `createTempClient()`，每次创建 axios instance 并注册 interceptor。
-
-第一批整改先保持调用方式不变，但让相同 timeout 的 client 复用，避免重复创建 interceptor；后续再逐步统一为命名 client。
-
-### P1-5 API DTO 需要拆 Input / Response
-
-例如 `EvaluationTask` 当前大量字段都是可选，既作为创建输入又作为返回类型，类型约束过弱。
-
-后续逐模块拆分：
-
-```ts
-CreateEvaluationTaskInput
-EvaluationTask
-UpdateEvaluationTaskInput
-EvaluationTaskQuery
-```
-
-先从修改频率最高的 evaluation / model / auth 模块开始。
-
----
-
-## 4. 页面整改方法
-
-每个业务页面按以下顺序处理，禁止一上来大规模拆组件。
-
-### Step 1：确认页面现状
-
-记录：
-
-- 页面路由；
-- 真实 API；
-- mock 数据；
-- localStorage/workflowStore；
-- 表单提交；
-- loading/error/empty；
-- 跳转；
-- 下载/上传；
-- 是否有假成功按钮。
-
-### Step 2：建立数据源表
-
-示例：
-
-| 功能 | 当前来源 | 是否有真实接口 | 本轮策略 |
-|---|---|---:|---|
-| 任务列表 | 后端总表 | 是 | 保留真实 API |
-| 任务结果详情 | QA_SAMPLES | 否/未发现 | mock service |
-| 管理员交付 | 后端 | 是 | 保留真实 API |
-| 忘记密码申请 | 本地 state | 否 | mock service |
-
-### Step 3：先抽数据，再拆 UI
-
-优先抽：
-
-- API service；
-- mapper；
-- mock；
-- query；
-- form schema / submit handler。
-
-视觉 JSX 在第一轮尽量原样保留。
-
-### Step 4：确认稳定后再拆大页面
-
-只拆真正有独立职责的区域，例如：
-
-```text
-DeepModelEval/
-├── index.tsx
-├── DeepModelTaskModal.tsx
-├── deepModelEval.mock.ts
-└── deepModelEval.types.ts
-```
-
-不为了目录完整强制创建 `components/hooks/query/schema/types/constants/utils` 全家桶。
-
----
-
-## 5. 最终工程结构
+## 3. 目标目录
 
 ```text
 src/
-├── api/
-│   ├── request.ts
-│   ├── auth.ts
-│   ├── evaluation/
-│   ├── model/
-│   └── ...
-├── app/
-│   ├── App.tsx
-│   ├── AppProviders.tsx
-│   ├── ErrorBoundary.tsx
-│   ├── router.tsx
-│   ├── routes.tsx
-│   └── guards/
-├── pages/
+├── api/                 # 请求基础设施、真实后端 API、DTO
+├── app/                 # App、Provider、Hash Router、路由元数据、守卫
+├── pages/               # 路由页面与页面私有代码
 ├── components/
-│   ├── ui/
-│   ├── common/
-│   └── charts/
-├── layouts/
-├── hooks/
-├── store/
-├── mocks/
-│   ├── auth/
-│   └── evaluation/
-├── styles/
-├── types/
-└── utils/
+│   ├── ui/              # 当前 shadcn/Radix 基础组件源码
+│   ├── common/          # 跨页面通用组件
+│   └── charts/          # 图表公共封装
+├── layouts/             # 页面布局
+├── hooks/               # 跨页面通用 Hook
+├── store/               # Zustand 客户端全局状态
+├── mocks/               # 没有后端能力的明确 mock
+├── styles/              # 当前视觉样式，迁移期不改
+├── types/               # 真正跨业务共享类型
+└── utils/               # 通用纯函数
 ```
 
-`newUI/` 继续保留为只读视觉参考，不作为运行时业务数据源。
+禁止重新建立 `features/` / `modules/` 作为默认业务根目录。
 
----
+## 4. 数据源规则
 
-## 6. Mock 代码规范
-
-### 允许
-
-```ts
-export async function getMockTaskDetail(id: string): Promise<TaskDetailViewModel> {
-  return MOCK_TASK_DETAIL[id] ?? createDefaultMockTaskDetail(id);
-}
-```
-
-页面：
-
-```ts
-const detail = await getMockTaskDetail(taskId);
-```
-
-### 不允许
-
-在页面事件中直接制造“真实成功”：
-
-```ts
-setTasks(prev => [{ id: Date.now(), status: '评测中' }, ...prev]);
-setSuccess(true);
-```
-
-尤其当同一个产品已经存在真实任务中心时，这种写法容易制造两套数据。
-
-### Mock 命名
-
-优先：
+### 真实接口完整
 
 ```text
-*.mock.ts
-src/mocks/**
-mockXxxService
-getMockXxx
+src/api
+  ↓
+TanStack Query
+  ↓
+page
 ```
 
-避免使用看起来像真实 API 的名字隐藏 mock 行为。
+服务端数据不再复制到 Zustand / UserContext / localStorage。
 
----
+### 没有接口或接口覆盖不足
 
-## 7. 实施批次
+```text
+src/mocks 或 page/*.mock.ts
+  ↓
+mock service / adapter
+  ↓
+page
+```
 
-### Batch 1：零样式风险基础整改
+后端以后补齐时，只替换数据源，页面视觉不重写。
 
-- [x] 创建独立整改分支；
-- [x] 增加本方案文档；
-- [x] 优化 temp axios client，避免相同 timeout 重复创建实例和 interceptor；
-- [ ] 建立 `src/mocks/` 边界；
-- [ ] 梳理所有页面真实接口完成度。
+### 全局客户端状态
 
-### Batch 2：任务链路
+使用 Zustand，例如会话客户端状态、跨页面 UI 状态。服务端任务列表、报告、模型列表不放 Zustand。
 
-按顺序：
+### 页面状态
 
-1. ResourceCenter；
-2. TaskDetail / TaskDetailNew；
-3. TaskCreationModal；
-4. DeepModelEval；
-5. AdminWorkflowWorkbench / AdminDashboard。
+筛选条件、Dialog 开关、Tab、展开状态等使用 React state。
 
-目标：
+### 表单
 
-- 正式任务统一后端；
-- 没有结果 API 的区域继续 mock；
-- mock 与正式数据彻底分层。
+复杂表单统一 React Hook Form + Zod。字段和 API Input 一致时直接提交 `values`，不逐字段重复组装。
 
-### Batch 3：认证与用户
+## 5. 迁移阶段
 
-- Login；
-- Register；
-- Forgot Password；
-- UserContext；
-- 用户资料修改；
-- 模型列表。
+### Phase A：仓库标准化
 
-目标：确认账号真实规则并减少 localStorage 正式数据。
+- [x] 建立独立分支 `refactor/template-alignment`
+- [x] 建立 `src/mocks` 边界
+- [x] Axios client 复用，避免重复注册 interceptor
+- [ ] 用模板规范重写 `AGENTS.md`
+- [ ] 增加 `skills/react-app`、`react-data`、`react-ui`、`react-performance`
+- [ ] 增加 ESLint / Prettier / Knip / Vitest / TypeScript 工具链
+- [ ] 增加 TanStack Query / Zustand / Zod / auto-import / icons 依赖
 
-### Batch 4：数据层模板化
+### Phase B：应用基础设施
 
-- 接入 TanStack Query；
-- API request 统一；
-- DTO Input/Response 拆分；
-- 状态 mapper 集中；
-- 页面删除手写 request sequence / cache。
+- [ ] 建立 `src/app/AppProviders.tsx`
+- [ ] QueryClientProvider 进入 AppProviders
+- [ ] 保留 UserProvider 作为兼容会话 Provider，逐步缩减职责
+- [ ] 将 Router 创建与路由元数据职责拆清，继续使用 Hash Router
+- [ ] 建立 app 级 ErrorBoundary
 
-### Batch 5：工程目录迁移
+### Phase C：目录迁移
 
-在业务数据边界稳定之后再做：
+- [ ] `src/app/pages` → `src/pages`
+- [ ] `src/app/components/ui` → `src/components/ui`
+- [ ] 跨页面组件 → `src/components/common`
+- [ ] `Layout.tsx` → `src/layouts`
+- [ ] 页面私有组件就近放入对应 page
+- [ ] 更新 import，移除旧目录兼容层
 
-- `src/app/pages` → `src/pages`；
-- `src/app/components/ui` → `src/components/ui`；
-- `Layout` → `src/layouts`；
-- `AppProviders`；
-- skills / AGENTS 对齐；
-- ESLint / Prettier / knip；
-- strict TS 分阶段开启。
+迁移只改变文件归属与 import；不改变视觉 JSX。
 
-### Batch 6：依赖升级
+### Phase D：真实业务数据层
 
-最后再考虑：
+优先处理真实接口已经存在的页面：
 
-- React 18 → 19；
-- Vite 6 → 8；
-- 其他基础依赖升级。
+1. ResourceCenter
+2. AdminDashboard / AdminWorkflowWorkbench
+3. TaskCreationModal
+4. 登录 / 注册
+5. AIGC 在线体验
+6. 各类评测任务创建与查询
 
-**暂不执行 Radix → Base UI 替换**，因为当前要求页面样式完全一致。
+原则：
 
----
+- 服务端状态改为 TanStack Query。
+- 删除页面中手写的 request sequence、请求去重、失败冷却等 Query 已提供的能力。
+- API DTO 按 Create/Input、Response、Query 拆分，不再一个全 optional 类型复用所有场景。
+- 状态/产品映射集中在 adapter，不在多个页面重复维护。
 
-## 8. 每次提交验收标准
+### Phase E：没有接口的业务
 
-每批代码改动必须满足：
+当前没有完整后端能力的功能保留 mock，例如部分评测结果详情、纯演示结果、暂未开放的用户功能。
 
-1. 不主动改变页面视觉；
-2. 不改变现有 HashRouter URL；
-3. 有真实接口的功能不能退化为 mock；
-4. 没有接口的功能允许 mock，但 mock 来源清晰；
-5. 不在真实 API 失败后偷偷写本地成功数据；
-6. 页面不直接拼装复杂后端协议，使用 API/service/mapper；
-7. 不为“架构完整”提前创建无用层；
-8. 重要非直观逻辑用中文 Why 注释；
-9. 一个提交只处理一个可说明的逻辑改动；
-10. 在用户未明确要求前，不主动进行大版本 React/Vite/UI 库升级。
+要求：
 
----
+- mock 文件名明确带 `mock`。
+- 页面不直接维护大段业务假数据。
+- mock 与真实正式任务不写入同一持久化数据源。
+- 不出现“真实接口失败后偷偷落 localStorage 然后显示成功”的行为。
 
-## 9. 本分支下一步
+### Phase F：大页面整理
 
-下一步从“任务链路”开始逐页面整改：
+按真实职责拆分 50KB~100KB 页面，优先：
 
-1. 建立 `src/mocks/evaluation`；
-2. 把 TaskDetailNew 的固定结果迁出页面；
-3. 判断 TaskDetail 可用的真实详情接口范围；
-4. 修 TaskCreationModal 的“模型后端保存失败仍写本地”问题；
-5. 将 DeepModelEval 的模拟提交抽离页面；
-6. 保持当前 UI 完全不变。
+- DeveloperCenter
+- DeepModelEval
+- OnlineExperience
+- AigcContent
+- CodeVulnerabilityAudit
+- LLMEvaluation
+
+只在存在清晰 UI/业务边界时拆组件，不建立目录全家桶。
+
+### Phase G：类型收口
+
+- [ ] 清理 `any`
+- [ ] API 输入/输出边界收紧
+- [ ] 将 `strict` 最终切为 true
+- [ ] 清理迁移兼容文件、死代码和旧 mock 数据源
+
+## 6. 当前业务的明确处理策略
+
+| 模块 | 数据策略 |
+|---|---|
+| ResourceCenter 任务列表/概览 | 真实 API + TanStack Query |
+| 管理端任务/交付/补件 | 真实 API + TanStack Query |
+| TaskCreationModal | 真实 API；模型保存失败不得伪造本地真实模型 |
+| TaskDetailNew 评测结果 | 当前无完整结果接口时使用明确 mock |
+| DeepModelEval | 接口字段不能覆盖当前 UI 时使用 mock service；能覆盖部分能力时不要混合伪成功 |
+| AIGC analyze / samples / reports | 保留现有真实 AIGC API |
+| 忘记密码 | 无接口时使用明确 mock service |
+| 营销页雷达图/场景示意 | 允许静态展示数据 |
+| 用户资料 | 后端支持的字段走 API；未支持字段不得假装已远端保存 |
+
+## 7. 完成定义
+
+本轮迁移完成必须同时满足：
+
+- 运行时页面与迁移前视觉一致。
+- 所有路由仍走 Hash Router。
+- 页面代码不直接使用 Axios。
+- 服务端数据默认由 TanStack Query 管理。
+- 客户端全局状态归 Zustand；不把服务端列表复制进去。
+- mock 与真实 API 有清晰代码边界。
+- 页面、组件、layout 已归入模板目录。
+- `AGENTS.md` 与四个 Skills 可直接指导后续 AI 生成代码。
+- ESLint、Prettier、TypeScript、Vitest、Knip 配置存在且与项目结构一致。
+- 不再以旧 `app/pages + app/components` 作为业务代码默认落点。
+
+## 8. Git 约束
+
+本轮全部修改只提交到：
+
+```text
+refactor/template-alignment
+```
+
+用户没有要求前，不创建其他分支、不创建 PR、不改默认分支。
