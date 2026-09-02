@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+
 import {
   getCurrentUser,
   loginAuth,
@@ -6,9 +7,10 @@ import {
   registerAuth,
   type AuthSession,
   type AuthUser,
-} from '@/api/auth';
-import { getToken, isTokenExpired, removeToken, setToken } from '@/utils/auth';
-import { setUnauthorizedHandler } from '@/utils/gateway';
+} from '@/api/auth'
+import { useSessionStore } from '@/store/sessionStore'
+import { getToken, isTokenExpired, removeToken, setToken } from '@/utils/auth'
+import { setUnauthorizedHandler } from '@/utils/gateway'
 import {
   WORKFLOW_EVENT,
   createWorkflowTask,
@@ -20,103 +22,116 @@ import {
   upsertPlatformUser,
   type StoredAttachment,
   type UserNotification,
+  type WorkflowCommunication,
   type WorkflowStatus,
-} from '../data/workflowStore';
+} from '../data/workflowStore'
 
-export type UserRole = 'guest' | 'user' | 'admin';
+export type UserRole = 'guest' | 'user' | 'admin'
 
+/** @deprecated 正式模型统一从后端 depth-model 获取；仅保留旧页面类型兼容。 */
 export interface MyModel {
-  id: string;
-  name: string;
-  type: '开源' | '闭源' | '自定义';
-  apiBase: string;
-  modelId: string;
-  createdAt: string;
+  id: string
+  name: string
+  type: '开源' | '闭源' | '自定义'
+  apiBase: string
+  modelId: string
+  createdAt: string
 }
 
+/** 本地 EvalTask 仅用于没有真实接口的 mock 工作流。正式任务由 TanStack Query + 后端任务总表负责。 */
 export interface EvalTask {
-  id: string;
-  name: string;
-  model: string;
-  modelType: string;
-  evalSet: string;
-  evalType: '个人敏感信息审查' | '模型数据安全评测' | '数据集安全评测' | 'AIGC内容审核' |
-    '深度模型可信测评' | '大模型安全评测' | '多模态大模型安全评测' |
-    '大模型评测' | '智能体安全评测' | '训练集评测';
-  status: '评测中' | '评测完成' | '评测失败' | '已暂停' | '排队中' | WorkflowStatus;
-  score: number | null;
-  createdAt: string;
-  plan: 'free' | 'paid';
-  shareLink?: string;
-  requirement?: string;
-  configSummary?: string;
-  attachments?: StoredAttachment[];
-  reports?: StoredAttachment[];
-  pushedAt?: string;
-  /** 管理员对用户可见的留言（可选，未接 API 时为空） */
-  publicMessage?: string;
-  supplementDueAt?: string;
-  supplementCategory?: string;
-  communications?: import('../data/workflowStore').WorkflowCommunication[];
-  terminationReason?: string;
+  id: string
+  name: string
+  model: string
+  modelType: string
+  evalSet: string
+  evalType:
+    | '个人敏感信息审查'
+    | '模型数据安全评测'
+    | '数据集安全评测'
+    | 'AIGC内容审核'
+    | '深度模型可信测评'
+    | '大模型安全评测'
+    | '多模态大模型安全评测'
+    | '大模型评测'
+    | '智能体安全评测'
+    | '训练集评测'
+  status: '评测中' | '评测完成' | '评测失败' | '已暂停' | '排队中' | WorkflowStatus
+  score: number | null
+  createdAt: string
+  plan: 'free' | 'paid'
+  shareLink?: string
+  requirement?: string
+  configSummary?: string
+  attachments?: StoredAttachment[]
+  reports?: StoredAttachment[]
+  pushedAt?: string
+  publicMessage?: string
+  supplementDueAt?: string
+  supplementCategory?: string
+  communications?: WorkflowCommunication[]
+  terminationReason?: string
 }
 
 export interface EvalSet {
-  id: string;
-  name: string;
-  category: string;
-  count: number;
-  createdAt: string;
+  id: string
+  name: string
+  category: string
+  count: number
+  createdAt: string
 }
 
 export interface User {
-  id: string;
-  name: string;
-  username?: string;
-  nickname?: string;
-  email: string;
-  role: UserRole;
-  avatar?: string;
-  isActive?: boolean;
-  myModels: MyModel[];
-  myTasks: EvalTask[];
-  myEvalSets: EvalSet[];
-  notificationPreference?: 'site' | 'contact' | 'both';
+  id: string
+  name: string
+  username?: string
+  nickname?: string
+  email: string
+  role: UserRole
+  avatar?: string
+  isActive?: boolean
+  /** @deprecated 正式模型不再写入 UserContext。 */
+  myModels: MyModel[]
+  /** 仅包含无真实接口的 mock 任务。 */
+  myTasks: EvalTask[]
+  myEvalSets: EvalSet[]
+  notificationPreference?: 'site' | 'contact' | 'both'
 }
 
 interface UserContextType {
-  user: User;
-  isGuest: boolean;
-  isLoggedIn: boolean;
-  isAdmin: boolean;
-  sessionReady: boolean;
-  login: (account: string, password: string, rememberMe?: boolean) => Promise<User>;
-  logout: () => Promise<void>;
+  user: User
+  isGuest: boolean
+  isLoggedIn: boolean
+  isAdmin: boolean
+  sessionReady: boolean
+  login: (account: string, password: string, rememberMe?: boolean) => Promise<User>
+  logout: () => Promise<void>
   register: (
     username: string,
     email: string,
     password: string,
     nickname?: string,
     rememberMe?: boolean,
-  ) => Promise<User>;
-  clearSession: () => void;
+  ) => Promise<User>
+  clearSession: () => void
   updateAccount: (updates: {
-    name: string;
-    email: string;
-    notificationPreference: 'site' | 'contact' | 'both';
-  }) => Promise<{ ok: boolean; message?: string }>;
+    name: string
+    email: string
+    notificationPreference: 'site' | 'contact' | 'both'
+  }) => Promise<{ ok: boolean; message?: string }>
   changePassword: (
     currentPassword: string,
     newPassword: string,
-  ) => Promise<{ ok: boolean; message?: string }>;
-  addTask: (task: EvalTask) => void;
-  updateTask: (id: string, updates: Partial<EvalTask>) => void;
-  deleteTask: (id: string) => void;
-  addModel: (model: MyModel) => void;
-  notifications: UserNotification[];
-  unreadCount: number;
-  markNoticeRead: (id: string) => void;
-  markAllNoticesRead: () => void;
+  ) => Promise<{ ok: boolean; message?: string }>
+  addTask: (task: EvalTask) => void
+  updateTask: (id: string, updates: Partial<EvalTask>) => void
+  deleteTask: (id: string) => void
+  /** @deprecated 正式模型保存请调用 src/api/model。 */
+  addModel: (model: MyModel) => void
+  notifications: UserNotification[]
+  unreadCount: number
+  markNoticeRead: (id: string) => void
+  markAllNoticesRead: () => void
 }
 
 const guestUser: User = {
@@ -129,68 +144,82 @@ const guestUser: User = {
   myTasks: [],
   myEvalSets: [],
   notificationPreference: 'both',
-};
+}
 
-const LOCAL_DATA_PREFIX = 'xuanjian-local-data:';
+const LOCAL_DATA_PREFIX = 'xuanjian-local-data:'
 
 export function getDefaultUserName(identifier: string): string {
-  const account = identifier.trim();
-  if (/^1\d{10}$/.test(account)) return `用户 ${account.slice(-4)}`;
+  const account = identifier.trim()
+  if (/^1\d{10}$/.test(account)) return `用户 ${account.slice(-4)}`
   if (account.includes('@')) {
-    const prefix = account.split('@')[0].trim();
-    return `用户 ${prefix || '新用户'}`;
+    const prefix = account.split('@')[0].trim()
+    return `用户 ${prefix || '新用户'}`
   }
-  return account ? `用户 ${account.slice(-4)}` : '普通用户';
+  return account ? `用户 ${account.slice(-4)}` : '普通用户'
 }
 
 function localDataKey(userId: string) {
-  return `${LOCAL_DATA_PREFIX}${userId}`;
+  return `${LOCAL_DATA_PREFIX}${userId}`
 }
 
-function loadLocalWorkspace(userId: string): Pick<
-  User,
-  'myModels' | 'myTasks' | 'myEvalSets' | 'notificationPreference' | 'name' | 'email'
-> {
+interface LocalWorkspace {
+  myTasks: EvalTask[]
+  myEvalSets: EvalSet[]
+  notificationPreference: 'site' | 'contact' | 'both'
+  name: string
+  email: string
+}
+
+function emptyWorkspace(): LocalWorkspace {
+  return {
+    myTasks: [],
+    myEvalSets: [],
+    notificationPreference: 'both',
+    name: '',
+    email: '',
+  }
+}
+
+function loadLocalWorkspace(userId: string): LocalWorkspace {
   try {
-    const raw = localStorage.getItem(localDataKey(userId));
-    if (!raw) {
-      return { myModels: [], myTasks: [], myEvalSets: [], notificationPreference: 'both', name: '', email: '' };
-    }
-    const parsed = JSON.parse(raw) as Partial<User>;
+    const raw = localStorage.getItem(localDataKey(userId))
+    if (!raw) return emptyWorkspace()
+
+    const parsed = JSON.parse(raw) as Partial<User>
     return {
-      myModels: Array.isArray(parsed.myModels) ? parsed.myModels : [],
       myTasks: Array.isArray(parsed.myTasks) ? parsed.myTasks : [],
       myEvalSets: Array.isArray(parsed.myEvalSets) ? parsed.myEvalSets : [],
       notificationPreference: parsed.notificationPreference || 'both',
       name: typeof parsed.name === 'string' ? parsed.name : '',
       email: typeof parsed.email === 'string' ? parsed.email : '',
-    };
+    }
   } catch {
-    return { myModels: [], myTasks: [], myEvalSets: [], notificationPreference: 'both', name: '', email: '' };
+    return emptyWorkspace()
   }
 }
 
 function saveLocalWorkspace(user: User) {
-  if (user.role === 'guest') return;
+  if (user.role === 'guest') return
   localStorage.setItem(
     localDataKey(user.id),
     JSON.stringify({
-      myModels: user.myModels,
+      // 正式模型已经有后端数据源，不再把 myModels 写入浏览器形成第二份数据库。
       myTasks: user.myTasks,
       myEvalSets: user.myEvalSets,
       notificationPreference: user.notificationPreference || 'both',
       name: user.name,
       email: user.email,
     }),
-  );
+  )
 }
 
 function mapApiUser(apiUser: AuthUser): User {
-  const id = String(apiUser.id);
-  const workspace = loadLocalWorkspace(id);
-  const roleRaw = String(apiUser.role || 'user').toLowerCase();
-  const role = (roleRaw === 'admin' ? 'admin' : 'user') as UserRole;
-  const fallbackName = apiUser.nickname || apiUser.username || '';
+  const id = String(apiUser.id)
+  const workspace = loadLocalWorkspace(id)
+  const roleRaw = String(apiUser.role || 'user').toLowerCase()
+  const role = (roleRaw === 'admin' ? 'admin' : 'user') as UserRole
+  const fallbackName = apiUser.nickname || apiUser.username || ''
+
   return {
     id,
     name: workspace.name || fallbackName,
@@ -199,43 +228,55 @@ function mapApiUser(apiUser: AuthUser): User {
     email: workspace.email || apiUser.email || apiUser.username || '',
     role,
     isActive: apiUser.is_active !== false,
-    myModels: workspace.myModels,
+    myModels: [],
     myTasks: workspace.myTasks,
     myEvalSets: workspace.myEvalSets,
     notificationPreference: workspace.notificationPreference || 'both',
-  };
+  }
 }
 
 function applyAuthSession(session: AuthSession, rememberMe: boolean): User {
-  setToken(session.token, session.expires_at_ms, rememberMe);
-  return mapApiUser(session.user);
+  setToken(session.token, session.expires_at_ms, rememberMe)
+  return mapApiUser(session.user)
 }
 
-const UserContext = createContext<UserContextType | null>(null);
+function isFormalServerTaskId(id: string) {
+  return id.startsWith('evaluation:') || id.startsWith('master:')
+}
+
+function updateStoredUser(updater: User | ((previous: User) => User)) {
+  const current = useSessionStore.getState().user ?? guestUser
+  const next = typeof updater === 'function' ? updater(current) : updater
+  useSessionStore.getState().setUser(next)
+}
+
+const UserContext = createContext<UserContextType | null>(null)
 
 /** 主站登录走后端鉴权，本地凭证重置仅用于原型联调占位。 */
 export async function adminResetLocalPassword(_userId: string, _password: string): Promise<boolean> {
-  return false;
+  return false
 }
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User>(guestUser);
-  const [sessionReady, setSessionReady] = useState(false);
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const storedUser = useSessionStore((state) => state.user)
+  const sessionReady = useSessionStore((state) => state.sessionReady)
+  const user = storedUser ?? guestUser
+  const [notifications, setNotifications] = useState<UserNotification[]>([])
 
   const clearSession = useCallback(() => {
-    removeToken();
-    setUser(guestUser);
-  }, []);
+    removeToken()
+    useSessionStore.getState().setUser(null)
+  }, [])
 
   const refreshWorkflow = useCallback(() => {
-    setNotifications(getNotifications());
-    setUser((prev) => {
-      if (prev.role === 'guest') return prev;
-      const workflows = getWorkflowTasks().filter((item) => item.userId === prev.id);
-      if (!workflows.length) return prev;
+    setNotifications(getNotifications())
+    updateStoredUser((prev) => {
+      if (prev.role === 'guest') return prev
+      const workflows = getWorkflowTasks().filter((item) => item.userId === prev.id)
+      if (!workflows.length) return prev
+
       const merged = prev.myTasks.map((task) => {
-        const workflow = workflows.find((item) => item.id === task.id);
+        const workflow = workflows.find((item) => item.id === task.id)
         return workflow
           ? {
               ...task,
@@ -249,11 +290,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               communications: workflow.communications,
               terminationReason: workflow.terminationReason,
             }
-          : task;
-      });
-      const known = new Set(merged.map((task) => task.id));
+          : task
+      })
+      const known = new Set(merged.map((task) => task.id))
       const extras: EvalTask[] = workflows
-        .filter((item) => !known.has(item.id))
+        .filter((item) => !known.has(item.id) && !isFormalServerTaskId(item.id))
         .map((item) => ({
           id: item.id,
           name: item.name,
@@ -275,71 +316,66 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           supplementCategory: item.supplementCategory,
           communications: item.communications,
           terminationReason: item.terminationReason,
-        }));
-      return { ...prev, myTasks: [...extras, ...merged] };
-    });
-  }, []);
+        }))
+      return { ...prev, myTasks: [...extras, ...merged] }
+    })
+  }, [])
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      clearSession();
-    });
-    return () => setUnauthorizedHandler(null);
-  }, [clearSession]);
+    setUnauthorizedHandler(clearSession)
+    return () => setUnauthorizedHandler(null)
+  }, [clearSession])
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const token = getToken();
+    let cancelled = false
+    void (async () => {
+      const token = getToken()
       if (!token || isTokenExpired()) {
-        if (token) removeToken();
-        if (!cancelled) setSessionReady(true);
-        return;
+        if (token) removeToken()
+        if (!cancelled) useSessionStore.getState().setSessionReady(true)
+        return
       }
+
       try {
-        const apiUser = await getCurrentUser();
-        if (!cancelled) setUser(mapApiUser(apiUser));
+        const apiUser = await getCurrentUser()
+        if (!cancelled) useSessionStore.getState().setUser(mapApiUser(apiUser))
       } catch {
-        if (!cancelled) clearSession();
+        if (!cancelled) clearSession()
       } finally {
-        if (!cancelled) setSessionReady(true);
+        if (!cancelled) useSessionStore.getState().setSessionReady(true)
       }
-    })();
+    })()
     return () => {
-      cancelled = true;
-    };
-  }, [clearSession]);
+      cancelled = true
+    }
+  }, [clearSession])
 
   useEffect(() => {
-    saveLocalWorkspace(user);
-  }, [user]);
+    saveLocalWorkspace(user)
+  }, [user])
 
   useEffect(() => {
-    refreshWorkflow();
-    window.addEventListener(WORKFLOW_EVENT, refreshWorkflow);
-    window.addEventListener('storage', refreshWorkflow);
+    refreshWorkflow()
+    window.addEventListener(WORKFLOW_EVENT, refreshWorkflow)
+    window.addEventListener('storage', refreshWorkflow)
     return () => {
-      window.removeEventListener(WORKFLOW_EVENT, refreshWorkflow);
-      window.removeEventListener('storage', refreshWorkflow);
-    };
-  }, [refreshWorkflow]);
+      window.removeEventListener(WORKFLOW_EVENT, refreshWorkflow)
+      window.removeEventListener('storage', refreshWorkflow)
+    }
+  }, [refreshWorkflow])
 
-  const isGuest = user.role === 'guest';
-  const isLoggedIn = user.role !== 'guest';
-  const isAdmin = user.role === 'admin';
+  const isGuest = user.role === 'guest'
+  const isLoggedIn = user.role !== 'guest'
+  const isAdmin = user.role === 'admin'
 
   const login = async (account: string, password: string, rememberMe = false) => {
-    const session = await loginAuth({
-      account,
-      password,
-      remember_me: rememberMe,
-    });
-    const next = applyAuthSession(session, rememberMe);
-    setUser(next);
-    upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || account });
-    recordPlatformActivity(next.id, '登录');
-    return next;
-  };
+    const session = await loginAuth({ account, password, remember_me: rememberMe })
+    const next = applyAuthSession(session, rememberMe)
+    useSessionStore.getState().setUser(next)
+    upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || account })
+    recordPlatformActivity(next.id, '登录')
+    return next
+  }
 
   const register = async (
     username: string,
@@ -354,48 +390,58 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       password,
       nickname: nickname || username,
       remember_me: rememberMe,
-    });
-    const next = applyAuthSession(session, rememberMe);
-    setUser(next);
-    upsertPlatformUser({ id: next.id, name: next.name || nickname || username, contact: email || username });
-    return next;
-  };
+    })
+    const mapped = applyAuthSession(session, rememberMe)
+    const next: User = {
+      ...mapped,
+      name: nickname || mapped.name,
+      email: email || mapped.email,
+    }
+    useSessionStore.getState().setUser(next)
+    upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || username })
+    return next
+  }
 
   const logout = async () => {
     try {
-      if (getToken()) await logoutAuth();
+      if (getToken()) await logoutAuth()
     } catch {
-      // 忽略登出接口失败
+      // 当前后端没有登出接口；即使未来接口短暂失败，也必须清理本地会话。
     } finally {
-      clearSession();
+      clearSession()
     }
-  };
+  }
 
   const updateAccount = async (updates: {
-    name: string;
-    email: string;
-    notificationPreference: 'site' | 'contact' | 'both';
+    name: string
+    email: string
+    notificationPreference: 'site' | 'contact' | 'both'
   }) => {
-    const name = updates.name.trim();
-    const email = updates.email.trim();
-    if (!name || !email) return { ok: false, message: '显示名称和登录账号不能为空' };
-    setUser((prev) => ({
+    const name = updates.name.trim()
+    const email = updates.email.trim()
+    if (!name || !email) return { ok: false, message: '显示名称和登录账号不能为空' }
+
+    // 后端暂无资料编辑接口，因此这里只保存明确的本地展示偏好，不伪装成服务端资料更新。
+    updateStoredUser((prev) => ({
       ...prev,
       name,
       email,
       notificationPreference: updates.notificationPreference,
-    }));
-    upsertPlatformUser({ id: user.id, name, contact: email });
-    return { ok: true };
-  };
+    }))
+    upsertPlatformUser({ id: user.id, name, contact: email })
+    return { ok: true }
+  }
 
   const changePassword = async (_currentPassword: string, newPassword: string) => {
-    if (newPassword.length < 6) return { ok: false, message: '新密码至少需要 6 位' };
-    return { ok: false, message: '密码修改接口尚未开放，请联系管理员' };
-  };
+    if (newPassword.length < 6) return { ok: false, message: '新密码至少需要 6 位' }
+    return { ok: false, message: '密码修改接口尚未开放，请联系管理员' }
+  }
 
   const addTask = (task: EvalTask) => {
-    setUser((prev) => ({ ...prev, myTasks: [task, ...prev.myTasks] }));
+    // 正式任务已经由后端 + Query 管理；兼容调用到这里时直接忽略，避免再次写 localStorage/workflowStore。
+    if (isFormalServerTaskId(task.id)) return
+
+    updateStoredUser((prev) => ({ ...prev, myTasks: [task, ...prev.myTasks] }))
     createWorkflowTask({
       id: task.id,
       userId: user.id,
@@ -411,31 +457,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       updatedAt: task.createdAt,
       inputs: task.attachments || [],
       outputs: task.reports || [],
-    });
-  };
+    })
+  }
 
   const updateTask = (id: string, updates: Partial<EvalTask>) => {
-    setUser((prev) => ({
+    if (isFormalServerTaskId(id)) return
+    updateStoredUser((prev) => ({
       ...prev,
-      myTasks: prev.myTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    }));
-  };
+      myTasks: prev.myTasks.map((task) => (task.id === id ? { ...task, ...updates } : task)),
+    }))
+  }
 
   const deleteTask = (id: string) => {
-    setUser((prev) => ({
+    if (isFormalServerTaskId(id)) return
+    updateStoredUser((prev) => ({
       ...prev,
-      myTasks: prev.myTasks.filter((t) => t.id !== id),
-    }));
-  };
+      myTasks: prev.myTasks.filter((task) => task.id !== id),
+    }))
+  }
 
-  const addModel = (model: MyModel) => {
-    setUser((prev) => ({ ...prev, myModels: [model, ...prev.myModels] }));
-  };
+  const addModel = (_model: MyModel) => {
+    // 正式模型已有 depth-model 后端接口；旧调用保留为 no-op，避免模型保存失败后仍出现本地“已保存”记录。
+  }
 
-  const ownNotifications = notifications.filter((item) => item.userId === user.id);
-  const unreadCount = ownNotifications.filter((item) => !item.read).length;
-  const markNoticeRead = (id: string) => markNotificationRead(id);
-  const markAllNoticesRead = () => markAllNotificationsRead(user.id);
+  const ownNotifications = notifications.filter((item) => item.userId === user.id)
+  const unreadCount = ownNotifications.filter((item) => !item.read).length
+  const markNoticeRead = (id: string) => markNotificationRead(id)
+  const markAllNoticesRead = () => markAllNotificationsRead(user.id)
 
   return (
     <UserContext.Provider
@@ -463,11 +511,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
     </UserContext.Provider>
-  );
+  )
 }
 
 export function useUser() {
-  const ctx = useContext(UserContext);
-  if (!ctx) throw new Error('useUser must be used within UserProvider');
-  return ctx;
+  const context = useContext(UserContext)
+  if (!context) throw new Error('useUser must be used within UserProvider')
+  return context
 }
