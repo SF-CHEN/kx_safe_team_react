@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   AlertTriangle, Bell, Bot, CheckCircle2, ChevronRight,
@@ -7,19 +8,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  fetchMyResourceTasks,
   parseMasterRowId,
   supplementEvaluationTaskMaterial,
   type MyResourceTask,
 } from '@/api/evaluation';
 import { downloadSysFile, uploadSysFile } from '@/api/file';
-import { fetchDepthModelDropdown } from '@/api/model';
-import { fetchMyTaskOverview } from '@/api/overview';
-import type {
-  BaseDropDepthModel,
-  EvaluationTaskMasterProductType,
-  TaskOverviewVo,
-} from '@/api/types';
+import type { EvaluationTaskMasterProductType } from '@/api/types';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { DataPagination } from '../components/DataPagination';
 import { Button } from '../components/ui/button';
@@ -27,6 +21,12 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import type { StoredAttachment } from '../data/workflowStore';
+import {
+  resourceCenterKeys,
+  resourceModelsQueryOptions,
+  resourceOverviewQueryOptions,
+  resourceTasksQueryOptions,
+} from './ResourceCenter.query';
 
 const PRODUCT_OPTIONS = [
   '全部产品', '数据集安全评测', '深度模型可信测评',
@@ -40,7 +40,6 @@ const STATUS_UI: Record<string, { label: string; style: string; icon: React.Elem
   待用户补充: { label: '待用户补充', style: 'bg-orange-50 text-orange-700', icon: AlertTriangle },
   已交付: { label: '已交付', style: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
   已终止: { label: '已终止', style: 'bg-slate-100 text-slate-600', icon: XCircle },
-  // 兼容旧状态文案
   待受理: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
   材料已接收: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
   待补充材料: { label: '待用户补充', style: 'bg-orange-50 text-orange-700', icon: AlertTriangle },
@@ -122,6 +121,7 @@ function toEvalTask(row: MyResourceTask): EvalTask {
 export function ResourceCenter() {
   const { user, isGuest, notifications, unreadCount, markNoticeRead, markAllNoticesRead } = useUser();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -129,87 +129,32 @@ export function ResourceCenter() {
   const [status, setStatus] = useState('全部状态');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
   const [selectedTask, setSelectedTask] = useState<EvalTask | null>(null);
   const [modelsOpen, setModelsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
-  const [formalTasks, setFormalTasks] = useState<EvalTask[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [taskOverview, setTaskOverview] = useState<TaskOverviewVo | null>(null);
-  const [apiModels, setApiModels] = useState<BaseDropDepthModel[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
   const supplementRef = useRef<HTMLInputElement>(null);
-  const taskRequestSeq = useRef(0);
 
-  const loadTaskOverview = useCallback(async () => {
-    if (user.role === 'guest' || !Number.isFinite(Number(user.id))) {
-      setTaskOverview(null);
-      return;
-    }
-    try {
-      const overview = await fetchMyTaskOverview();
-      setTaskOverview(overview);
-    } catch (err) {
-      setTaskOverview(null);
-      toast.error(err instanceof Error ? err.message : '加载任务概览失败');
-    }
-  }, [user.id, user.role]);
+  const userId = Number(user.id);
+  const canLoadServerData = !isGuest && Number.isFinite(userId);
+  const taskQueryInput = {
+    userId,
+    pageCurrent: page,
+    pageSize,
+    productType: productTypeFromLabel(product),
+    status: statusFromLabel(status),
+    ...parseSearchQuery(keyword),
+  };
 
-  const loadTasks = useCallback(async () => {
-    if (user.role === 'guest') {
-      taskRequestSeq.current += 1;
-      setFormalTasks([]);
-      setTotal(0);
-      setLoading(false);
-      return;
-    }
-    const userId = Number(user.id);
-    if (!Number.isFinite(userId)) {
-      taskRequestSeq.current += 1;
-      setFormalTasks([]);
-      setTotal(0);
-      setLoading(false);
-      return;
-    }
-    const productType = productTypeFromLabel(product);
-    const seq = ++taskRequestSeq.current;
-    setLoading(true);
-    try {
-      const result = await fetchMyResourceTasks({
-        userId,
-        pageCurrent: page,
-        pageSize,
-        productType,
-        status: statusFromLabel(status),
-        ...parseSearchQuery(keyword),
-      });
-      if (seq !== taskRequestSeq.current) return;
-      setFormalTasks(result.items.map(toEvalTask));
-      setTotal(result.total);
-      const maxPage = Math.max(1, Math.ceil(result.total / pageSize) || 1);
-      if (page > maxPage) setPage(maxPage);
-    } catch (err) {
-      if (seq !== taskRequestSeq.current) return;
-      toast.error(err instanceof Error ? err.message : '加载任务列表失败');
-      setFormalTasks([]);
-      setTotal(0);
-    } finally {
-      if (seq === taskRequestSeq.current) setLoading(false);
-    }
-  }, [keyword, page, pageSize, product, status, user.id, user.role]);
+  const tasksQuery = useQuery(resourceTasksQueryOptions(taskQueryInput, canLoadServerData));
+  const overviewQuery = useQuery(resourceOverviewQueryOptions(userId, canLoadServerData));
+  const modelsQuery = useQuery(resourceModelsQueryOptions(userId, modelsOpen && canLoadServerData));
 
-  const loadModels = useCallback(async () => {
-    setModelsLoading(true);
-    try {
-      const rows = await fetchDepthModelDropdown();
-      setApiModels(rows);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '加载模型配置失败');
-      setApiModels([]);
-    } finally {
-      setModelsLoading(false);
-    }
-  }, []);
+  const formalTasks = (tasksQuery.data?.items ?? []).map(toEvalTask);
+  const total = tasksQuery.data?.total ?? 0;
+  const taskOverview = overviewQuery.data ?? null;
+  const apiModels = modelsQuery.data ?? [];
+  const loading = tasksQuery.isPending && !tasksQuery.data;
+  const modelsLoading = modelsQuery.isPending && !modelsQuery.data;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -220,19 +165,25 @@ export function ResourceCenter() {
   }, [search]);
 
   useEffect(() => {
-    if (isGuest) return;
-    void loadTasks();
-  }, [isGuest, loadTasks]);
+    if (!tasksQuery.error) return;
+    toast.error(tasksQuery.error instanceof Error ? tasksQuery.error.message : '加载任务列表失败');
+  }, [tasksQuery.error]);
 
   useEffect(() => {
-    if (isGuest) return;
-    void loadTaskOverview();
-  }, [isGuest, loadTaskOverview]);
+    if (!overviewQuery.error) return;
+    toast.error(overviewQuery.error instanceof Error ? overviewQuery.error.message : '加载任务概览失败');
+  }, [overviewQuery.error]);
 
   useEffect(() => {
-    if (!modelsOpen || isGuest) return;
-    void loadModels();
-  }, [modelsOpen, isGuest, loadModels]);
+    if (!modelsOpen || !modelsQuery.error) return;
+    toast.error(modelsQuery.error instanceof Error ? modelsQuery.error.message : '加载模型配置失败');
+  }, [modelsOpen, modelsQuery.error]);
+
+  useEffect(() => {
+    if (!tasksQuery.data) return;
+    const maxPage = Math.max(1, Math.ceil(tasksQuery.data.total / pageSize) || 1);
+    if (page > maxPage) setPage(maxPage);
+  }, [page, pageSize, tasksQuery.data]);
 
   useEffect(() => {
     const tab = params.get('tab');
@@ -281,9 +232,8 @@ export function ResourceCenter() {
       const uploaded = await uploadSysFile(files[0]);
       if (uploaded.id == null) throw new Error('上传未返回文件编号');
       await supplementEvaluationTaskMaterial({ id: masterId, supplementFileId: uploaded.id });
+      await queryClient.invalidateQueries({ queryKey: resourceCenterKeys.all });
       toast.success('补充材料已提交');
-      void loadTasks();
-      void loadTaskOverview();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '补充材料提交失败');
     } finally {
@@ -346,7 +296,7 @@ export function ResourceCenter() {
             total={total}
             page={page}
             pageSize={pageSize}
-            disabled={loading}
+            disabled={loading || tasksQuery.isFetching}
             onPageChange={setPage}
             onPageSizeChange={(size) => {
               setPageSize(size);
