@@ -7,8 +7,15 @@ import {
   type GatewayError,
 } from '@/utils/gateway';
 
-/** 对接 temp-maven（api.json）的 axios 客户端 */
-export function createTempClient(timeout = 30_000): AxiosInstance {
+const tempClients = new Map<number, AxiosInstance>();
+
+/**
+ * 创建 temp-maven 客户端。
+ *
+ * 相同 timeout 的请求复用同一个 axios instance，避免每个 API 调用都重复创建实例和注册拦截器。
+ * 特殊长耗时接口仍可通过 createTempClient(customTimeout) 获取对应 timeout 的复用实例。
+ */
+function createConfiguredTempClient(timeout: number): AxiosInstance {
   const client = axios.create({
     baseURL: getTempApiBase(),
     timeout,
@@ -36,3 +43,16 @@ export function createTempClient(timeout = 30_000): AxiosInstance {
 
   return client;
 }
+
+/** 对接 temp-maven（api.json）的 axios 客户端 */
+export function createTempClient(timeout = 30_000): AxiosInstance {
+  const cached = tempClients.get(timeout);
+  if (cached) return cached;
+
+  const client = createConfiguredTempClient(timeout);
+  tempClients.set(timeout, client);
+  return client;
+}
+
+/** 默认业务请求客户端；新代码优先直接复用该实例。 */
+export const tempClient = createTempClient();
