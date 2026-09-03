@@ -1,216 +1,189 @@
-# 玄鉴 React 模板化迁移执行计划
+# 玄鉴 React 模板化迁移完成记录
 
 > 工作分支：`refactor/template-alignment`
 >
-> 唯一工程基准：`SF-CHEN/react-ai-template`
+> 工程规范基准：`SF-CHEN/react-ai-template`
 >
 > 业务与视觉来源：`SF-CHEN/kx_safe_team_react`
 
-## 1. 最终目标
+## 1. 本轮目标
 
-本次不再以“修补旧项目结构”为目标，而是直接把当前项目实现成 `react-ai-template` 的工程形态：
-
-- **工程结构、代码规范、数据层、状态管理、Skills、工具链：以 `react-ai-template` 为标准。**
-- **现有业务、路由地址、页面 DOM、className、CSS、动画与视觉效果：以当前玄鉴项目为标准。**
-- **已有并能覆盖业务的接口继续使用真实 API；没有接口或接口能力不足的功能继续使用 mock。**
-- **mock 必须显式放在 `src/mocks` 或页面私有 `*.mock.ts`，不能伪装成真实后端成功。**
-
-最终结果可以概括为：
+本轮迁移已经完成“模板工程能力 + 现有玄鉴业务 + 现有玄鉴视觉”的合并：
 
 ```text
-react-ai-template 的骨架
+react-ai-template 的工程规范
 +
-kx_safe_team_react 的完整业务
+kx_safe_team_react 的业务实现
 +
 kx_safe_team_react 的现有视觉
 ```
 
-## 2. 不变项
+迁移过程中没有强制把现有 Radix/shadcn UI 替换成 Base UI，也没有为了追求模板版本号而直接升级 React 19 / Vite 8；这两项会扩大视觉和运行时回归面，不属于本轮必要改动。
 
-迁移过程中以下内容默认冻结：
+## 2. 已完成的工程标准化
 
-1. `createHashRouter` 与当前 URL；不切 BrowserRouter。
-2. 当前页面 className、inline style、全局 CSS、动画、响应式表现。
-3. 当前 Radix/shadcn UI 源码；不强制切换 Base UI。
-4. 当前 Vite 的 Figma asset resolver、代理、base、manualChunks、assetsInclude。
-5. 已接通的真实 API、鉴权头、上传下载、管理员交付等真实业务能力。
-6. `newUI/` 继续作为只读视觉参考，不作为运行时业务数据源。
+- [x] `AGENTS.md` 按模板原则重写并加入玄鉴项目覆盖规则。
+- [x] 增加 `skills/react-app`、`react-data`、`react-ui`、`react-performance`。
+- [x] 增加 ESLint、Prettier、Vitest、Knip、TypeScript 工具链与脚本。
+- [x] 增加 TanStack Query、Zustand、Zod、auto-import、icons 等工程依赖。
+- [x] Axios 请求客户端统一复用，避免业务 API 重复创建 interceptor。
+- [x] 新增 `package-lock.json`，正式 CI 使用 `npm ci` 和 npm cache。
+- [x] TypeScript 已开启 `strict: true`。
 
-## 3. 目标目录
+## 3. 已完成的应用基础设施
+
+- [x] 建立 `src/app/AppProviders.tsx`。
+- [x] QueryClientProvider 进入应用 Provider 层。
+- [x] 建立 app 级 `ErrorBoundary`。
+- [x] Router / routes 职责拆分，同时保留 `createHashRouter`。
+- [x] 会话客户端状态进入 Zustand；`UserContext` 仅保留迁移兼容职责。
+
+## 4. 已完成的目录迁移
+
+当前主要运行时代码已经按页面优先的模板结构整理：
 
 ```text
 src/
-├── api/                 # 请求基础设施、真实后端 API、DTO
-├── app/                 # App、Provider、Hash Router、路由元数据、守卫
-├── pages/               # 路由页面与页面私有代码
+├── api/
+├── app/
+├── pages/
 ├── components/
-│   ├── ui/              # 当前 shadcn/Radix 基础组件源码
-│   ├── common/          # 跨页面通用组件
-│   └── charts/          # 图表公共封装
-├── layouts/             # 页面布局
-├── hooks/               # 跨页面通用 Hook
-├── store/               # Zustand 客户端全局状态
-├── mocks/               # 没有后端能力的明确 mock
-├── styles/              # 当前视觉样式，迁移期不改
-├── types/               # 真正跨业务共享类型
-└── utils/               # 通用纯函数
+├── layouts/
+├── hooks/
+├── store/
+├── mocks/
+├── context/
+├── data/
+├── styles/
+├── imports/
+└── utils/
 ```
 
-禁止重新建立 `features/` / `modules/` 作为默认业务根目录。
+具体完成项：
 
-## 4. 数据源规则
+- [x] `src/app/pages` → `src/pages`。
+- [x] `src/app/components` → `src/components`。
+- [x] Layout → `src/layouts`。
+- [x] App / Providers / ErrorBoundary / Router → `src/app`。
+- [x] 建立 `src/store` 与 `src/mocks`。
+- [x] 修复目录迁移导致的 11 处相对资源引用错误。
+- [x] 运行时不再以旧 `src/app/pages + src/app/components` 作为默认业务目录。
 
-### 真实接口完整
+跨页面组件目前保留在 `src/components` 根目录和 `ui/` 中，没有机械地为每个组件创建 `common/xxx` 单文件目录；后续只有出现真实复用边界时再继续分层。
+
+## 5. 已完成的数据层与真实接口整改
+
+### ResourceCenter / Admin
+
+- [x] 服务端任务、概览、模型等数据迁入 TanStack Query。
+- [x] 删除/替代页面层手写 request sequence、请求去重、失败冷却等重复能力。
+- [x] 管理端任务、沟通、文件、交付等真实 API 统一进入请求层。
+- [x] 状态、产品等映射集中整理，减少页面间重复映射。
+
+### TaskCreationModal
+
+- [x] 正式任务只以真实后端提交成功为准。
+- [x] 模型保存失败时不再向 UserContext/localStorage 伪造“已保存模型”。
+- [x] 不再向本地任务系统复制正式服务端任务。
+- [x] 创建参数直接使用 `CreateEvaluationTaskInput`，不再复用全 optional 的响应 DTO。
+
+### DeepModelEval
+
+- [x] 删除未被使用的 `Date.now() + addTask()` 假任务提交死代码。
+- [x] 当前实际交互继续使用真实 `model-trust-evaluation-task` 上传任务流程。
+
+### 登录 / 注册 / 用户状态
+
+- [x] 修正注册与登录“邮箱/用户名”契约不一致问题。
+- [x] 忘记密码在无真实后端接口时走显式 mock，不再伪装真实远端成功。
+- [x] 去掉前端自行发明的 1 天 / 15 天 token 有效期；“记住登录”只表达存储策略。
+- [x] 服务端正式任务不再依赖 UserContext/localStorage 作为事实来源。
+
+### API 边界
+
+- [x] 引入 Input / Response 分离的严格创建类型。
+- [x] 页面代码不直接创建 Axios client。
+- [x] AIGC、文件、概览、模型、任务等 API 使用统一请求基础设施。
+
+## 6. Mock 边界
+
+后端暂未覆盖的能力已显式放入：
 
 ```text
-src/api
-  ↓
-TanStack Query
-  ↓
-page
+src/mocks/auth/
+src/mocks/evaluation/
 ```
 
-服务端数据不再复制到 Zustand / UserContext / localStorage。
+约束：
 
-### 没有接口或接口覆盖不足
+- mock 不和正式服务端任务写入同一事实数据源。
+- 接口失败时不能偷偷回退 localStorage 并显示成功。
+- 营销页、效果示意、雷达图等纯展示数据可以保留静态数据。
+- 后端能力补齐后只替换 mock service / adapter，不要求重写页面视觉。
+
+## 7. 保留不动的项目特性
+
+以下内容是有意保留，而不是迁移遗漏：
+
+1. `createHashRouter` 与现有 `/#/path` URL。
+2. 当前 DOM、className、CSS、动画和响应式表现。
+3. 当前 Radix/shadcn UI 源码。
+4. 当前 Vite 的 Figma asset resolver、代理、base、manualChunks、assetsInclude。
+5. `newUI/` 继续作为只读视觉参考。
+6. React 18 / Vite 6 暂不为了版本对齐而强制升级。
+
+## 8. 类型与构建验证
+
+本轮已经完成：
+
+- [x] `strict: true`。
+- [x] strict 模式下 TypeScript typecheck 通过。
+- [x] Vite production build 通过。
+- [x] 目录迁移后的资源解析通过生产构建验证。
+- [x] 正式 GitHub Actions 校验保留为 `.github/workflows/template-alignment-check.yml`。
+- [x] 所有用于迁移的一次性 autofix workflow / trigger / patch script 已删除。
+
+正式 CI 使用：
 
 ```text
-src/mocks 或 page/*.mock.ts
-  ↓
-mock service / adapter
-  ↓
-page
+Node 22
+→ npm ci
+→ npm run typecheck
+→ npm run build
 ```
 
-后端以后补齐时，只替换数据源，页面视觉不重写。
+## 9. 后续可选优化
 
-### 全局客户端状态
+以下不再是“本轮迁移阻塞项”，建议按实际维护成本逐步做，不要一次性大拆：
 
-使用 Zustand，例如会话客户端状态、跨页面 UI 状态。服务端任务列表、报告、模型列表不放 Zustand。
+- DeveloperCenter、OnlineExperience、AigcContent、CodeVulnerabilityAudit、LLMEvaluation 等超大页面按真实职责拆分。
+- 当 `src/context` / `src/data/workflowStore` 不再被兼容功能使用后，再彻底删除对应兼容代码。
+- 根据真实需求升级 React 19 / Vite 8 / Recharts 3，而不是仅为版本号对齐升级。
+- 开始新增复杂表单时，优先 RHF + Zod；不要为了重构旧表单而无收益地全量替换。
 
-### 页面状态
+## 10. 完成定义
 
-筛选条件、Dialog 开关、Tab、展开状态等使用 React state。
+本轮模板化迁移完成标准：
 
-### 表单
+- [x] 页面视觉与迁移前保持同一实现来源。
+- [x] 所有路由继续走 Hash Router。
+- [x] 页面不直接使用 Axios client。
+- [x] 服务端列表/详情默认由 TanStack Query 管理。
+- [x] 正式任务不复制进 localStorage 作为第二事实来源。
+- [x] mock 与真实 API 有明确代码边界。
+- [x] 页面、组件、layout 已归入模板化目录。
+- [x] `AGENTS.md` 与四个 Skills 可直接指导后续 AI 生成代码。
+- [x] ESLint、Prettier、TypeScript、Vitest、Knip 配置存在。
+- [x] TypeScript strict、production build 已通过。
+- [x] npm lockfile 与可重复 CI 安装链路已建立。
+- [x] 仓库不保留一次性迁移脚本或自动改源码 workflow。
 
-复杂表单统一 React Hook Form + Zod。字段和 API Input 一致时直接提交 `values`，不逐字段重复组装。
+## 11. Git 约束
 
-## 5. 迁移阶段
-
-### Phase A：仓库标准化
-
-- [x] 建立独立分支 `refactor/template-alignment`
-- [x] 建立 `src/mocks` 边界
-- [x] Axios client 复用，避免重复注册 interceptor
-- [ ] 用模板规范重写 `AGENTS.md`
-- [ ] 增加 `skills/react-app`、`react-data`、`react-ui`、`react-performance`
-- [ ] 增加 ESLint / Prettier / Knip / Vitest / TypeScript 工具链
-- [ ] 增加 TanStack Query / Zustand / Zod / auto-import / icons 依赖
-
-### Phase B：应用基础设施
-
-- [ ] 建立 `src/app/AppProviders.tsx`
-- [ ] QueryClientProvider 进入 AppProviders
-- [ ] 保留 UserProvider 作为兼容会话 Provider，逐步缩减职责
-- [ ] 将 Router 创建与路由元数据职责拆清，继续使用 Hash Router
-- [ ] 建立 app 级 ErrorBoundary
-
-### Phase C：目录迁移
-
-- [ ] `src/app/pages` → `src/pages`
-- [ ] `src/app/components/ui` → `src/components/ui`
-- [ ] 跨页面组件 → `src/components/common`
-- [ ] `Layout.tsx` → `src/layouts`
-- [ ] 页面私有组件就近放入对应 page
-- [ ] 更新 import，移除旧目录兼容层
-
-迁移只改变文件归属与 import；不改变视觉 JSX。
-
-### Phase D：真实业务数据层
-
-优先处理真实接口已经存在的页面：
-
-1. ResourceCenter
-2. AdminDashboard / AdminWorkflowWorkbench
-3. TaskCreationModal
-4. 登录 / 注册
-5. AIGC 在线体验
-6. 各类评测任务创建与查询
-
-原则：
-
-- 服务端状态改为 TanStack Query。
-- 删除页面中手写的 request sequence、请求去重、失败冷却等 Query 已提供的能力。
-- API DTO 按 Create/Input、Response、Query 拆分，不再一个全 optional 类型复用所有场景。
-- 状态/产品映射集中在 adapter，不在多个页面重复维护。
-
-### Phase E：没有接口的业务
-
-当前没有完整后端能力的功能保留 mock，例如部分评测结果详情、纯演示结果、暂未开放的用户功能。
-
-要求：
-
-- mock 文件名明确带 `mock`。
-- 页面不直接维护大段业务假数据。
-- mock 与真实正式任务不写入同一持久化数据源。
-- 不出现“真实接口失败后偷偷落 localStorage 然后显示成功”的行为。
-
-### Phase F：大页面整理
-
-按真实职责拆分 50KB~100KB 页面，优先：
-
-- DeveloperCenter
-- DeepModelEval
-- OnlineExperience
-- AigcContent
-- CodeVulnerabilityAudit
-- LLMEvaluation
-
-只在存在清晰 UI/业务边界时拆组件，不建立目录全家桶。
-
-### Phase G：类型收口
-
-- [ ] 清理 `any`
-- [ ] API 输入/输出边界收紧
-- [ ] 将 `strict` 最终切为 true
-- [ ] 清理迁移兼容文件、死代码和旧 mock 数据源
-
-## 6. 当前业务的明确处理策略
-
-| 模块 | 数据策略 |
-|---|---|
-| ResourceCenter 任务列表/概览 | 真实 API + TanStack Query |
-| 管理端任务/交付/补件 | 真实 API + TanStack Query |
-| TaskCreationModal | 真实 API；模型保存失败不得伪造本地真实模型 |
-| TaskDetailNew 评测结果 | 当前无完整结果接口时使用明确 mock |
-| DeepModelEval | 接口字段不能覆盖当前 UI 时使用 mock service；能覆盖部分能力时不要混合伪成功 |
-| AIGC analyze / samples / reports | 保留现有真实 AIGC API |
-| 忘记密码 | 无接口时使用明确 mock service |
-| 营销页雷达图/场景示意 | 允许静态展示数据 |
-| 用户资料 | 后端支持的字段走 API；未支持字段不得假装已远端保存 |
-
-## 7. 完成定义
-
-本轮迁移完成必须同时满足：
-
-- 运行时页面与迁移前视觉一致。
-- 所有路由仍走 Hash Router。
-- 页面代码不直接使用 Axios。
-- 服务端数据默认由 TanStack Query 管理。
-- 客户端全局状态归 Zustand；不把服务端列表复制进去。
-- mock 与真实 API 有清晰代码边界。
-- 页面、组件、layout 已归入模板目录。
-- `AGENTS.md` 与四个 Skills 可直接指导后续 AI 生成代码。
-- ESLint、Prettier、TypeScript、Vitest、Knip 配置存在且与项目结构一致。
-- 不再以旧 `app/pages + app/components` 作为业务代码默认落点。
-
-## 8. Git 约束
-
-本轮全部修改只提交到：
+本轮修改全部位于：
 
 ```text
 refactor/template-alignment
 ```
 
-用户没有要求前，不创建其他分支、不创建 PR、不改默认分支。
+未创建额外业务分支，未创建 PR，未修改默认分支。
