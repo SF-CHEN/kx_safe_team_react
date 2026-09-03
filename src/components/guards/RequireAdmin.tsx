@@ -39,9 +39,8 @@ function Forbidden() {
           <button
             type="button"
             onClick={() => {
-              void logout().then(() => {
-                navigate('/login', { replace: true, state: { from: '/admin', adminRequired: true } });
-              });
+              logout();
+              navigate('/login', { replace: true, state: { from: '/admin', adminRequired: true } });
             }}
             className="flex-1 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold hover:bg-blue-500"
           >
