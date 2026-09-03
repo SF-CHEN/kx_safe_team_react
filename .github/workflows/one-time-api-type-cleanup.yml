@@ -1,0 +1,96 @@
+name: One-time API Type Cleanup
+
+on:
+  push:
+    branches:
+      - refactor/template-alignment
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.head_commit.message == 'chore: apply api type cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace legacy API type imports
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+
+          function replaceExact(file, from, to) {
+            const source = fs.readFileSync(file, 'utf8')
+            if (!source.includes(from)) {
+              throw new Error(`${file}: replacement source not found`)
+            }
+            fs.writeFileSync(file, source.replace(from, to))
+          }
+
+          replaceExact(
+            'src/components/AdminFieldDictPanel.tsx',
+            `import type {\n  EvaluationDimension,\n  EvaluationTaskKind,\n  PresetScene,\n} from '@/api/types';`,
+            `import type { EvaluationTaskKind } from '@/api/evaluationDimension';\nimport type { EvaluationDimension } from '@/api/generated/types/evaluation-dimension';\nimport type { PresetScene } from '@/api/generated/types/preset-scene';`,
+          )
+
+          replaceExact(
+            'src/components/AdminWorkflowWorkbench.tsx',
+            `import type { UserOverviewVo } from '@/api/types';`,
+            `import type { UserOverviewVo } from '@/api/generated/types/overview';`,
+          )
+          replaceExact(
+            'src/components/AdminWorkflowWorkbench.tsx',
+            `  待受理: 'bg-amber-50 text-amber-700', 材料已接收: 'bg-cyan-50 text-cyan-700',\n  待补充材料: 'bg-orange-50 text-orange-700', 待交付: 'bg-violet-50 text-violet-700',\n  已推送: 'bg-emerald-50 text-emerald-700', 处理异常: 'bg-red-50 text-red-700',\n`,
+            ``,
+          )
+          replaceExact(
+            'src/components/AdminWorkflowWorkbench.tsx',
+            `  待受理: 'bg-amber-500', 材料已接收: 'bg-cyan-500',\n  待补充材料: 'bg-orange-500', 待交付: 'bg-violet-500',\n  已推送: 'bg-emerald-500', 处理异常: 'bg-red-500',\n`,
+            ``,
+          )
+          replaceExact(
+            'src/components/AdminWorkflowWorkbench.tsx',
+            `export function normalizeAdminStatus(status: string): WorkflowStatus {\n  const upper = status.trim().toUpperCase();\n  if (\n    status === '待补充材料' ||\n    status === '待用户补充' ||\n    upper === 'AWAIT_SUPPLEMENT'\n  ) {\n    return '待用户补充';\n  }\n  if (\n    status === '已推送' ||\n    status === '已交付' ||\n    upper === 'COMPLETED' ||\n    upper === 'DELIVERED'\n  ) {\n    return '已交付';\n  }\n  if (\n    status === '已终止' ||\n    status === '处理异常' ||\n    upper === 'FAILED' ||\n    upper === 'TERMINATED'\n  ) {\n    return '已终止';\n  }\n  return '处理中';\n}`,
+            `export function normalizeAdminStatus(status: string): WorkflowStatus {\n  const upper = status.trim().toUpperCase();\n  if (status === '待用户补充' || upper === 'AWAIT_SUPPLEMENT') return '待用户补充';\n  if (status === '已交付' || upper === 'DELIVERED') return '已交付';\n  if (status === '已终止' || upper === 'TERMINATED') return '已终止';\n  return '处理中';\n}`,
+          )
+
+          replaceExact(
+            'src/components/TaskCreationModal.tsx',
+            `import type {\n  BaseDropDepthModel,\n  EvaluationTaskKind,\n  PresetSceneVo,\n} from '@/api/types';`,
+            `import type { EvaluationTaskKind } from '@/api/evaluation/evaluationTask';\nimport type { BaseDropDepthModel } from '@/api/generated/types/depth-model';\nimport type { PresetSceneVo } from '@/api/generated/types/preset-scene';`,
+          )
+
+          replaceExact(
+            'src/pages/AdminDashboard.tsx',
+            `import type { OverviewVo } from '@/api/types';`,
+            `import type { OverviewVo } from '@/api/generated/types/overview';`,
+          )
+
+          replaceExact(
+            'src/pages/ResourceCenter.tsx',
+            `import type { EvaluationTaskMasterProductType } from '@/api/types';`,
+            `import type {\n  EvaluationTaskMasterProductType,\n  EvaluationTaskMasterStatus,\n} from '@/api/evaluation/taskMeta';`,
+          )
+          replaceExact(
+            'src/pages/ResourceCenter.tsx',
+            `  待受理: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },\n  材料已接收: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },\n  待补充材料: { label: '待用户补充', style: 'bg-orange-50 text-orange-700', icon: AlertTriangle },\n  待交付: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },\n  已推送: { label: '已交付', style: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },\n  处理异常: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },\n`,
+            ``,
+          )
+          replaceExact(
+            'src/pages/ResourceCenter.tsx',
+            `function statusFromLabel(status: string): string | undefined {`,
+            `function statusFromLabel(status: string): EvaluationTaskMasterStatus | undefined {`,
+          )
+          NODE
+
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/AdminFieldDictPanel.tsx src/components/AdminWorkflowWorkbench.tsx src/components/TaskCreationModal.tsx src/pages/AdminDashboard.tsx src/pages/ResourceCenter.tsx
+          git commit -m "refactor: 清理剩余 API 旧类型引用 [skip ci]"
+          git pull --rebase origin refactor/template-alignment
+          git push origin HEAD:refactor/template-alignment
