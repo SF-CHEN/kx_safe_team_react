@@ -38,6 +38,9 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install --ignore-scripts --no-audit --no-fund
+          # npm 10 can emit an incomplete nested dependency tree on the first install;
+          # a second install normalizes the freshly generated lock before npm ci validates it.
+          npm install --ignore-scripts --no-audit --no-fund
 
       - name: Validate with npm ci
         if: steps.guard.outputs.run == 'true'
