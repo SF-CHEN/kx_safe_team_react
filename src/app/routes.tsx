@@ -1,8 +1,8 @@
 import React, { Suspense, lazy, type ComponentType } from 'react'
 import { createHashRouter, Navigate, Outlet } from 'react-router'
 
+import { Layout } from '@/components/Layout'
 import { ScrollToTop } from '@/components/ScrollToTop'
-import { MainLayout } from '@/layouts/MainLayout'
 import { AppErrorBoundary } from './ErrorBoundary'
 
 function lazyPage(
@@ -94,10 +94,10 @@ function withSuspense(Component: ComponentType) {
 
 function Root() {
   return (
-    <MainLayout>
+    <Layout>
       <ScrollToTop />
       <Outlet />
-    </MainLayout>
+    </Layout>
   )
 }
 
