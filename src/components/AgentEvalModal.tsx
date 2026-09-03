@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,11 @@ import { Badge } from './ui/badge';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Checkbox } from './ui/checkbox';
 import {
-  CheckCircle2, AlertTriangle, Lock, Clock,
-  FileText, Eye, Crown, Bot, Network, Shield, Wrench, Users
+  CheckCircle2, Lock, FileText, Bot, Network, Shield, Wrench, Users
 } from 'lucide-react';
-import { useUser, EvalTask, MyModel } from '../context/UserContext';
+import { addDepthModel, fetchDepthModelDropdown } from '@/api/model';
+import type { BaseDropDepthModel } from '@/api/generated/types/depth-model';
+import { useUser, type EvalTask } from '../context/UserContext';
 import { toast } from 'sonner';
 
 type PricingPlan = 'free' | 'paid';
@@ -60,13 +61,25 @@ const EVAL_MODULES = [
   },
 ];
 
+function resolveDropModel(item: BaseDropDepthModel) {
+  const data = item.data;
+  const id = data?.id ?? item.id;
+  const name = data?.name || item.name || (id != null ? `模型 #${id}` : '');
+  return {
+    id,
+    name,
+    type: data?.type || 'USER',
+    baseUrl: data?.baseUrl || '',
+  };
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
 }
 
 export function AgentEvalModal({ open, onClose }: Props) {
-  const { user, addTask, addModel } = useUser();
+  const { user, addTask } = useUser();
   const [taskName, setTaskName] = useState('');
   const [agentType, setAgentType] = useState<AgentType>('single');
   const [modelSource, setModelSource] = useState<ModelSource>('custom_new');
@@ -76,6 +89,42 @@ export function AgentEvalModal({ open, onClose }: Props) {
   const [customApiKey, setCustomApiKey] = useState('');
   const [selectedModules, setSelectedModules] = useState<string[]>(['intrinsic', 'tool']);
   const [pricingPlan, setPricingPlan] = useState<PricingPlan>('paid');
+  const [dropModels, setDropModels] = useState<BaseDropDepthModel[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setModelsLoading(true);
+    void fetchDepthModelDropdown()
+      .then((models) => {
+        if (!cancelled) setDropModels(models);
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(err instanceof Error ? err.message : '加载模型列表失败');
+      })
+      .finally(() => {
+        if (!cancelled) setModelsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const resolvedModels = useMemo(
+    () =>
+      dropModels
+        .map(resolveDropModel)
+        .filter((model): model is {
+          id: number;
+          name: string;
+          type: 'BUILT_IN' | 'USER';
+          baseUrl: string;
+        } => model.id != null && Boolean(model.name)),
+    [dropModels],
+  );
 
   const toggleModule = (id: string) => {
     setSelectedModules(prev =>
@@ -93,69 +142,92 @@ export function AgentEvalModal({ open, onClose }: Props) {
     setCustomApiKey('');
     setSelectedModules(['intrinsic', 'tool']);
     setPricingPlan('paid');
+    setSubmitting(false);
   };
 
   const handleClose = () => {
+    if (submitting) return;
     resetForm();
     onClose();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitting) return;
     if (!taskName.trim()) {
       toast.error('请填写任务名称');
       return;
     }
 
+    const selectedModel = modelSource === 'my_models'
+      ? resolvedModels.find(model => String(model.id) === selectedMyModel)
+      : undefined;
     const modelName = modelSource === 'my_models'
-        ? user.myModels.find(m => m.id === selectedMyModel)?.name || ''
-        : customModelName;
+      ? selectedModel?.name || ''
+      : customModelName.trim();
 
     if (!modelName) {
       toast.error('请选择或填写被测 Agent 模型');
       return;
     }
-
+    if (modelSource === 'custom_new' && !customApiBase.trim()) {
+      toast.error('请填写 API Base URL');
+      return;
+    }
+    if (modelSource === 'my_models' && !selectedModel) {
+      toast.error('请选择被测 Agent 模型');
+      return;
+    }
     if (selectedModules.length === 0) {
       toast.error('请至少选择一个评测模块');
       return;
     }
 
-    if (modelSource === 'custom_new' && customModelName && customApiBase) {
-      const newModel: MyModel = {
-        id: `m_${Date.now()}`,
-        name: customModelName,
-        type: '自定义',
-        apiBase: customApiBase,
-        modelId: customModelName,
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      addModel(newModel);
-    }
-
     const moduleNames = selectedModules
       .map(id => EVAL_MODULES.find(m => m.id === id)?.name || id)
       .join('、');
+    const userId = Number(user.id);
 
-    const newTask: EvalTask = {
-      id: `t_${Date.now()}`,
-      name: taskName,
-      model: modelName,
-      modelType: '自定义',
-      evalSet: `智能体安全评测 · ${agentType === 'single' ? '单智能体' : '多智能体'}`,
-      evalType: '智能体安全评测',
-      status: '处理中',
-      score: null,
-      createdAt: new Date().toLocaleString('zh-CN'),
-      plan: pricingPlan,
-      requirement: `重点评测模块：${moduleNames}`,
-      configSummary: `智能体类型：${agentType === 'single' ? '单智能体' : '多智能体'}；模型：${modelName}`,
-    };
+    setSubmitting(true);
+    try {
+      if (modelSource === 'custom_new') {
+        try {
+          await addDepthModel({
+            name: modelName,
+            baseUrl: customApiBase.trim(),
+            apiKey: customApiKey || undefined,
+            type: 'USER',
+            ...(Number.isFinite(userId) ? { userId } : {}),
+          });
+          setDropModels(await fetchDepthModelDropdown());
+        } catch {
+          // 当前智能体评测仍是 mock 工作流；模型保存失败不应伪造“已保存”，但不阻断本次自定义 API 评测配置。
+        }
+      }
 
-    addTask(newTask);
-    toast.success('智能体安全评测任务已提交', {
-      description: `评测模块：${moduleNames}。技术团队受理后将开展正式评测。`,
-    });
-    handleClose();
+      const newTask: EvalTask = {
+        id: `t_${Date.now()}`,
+        name: taskName.trim(),
+        model: modelName,
+        modelType: selectedModel?.type === 'BUILT_IN' ? '内置模型' : modelSource === 'my_models' ? '用户模型' : '自定义',
+        evalSet: `智能体安全评测 · ${agentType === 'single' ? '单智能体' : '多智能体'}`,
+        evalType: '智能体安全评测',
+        status: '处理中',
+        score: null,
+        createdAt: new Date().toLocaleString('zh-CN'),
+        plan: pricingPlan,
+        requirement: `重点评测模块：${moduleNames}`,
+        configSummary: `智能体类型：${agentType === 'single' ? '单智能体' : '多智能体'}；模型：${modelName}`,
+      };
+
+      addTask(newTask);
+      toast.success('智能体安全评测任务已提交', {
+        description: `评测模块：${moduleNames}。技术团队受理后将开展正式评测。`,
+      });
+      resetForm();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -263,23 +335,26 @@ export function AgentEvalModal({ open, onClose }: Props) {
 
             {modelSource === 'my_models' && (
               <div className="border rounded-lg bg-gray-50 p-2 space-y-1.5 max-h-40 overflow-y-auto">
-                {user.myModels.length === 0 ? (
+                {modelsLoading ? (
+                  <div className="py-6 text-center text-gray-400 text-sm">加载模型列表…</div>
+                ) : resolvedModels.length === 0 ? (
                   <div className="py-6 text-center text-gray-400 text-sm">
                     <Bot className="w-8 h-8 mx-auto mb-2 text-gray-300" />
                     <p className="text-xs">暂无模型，请先添加自定义模型</p>
                   </div>
-                ) : user.myModels.map(m => (
+                ) : resolvedModels.map(model => (
                   <button
-                    key={m.id}
-                    onClick={() => setSelectedMyModel(m.id)}
+                    key={model.id}
+                    type="button"
+                    onClick={() => setSelectedMyModel(String(model.id))}
                     className={`w-full text-left p-3 rounded-lg border transition-all ${
-                      selectedMyModel === m.id
+                      selectedMyModel === String(model.id)
                         ? 'border-violet-400 bg-violet-50'
                         : 'border-transparent bg-white hover:border-gray-200'
                     }`}
                   >
-                    <div className="text-sm font-medium">{m.name}</div>
-                    <div className="text-xs text-gray-400">{m.apiBase}</div>
+                    <div className="text-sm font-medium">{model.name}</div>
+                    <div className="text-xs text-gray-400">{model.baseUrl || '—'}</div>
                   </button>
                 ))}
               </div>
@@ -328,18 +403,18 @@ export function AgentEvalModal({ open, onClose }: Props) {
               })}
             </div>
           </div>
-
         </div>
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex items-center justify-between">
-          <Button variant="outline" onClick={handleClose}>取消</Button>
+          <Button variant="outline" onClick={handleClose} disabled={submitting}>取消</Button>
           <Button
             className="bg-violet-600 hover:bg-violet-700 text-white"
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
+            disabled={submitting}
           >
             <CheckCircle2 className="w-4 h-4 mr-1.5" />
-            创建评测任务
+            {submitting ? '提交中…' : '创建评测任务'}
           </Button>
         </div>
       </DialogContent>
