@@ -1,59 +1,56 @@
-import { tempRequest } from '@/api/request'
+import {
+  add5ModelDataSafetyEvaluationTask,
+  batchDel6ModelDataSafetyEvaluationTask,
+  deleteOne6ModelDataSafetyEvaluationTask,
+  findPage6ModelDataSafetyEvaluationTask,
+  getDetailById6ModelDataSafetyEvaluationTask,
+  update5ModelDataSafetyEvaluationTask,
+} from '@/api/generated/model-data-safety-evaluation-task'
+import type { ModelDataSafetyEvaluationTask as GeneratedModelDataSafetyEvaluationTask } from '@/api/generated/types/model-data-safety-evaluation-task'
+import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
 import type {
   ModelDataSafetyEvaluationTask,
   PageQuery,
   PageResult,
 } from '@/api/types'
-import { unwrapGatewayData } from '@/utils/gateway'
 import type { CreateFileEvaluationTaskInput } from './fileTask.types'
 
 export async function addModelDataSafetyEvaluationTask(
   payload: CreateFileEvaluationTaskInput,
 ): Promise<ModelDataSafetyEvaluationTask> {
-  const { data } = await tempRequest.post('/temp/model-data-safety-evaluation-task/add', payload, {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data)
+  const result = await add5ModelDataSafetyEvaluationTask(payload as GeneratedModelDataSafetyEvaluationTask)
+  return unwrapApiResult(result, '创建模型数据安全评测任务失败') as ModelDataSafetyEvaluationTask
 }
 
 export async function updateModelDataSafetyEvaluationTask(
   payload: ModelDataSafetyEvaluationTask,
 ): Promise<boolean> {
-  const { data } = await tempRequest.put('/temp/model-data-safety-evaluation-task/update', payload, {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return unwrapGatewayData<boolean>(data)
+  const result = await update5ModelDataSafetyEvaluationTask(payload as GeneratedModelDataSafetyEvaluationTask)
+  return unwrapApiResult(result, '修改模型数据安全评测任务失败')
 }
 
 export async function getModelDataSafetyEvaluationTaskById(
   id: number,
 ): Promise<ModelDataSafetyEvaluationTask> {
-  const { data } = await tempRequest.get('/temp/model-data-safety-evaluation-task/getDetailById', {
-    params: { id },
-  })
-  return unwrapGatewayData<ModelDataSafetyEvaluationTask>(data)
+  const result = await getDetailById6ModelDataSafetyEvaluationTask({ id })
+  return unwrapApiResult(result, '获取模型数据安全评测任务失败') as ModelDataSafetyEvaluationTask
 }
 
 export async function pageModelDataSafetyEvaluationTasks(
   query: PageQuery<ModelDataSafetyEvaluationTask>,
 ): Promise<PageResult<ModelDataSafetyEvaluationTask>> {
-  const { data } = await tempRequest.post('/temp/model-data-safety-evaluation-task/page', query, {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return unwrapGatewayData<PageResult<ModelDataSafetyEvaluationTask>>(data)
+  const result = await findPage6ModelDataSafetyEvaluationTask(
+    query as Parameters<typeof findPage6ModelDataSafetyEvaluationTask>[0],
+  )
+  return unwrapApiResultOr(result, { records: [], total: 0 }, '查询模型数据安全评测任务失败') as PageResult<ModelDataSafetyEvaluationTask>
 }
 
 export async function deleteModelDataSafetyEvaluationTask(id: number): Promise<boolean> {
-  const { data } = await tempRequest.delete('/temp/model-data-safety-evaluation-task/deleteOne', {
-    params: { id },
-  })
-  return unwrapGatewayData<boolean>(data)
+  const result = await deleteOne6ModelDataSafetyEvaluationTask({ id })
+  return unwrapApiResult(result, '删除模型数据安全评测任务失败')
 }
 
 export async function batchDeleteModelDataSafetyEvaluationTasks(ids: number[]): Promise<boolean> {
-  const { data } = await tempRequest.delete('/temp/model-data-safety-evaluation-task/batchDel', {
-    params: { ids },
-    paramsSerializer: { indexes: null },
-  })
-  return unwrapGatewayData<boolean>(data)
+  const result = await batchDel6ModelDataSafetyEvaluationTask({ ids })
+  return unwrapApiResult(result, '批量删除模型数据安全评测任务失败')
 }
