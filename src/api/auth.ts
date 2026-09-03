@@ -5,8 +5,6 @@ import { getToken } from '@/utils/auth'
 import { unwrapGatewayData } from '@/utils/gateway'
 import { md5Password } from '@/utils/md5'
 
-const DAY_MS = 24 * 60 * 60 * 1000
-
 export interface AuthUser {
   id: number | string
   username?: string
@@ -27,8 +25,8 @@ export interface AuthUser {
 export interface AuthSession {
   token: string
   token_type: string
-  /** 后端暂未返回有效期，当前值只控制前端“记住我”的本地会话窗口；服务端仍可通过 401 提前终止会话。 */
-  expires_at_ms: number
+  /** 只有后端真实返回有效期时才设置；当前接口没有该字段，前端不自行发明 token 生命周期。 */
+  expires_at_ms?: number
   user: AuthUser
 }
 
@@ -50,14 +48,13 @@ function mapSysUser(user?: SysUser | null): AuthUser {
   }
 }
 
-function toAuthSession(vo: UserLoginVo, rememberMe = false): AuthSession {
+function toAuthSession(vo: UserLoginVo): AuthSession {
   const token = String(vo.token || '').trim()
   if (!token) throw new Error('登录返回缺少 token')
 
   return {
     token,
     token_type: 'X-token',
-    expires_at_ms: Date.now() + (rememberMe ? 15 : 1) * DAY_MS,
     user: mapSysUser(vo.user),
   }
 }
@@ -78,7 +75,7 @@ export async function registerAuth(payload: {
     },
     { headers: { 'Content-Type': 'application/json' } },
   )
-  return toAuthSession(unwrapGatewayData<UserLoginVo>(data), Boolean(payload.remember_me))
+  return toAuthSession(unwrapGatewayData<UserLoginVo>(data))
 }
 
 export async function loginAuth(payload: {
@@ -94,7 +91,7 @@ export async function loginAuth(payload: {
     },
     { headers: { 'Content-Type': 'application/json' } },
   )
-  return toAuthSession(unwrapGatewayData<UserLoginVo>(data), Boolean(payload.remember_me))
+  return toAuthSession(unwrapGatewayData<UserLoginVo>(data))
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
