@@ -39,7 +39,7 @@ export interface EvalTask {
     | '模型数据安全评测'
     | '数据集安全评测'
     | 'AIGC内容审核'
-    | '深度模型可信测评'
+    | '深度模型可信评测'
     | '大模型安全评测'
     | '多模态大模型安全评测'
     | '大模型评测'
@@ -91,14 +91,13 @@ interface UserContextType {
   isLoggedIn: boolean
   isAdmin: boolean
   sessionReady: boolean
-  login: (account: string, password: string, rememberMe?: boolean) => Promise<User>
+  login: (account: string, password: string) => Promise<User>
   logout: () => Promise<void>
   register: (
     username: string,
     email: string,
     password: string,
     nickname?: string,
-    rememberMe?: boolean,
   ) => Promise<User>
   clearSession: () => void
   updateAccount: (updates: {
@@ -338,7 +337,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isLoggedIn = user.role !== 'guest'
   const isAdmin = user.role === 'admin'
 
-  const login = async (account: string, password: string, _rememberMe = false) => {
+  const login = async (account: string, password: string) => {
     const session = await loginAuth({ account, password })
     const next = applyAuthSession(session)
     useSessionStore.getState().setUser(next)
@@ -357,7 +356,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     nickname?: string,
-    _rememberMe = false,
   ) => {
     const session = await registerAuth({ username, password })
     const mapped = applyAuthSession(session)
