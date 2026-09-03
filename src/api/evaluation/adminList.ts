@@ -20,6 +20,8 @@ import { uploadSysFile } from '@/api/file'
 import type {
   EvaluationTaskMasterProductType,
   EvaluationTaskMasterSubmitType,
+  ResourceEvalType,
+  ResourceTaskStatus,
 } from './taskMeta'
 
 export type AdminEvalSource = 'trust' | 'data-safety' | 'evaluation'
@@ -38,23 +40,23 @@ export interface AdminEvalCommunication {
   createdAt: string
 }
 
-/** 管理端列表行：对齐现有 WorkflowTask 展示字段，缺省用 — */
+/** 管理端列表行：直接输出门户标准产品与状态。 */
 export interface AdminEvalTaskRow {
   id: string
   source: AdminEvalSource
   numericId: number
   taskRefId?: number
-  productType?: EvaluationTaskMasterProductType
+  productType: EvaluationTaskMasterProductType
   submitType?: EvaluationTaskMasterSubmitType
   userId: string
   userName: string
   contact: string
   name: string
-  product: string
+  product: ResourceEvalType
   model: string
   requirement: string
   configSummary?: string
-  status: string
+  status: ResourceTaskStatus
   createdAt: string
   updatedAt: string
   /** 列表态可能为空；选中后由详情补齐 */
@@ -69,7 +71,7 @@ export interface AdminEvalTaskDetail {
   userName: string
   contact: string
   configSummary?: string
-  status: string
+  status: ResourceTaskStatus
   inputs: AdminEvalFileRef[]
   outputs: AdminEvalFileRef[]
   communications: AdminEvalCommunication[]
@@ -78,7 +80,7 @@ export interface AdminEvalTaskDetail {
 
 const LIST_PAGE_SIZE = 200
 
-function sourceFromProduct(productType?: string): AdminEvalSource {
+function sourceFromProduct(productType: EvaluationTaskMasterProductType): AdminEvalSource {
   if (productType === 'TRUST') return 'trust'
   if (productType === 'DATA_SAFETY') return 'data-safety'
   return 'evaluation'
@@ -127,17 +129,19 @@ function mapCommunications(
 }
 
 function mapMaster(row: EvaluationTaskMaster): AdminEvalTaskRow | null {
-  if (row.id == null) return null
+  if (row.id == null || !isMasterProductType(row.productType)) return null
   const name = row.name?.trim() || `任务 #${row.id}`
   const target = row.targetObject?.trim() || '—'
   const deliver = fileRef(row.deliverFileId)
   const supplement = fileRef(row.supplementFileId)
+  const status = mapMasterStatusToWorkflow(row.status)
+
   return {
     id: masterRowId(row.id),
     source: sourceFromProduct(row.productType),
     numericId: row.id,
     taskRefId: row.taskRefId,
-    productType: isMasterProductType(row.productType) ? row.productType : undefined,
+    productType: row.productType,
     submitType: isMasterSubmitType(row.submitType) ? row.submitType : undefined,
     userId: row.userId != null ? String(row.userId) : '—',
     userName: row.userId != null ? `用户 #${row.userId}` : '—',
@@ -154,16 +158,13 @@ function mapMaster(row: EvaluationTaskMaster): AdminEvalTaskRow | null {
       ]
         .filter(Boolean)
         .join(' · ') || undefined,
-    status: mapMasterStatusToWorkflow(row.status),
+    status,
     createdAt: formatMasterDateTime(row.createdAt),
     updatedAt: formatMasterDateTime(row.updatedAt),
     inputs: supplement ? [supplement] : [],
     outputs: deliver ? [deliver] : [],
     communications: [],
-    pushedAt:
-      mapMasterStatusToWorkflow(row.status) === '已交付'
-        ? formatMasterDateTime(row.updatedAt)
-        : undefined,
+    pushedAt: status === '已交付' ? formatMasterDateTime(row.updatedAt) : undefined,
   }
 }
 
