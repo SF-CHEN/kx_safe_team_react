@@ -5,11 +5,13 @@ export type EvaluationTaskMasterStatus = NonNullable<EvaluationTaskMaster['statu
 export type EvaluationTaskMasterSubmitType = NonNullable<EvaluationTaskMaster['submitType']>
 
 export type ResourceEvalType =
-  | '模型数据安全评测'
+  | '数据集安全评测'
   | '深度模型可信测评'
-  | '大模型评测'
+  | '大模型性能评测'
   | '大模型安全评测'
   | '智能体安全评测'
+
+export type ResourceTaskStatus = '处理中' | '待用户补充' | '已交付' | '已终止'
 
 export function formatMasterDateTime(value?: string) {
   if (!value) return '—'
@@ -18,17 +20,19 @@ export function formatMasterDateTime(value?: string) {
   return date.toLocaleString('zh-CN', { hour12: false })
 }
 
-/** 后端总表状态 → 门户统一工作流状态。 */
-export function mapMasterStatusToWorkflow(status?: EvaluationTaskMasterStatus): string {
+/** 后端总表状态 → 门户工作流状态。 */
+export function mapMasterStatusToWorkflow(
+  status?: EvaluationTaskMasterStatus,
+): ResourceTaskStatus {
   if (status === 'AWAIT_SUPPLEMENT') return '待用户补充'
   if (status === 'DELIVERED') return '已交付'
   if (status === 'TERMINATED') return '已终止'
   return '处理中'
 }
 
-/** 门户筛选文案 → 后端正式状态枚举。 */
-export function mapWorkflowStatusToMaster(status: string): EvaluationTaskMasterStatus {
-  if (status === '待用户补充' || status === '待补充材料') return 'AWAIT_SUPPLEMENT'
+/** 门户工作流状态 → 后端状态。 */
+export function mapWorkflowStatusToMaster(status: ResourceTaskStatus): EvaluationTaskMasterStatus {
+  if (status === '待用户补充') return 'AWAIT_SUPPLEMENT'
   if (status === '已交付') return 'DELIVERED'
   if (status === '已终止') return 'TERMINATED'
   return 'PROCESSING'
@@ -37,7 +41,7 @@ export function mapWorkflowStatusToMaster(status: string): EvaluationTaskMasterS
 export function mapMasterProductLabel(productType?: EvaluationTaskMasterProductType): string {
   if (productType === 'PERFORMANCE') return '大模型性能评测'
   if (productType === 'SAFETY') return '大模型安全评测'
-  if (productType === 'DATA_SAFETY') return '模型数据安全评测'
+  if (productType === 'DATA_SAFETY') return '数据集安全评测'
   if (productType === 'TRUST') return '深度模型可信测评'
   if (productType === 'AGENT_SAFETY') return '智能体安全评测'
   return '—'
@@ -45,17 +49,17 @@ export function mapMasterProductLabel(productType?: EvaluationTaskMasterProductT
 
 export function mapMasterEvalType(productType?: EvaluationTaskMasterProductType): ResourceEvalType {
   if (productType === 'SAFETY') return '大模型安全评测'
-  if (productType === 'DATA_SAFETY') return '模型数据安全评测'
+  if (productType === 'DATA_SAFETY') return '数据集安全评测'
   if (productType === 'TRUST') return '深度模型可信测评'
   if (productType === 'AGENT_SAFETY') return '智能体安全评测'
-  return '大模型评测'
+  return '大模型性能评测'
 }
 
 /** 资源中心产品筛选文案 → 后端产品枚举。 */
 export function mapProductFilterToMaster(
   product: string,
 ): EvaluationTaskMasterProductType | undefined {
-  if (product === '数据集安全评测' || product === '模型数据安全评测') return 'DATA_SAFETY'
+  if (product === '数据集安全评测') return 'DATA_SAFETY'
   if (product === '深度模型可信测评') return 'TRUST'
   if (product === '大模型性能评测') return 'PERFORMANCE'
   if (product === '大模型安全评测') return 'SAFETY'
@@ -67,7 +71,7 @@ export function mapProductFilterToMaster(
 export function mapStatusFilterToMaster(status: string): EvaluationTaskMasterStatus | undefined {
   if (status === '全部状态') return undefined
   if (status === '处理中') return 'PROCESSING'
-  if (status === '待用户补充' || status === '待补充材料') return 'AWAIT_SUPPLEMENT'
+  if (status === '待用户补充') return 'AWAIT_SUPPLEMENT'
   if (status === '已交付') return 'DELIVERED'
   if (status === '已终止') return 'TERMINATED'
   return undefined
@@ -85,9 +89,7 @@ export function masterRowId(id: number) {
 
 export function parseMasterRowId(id: string): number | null {
   const matched = /^master:(\d+)$/i.exec(id.trim())
-  if (matched) return Number(matched[1])
-  const numeric = Number(id)
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null
+  return matched ? Number(matched[1]) : null
 }
 
 export function isMasterProductType(value?: string): value is EvaluationTaskMasterProductType {
