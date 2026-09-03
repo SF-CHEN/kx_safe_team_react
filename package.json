@@ -15,7 +15,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "check:deadcode": "knip",
-    "api:docs": "node script/doc.cjs --pull"
+    "api:generate": "node script/generate-api.cjs && node script/sync-options.cjs",
+    "api:docs": "node script/doc.cjs --pull",
+    "api:all": "node script/generate-api.cjs && node script/sync-options.cjs && node script/doc.cjs --pull"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
