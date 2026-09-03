@@ -16,12 +16,11 @@ import {
   Shield, Zap, Lock, FileText, Eye, Star, Globe,
   Bot, Image as ImageIcon,
 } from 'lucide-react';
-import { addEvaluationTask } from '@/api/evaluation';
+import { addEvaluationTask, type CreateEvaluationTaskInput } from '@/api/evaluation';
 import { addDepthModel, fetchDepthModelDropdown } from '@/api/model';
 import { fetchPresetScenes } from '@/api/presetScene';
 import type {
   BaseDropDepthModel,
-  EvaluationTask,
   EvaluationTaskKind,
   PresetSceneVo,
 } from '@/api/types';
@@ -212,7 +211,7 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       .join('；');
 
     const userId = Number(user.id);
-    const payload: EvaluationTask = {
+    const basePayload: Omit<CreateEvaluationTaskInput, 'useModelType'> = {
       type: resolveApiType(),
       name: taskName.trim(),
       needSendEmail: enableEmail,
@@ -221,18 +220,22 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
       ...(scenarioDescription ? { demandSupplement: scenarioDescription } : {}),
     };
 
-    if (modelSource === 'my_models' && selectedDrop) {
-      payload.useModelType =
-        selectedDrop.type === 'BUILT_IN' ? 'BUILT_IN' : 'USER_MODEL';
-      payload.modelId = selectedDrop.id;
-    } else {
-      payload.useModelType = 'CUSTOM';
-      payload.customModelConfig = buildCustomModelConfig({
-        name: customModelName,
-        baseUrl: customApiBase.trim(),
-        apiKey: customApiKey,
-      });
-    }
+    const payload: CreateEvaluationTaskInput =
+      modelSource === 'my_models' && selectedDrop
+        ? {
+            ...basePayload,
+            useModelType: selectedDrop.type === 'BUILT_IN' ? 'BUILT_IN' : 'USER_MODEL',
+            modelId: selectedDrop.id,
+          }
+        : {
+            ...basePayload,
+            useModelType: 'CUSTOM',
+            customModelConfig: buildCustomModelConfig({
+              name: customModelName,
+              baseUrl: customApiBase.trim(),
+              apiKey: customApiKey,
+            }),
+          };
 
     // 原型仅有预设场景 + 补充需求；自定义维度 UI 已去掉。有场景则写 PRESET_SCENE
     if (selectedScene?.sceneId != null) {
