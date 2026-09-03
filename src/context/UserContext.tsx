@@ -3,13 +3,12 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import {
   getCurrentUser,
   loginAuth,
-  logoutAuth,
   registerAuth,
   type AuthSession,
   type AuthUser,
 } from '@/api/auth'
 import { useSessionStore } from '@/store/sessionStore'
-import { getToken, isTokenExpired, removeToken, setToken } from '@/utils/auth'
+import { getToken, removeToken, setToken } from '@/utils/auth'
 import { setUnauthorizedHandler } from '@/utils/gateway'
 import {
   WORKFLOW_EVENT,
@@ -200,8 +199,7 @@ function saveLocalWorkspace(user: User) {
 function mapApiUser(apiUser: AuthUser): User {
   const id = String(apiUser.id)
   const workspace = loadLocalWorkspace(id)
-  const roleRaw = String(apiUser.role || 'user').toLowerCase()
-  const role = (roleRaw === 'admin' ? 'admin' : 'user') as UserRole
+  const role: UserRole = apiUser.role === 'admin' ? 'admin' : 'user'
   const fallbackName = apiUser.nickname || apiUser.username || ''
 
   return {
@@ -218,8 +216,8 @@ function mapApiUser(apiUser: AuthUser): User {
   }
 }
 
-function applyAuthSession(session: AuthSession, rememberMe: boolean): User {
-  setToken(session.token, session.expires_at_ms, rememberMe)
+function applyAuthSession(session: AuthSession): User {
+  setToken(session.token)
   return mapApiUser(session.user)
 }
 
@@ -303,10 +301,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const token = getToken()
-      if (!token || isTokenExpired()) {
-        if (token) removeToken()
-        if (!cancelled) useSessionStore.getState().setSessionReady(true)
+      if (!getToken()) {
+        useSessionStore.getState().setSessionReady(true)
         return
       }
 
@@ -342,9 +338,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isLoggedIn = user.role !== 'guest'
   const isAdmin = user.role === 'admin'
 
-  const login = async (account: string, password: string, rememberMe = false) => {
-    const session = await loginAuth({ account, password, remember_me: rememberMe })
-    const next = applyAuthSession(session, rememberMe)
+  const login = async (account: string, password: string, _rememberMe = false) => {
+    const session = await loginAuth({ account, password })
+    const next = applyAuthSession(session)
     useSessionStore.getState().setUser(next)
     upsertPlatformUser({
       id: next.id,
@@ -361,16 +357,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     nickname?: string,
-    rememberMe = false,
+    _rememberMe = false,
   ) => {
-    const session = await registerAuth({
-      username,
-      email,
-      password,
-      nickname: nickname || username,
-      remember_me: rememberMe,
-    })
-    const mapped = applyAuthSession(session, rememberMe)
+    const session = await registerAuth({ username, password })
+    const mapped = applyAuthSession(session)
     const next: User = {
       ...mapped,
       name: nickname || mapped.name,
@@ -387,13 +377,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = async () => {
-    try {
-      if (getToken()) await logoutAuth()
-    } catch {
-      // 当前后端没有登出接口；即使未来接口短暂失败，也必须清理本地会话。
-    } finally {
-      clearSession()
-    }
+    clearSession()
   }
 
   const updateAccount = async (updates: {
