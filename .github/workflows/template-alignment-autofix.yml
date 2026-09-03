@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.head_commit.message == 'chore: apply template alignment patch set'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -19,13 +18,21 @@ jobs:
           fetch-depth: 0
 
       - name: Apply guarded patches
-        run: node script/template-alignment-patch.cjs
+        run: |
+          if [ "$(git log -1 --pretty=%s)" != "chore: apply template alignment patch set" ]; then
+            echo "No autofix marker on this commit; skipping."
+            exit 0
+          fi
+          node script/template-alignment-patch.cjs
 
       - name: Commit patched sources
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src
-          git diff --cached --exit-code && exit 0
+          if git diff --cached --quiet; then
+            echo "No guarded source changes to commit."
+            exit 0
+          fi
           git commit -m "fix: 收口迁移遗留类型与假数据逻辑 [skip ci]"
           git push origin HEAD:refactor/template-alignment
