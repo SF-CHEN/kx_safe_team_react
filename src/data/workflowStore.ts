@@ -60,8 +60,7 @@ export interface PlatformUserRecord {
   registeredAt: string;
   lastLoginAt: string;
   status: '正常' | '已停用';
-  /** 管理端展示所需的归一化角色；旧本地记录缺失时按普通用户处理。 */
-  role?: 'admin' | 'user';
+  role: 'admin' | 'user';
 }
 
 export interface PlatformActivity {
@@ -114,30 +113,13 @@ function write<T>(key: string, value: T[]) {
   window.dispatchEvent(new CustomEvent(WORKFLOW_EVENT));
 }
 
-function normalizeStatus(status: string): WorkflowStatus {
-  const aliases: Record<string, WorkflowStatus> = {
-    待受理: '处理中', 材料核验: '处理中', 待交付: '处理中', 材料已接收: '处理中',
-    待补充材料: '待用户补充', 已推送: '已交付', 处理异常: '处理中', 评测中: '处理中', 排队中: '处理中',
-  };
-  if (aliases[status]) return aliases[status];
-  if (status === '处理中' || status === '待用户补充' || status === '已交付' || status === '已终止') return status;
-  return '处理中';
-}
-
 function normalizeTask(task: WorkflowTask): WorkflowTask {
-  const normalized = normalizeStatus(String(task.status));
-  return {
-    ...task,
-    product: task.product === '模型数据安全评测' ? '数据集安全评测' : task.product,
-    status: normalized,
-    communications: task.communications || [],
-    publicMessage: task.publicMessage || (String(task.status) === '处理异常' ? '任务处理遇到异常，管理员正在核实。' : undefined),
-  };
+  return { ...task, communications: task.communications || [] };
 }
 
 export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY).filter(task => FORMAL_TASK_PRODUCTS.has(task.product)).map(normalizeTask);
 export const saveWorkflowTasks = (tasks: WorkflowTask[]) => write(TASK_KEY, tasks);
-export const getPlatformUsers = (): PlatformUserRecord[] => read<PlatformUserRecord>(USERS_KEY).map((user) => ({ ...user, role: user.role || 'user' }));
+export const getPlatformUsers = (): PlatformUserRecord[] => read<PlatformUserRecord>(USERS_KEY);
 export const getNotifications = () => read<UserNotification>(NOTICE_KEY);
 export const getAdminOperationLogs = () => read<AdminOperationLog>(OPERATION_LOG_KEY);
 export const getPlatformActivities = () => read<PlatformActivity>(ACTIVITY_KEY);

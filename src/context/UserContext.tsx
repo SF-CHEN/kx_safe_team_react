@@ -28,16 +28,6 @@ import {
 
 export type UserRole = 'guest' | 'user' | 'admin'
 
-/** @deprecated 正式模型统一从后端 depth-model 获取；仅保留旧页面类型兼容。 */
-export interface MyModel {
-  id: string
-  name: string
-  type: '开源' | '闭源' | '自定义'
-  apiBase: string
-  modelId: string
-  createdAt: string
-}
-
 /** 本地 EvalTask 仅用于没有真实接口的 mock 工作流。正式任务由 TanStack Query + 后端任务总表负责。 */
 export interface EvalTask {
   id: string
@@ -90,8 +80,6 @@ export interface User {
   role: UserRole
   avatar?: string
   isActive?: boolean
-  /** @deprecated 正式模型不再写入 UserContext。 */
-  myModels: MyModel[]
   /** 仅包含无真实接口的 mock 任务。 */
   myTasks: EvalTask[]
   myEvalSets: EvalSet[]
@@ -126,8 +114,6 @@ interface UserContextType {
   addTask: (task: EvalTask) => void
   updateTask: (id: string, updates: Partial<EvalTask>) => void
   deleteTask: (id: string) => void
-  /** @deprecated 正式模型保存请调用 src/api/model。 */
-  addModel: (model: MyModel) => void
   notifications: UserNotification[]
   unreadCount: number
   markNoticeRead: (id: string) => void
@@ -140,7 +126,6 @@ const guestUser: User = {
   username: '',
   email: '',
   role: 'guest',
-  myModels: [],
   myTasks: [],
   myEvalSets: [],
   notificationPreference: 'both',
@@ -203,7 +188,6 @@ function saveLocalWorkspace(user: User) {
   localStorage.setItem(
     localDataKey(user.id),
     JSON.stringify({
-      // 正式模型已经有后端数据源，不再把 myModels 写入浏览器形成第二份数据库。
       myTasks: user.myTasks,
       myEvalSets: user.myEvalSets,
       notificationPreference: user.notificationPreference || 'both',
@@ -228,8 +212,7 @@ function mapApiUser(apiUser: AuthUser): User {
     email: workspace.email || apiUser.email || apiUser.username || '',
     role,
     isActive: apiUser.is_active !== false,
-    myModels: [],
-    myTasks: workspace.myTasks,
+      myTasks: workspace.myTasks,
     myEvalSets: workspace.myEvalSets,
     notificationPreference: workspace.notificationPreference || 'both',
   }
@@ -240,10 +223,6 @@ function applyAuthSession(session: AuthSession, rememberMe: boolean): User {
   return mapApiUser(session.user)
 }
 
-function isFormalServerTaskId(id: string) {
-  return id.startsWith('evaluation:') || id.startsWith('master:')
-}
-
 function updateStoredUser(updater: User | ((previous: User) => User)) {
   const current = useSessionStore.getState().user ?? guestUser
   const next = typeof updater === 'function' ? updater(current) : updater
@@ -251,11 +230,6 @@ function updateStoredUser(updater: User | ((previous: User) => User)) {
 }
 
 const UserContext = createContext<UserContextType | null>(null)
-
-/** 主站登录走后端鉴权，本地凭证重置仅用于原型联调占位。 */
-export async function adminResetLocalPassword(_userId: string, _password: string): Promise<boolean> {
-  return false
-}
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const storedUser = useSessionStore((state) => state.user)
@@ -294,7 +268,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       })
       const known = new Set(merged.map((task) => task.id))
       const extras: EvalTask[] = workflows
-        .filter((item) => !known.has(item.id) && !isFormalServerTaskId(item.id))
+        .filter((item) => !known.has(item.id))
         .map((item) => ({
           id: item.id,
           name: item.name,
@@ -372,7 +346,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const session = await loginAuth({ account, password, remember_me: rememberMe })
     const next = applyAuthSession(session, rememberMe)
     useSessionStore.getState().setUser(next)
-    upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || account })
+    upsertPlatformUser({
+      id: next.id,
+      name: next.name,
+      contact: next.email || account,
+      role: next.role === 'admin' ? 'admin' : 'user',
+    })
     recordPlatformActivity(next.id, '登录')
     return next
   }
@@ -398,7 +377,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       email: email || mapped.email,
     }
     useSessionStore.getState().setUser(next)
-    upsertPlatformUser({ id: next.id, name: next.name, contact: next.email || username })
+    upsertPlatformUser({
+      id: next.id,
+      name: next.name,
+      contact: next.email || username,
+      role: next.role === 'admin' ? 'admin' : 'user',
+    })
     return next
   }
 
@@ -428,7 +412,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       email,
       notificationPreference: updates.notificationPreference,
     }))
-    upsertPlatformUser({ id: user.id, name, contact: email })
+    upsertPlatformUser({
+      id: user.id,
+      name,
+      contact: email,
+      role: user.role === 'admin' ? 'admin' : 'user',
+    })
     return { ok: true }
   }
 
@@ -438,9 +427,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   const addTask = (task: EvalTask) => {
-    // 正式任务已经由后端 + Query 管理；兼容调用到这里时直接忽略，避免再次写 localStorage/workflowStore。
-    if (isFormalServerTaskId(task.id)) return
-
     updateStoredUser((prev) => ({ ...prev, myTasks: [task, ...prev.myTasks] }))
     createWorkflowTask({
       id: task.id,
@@ -461,7 +447,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   const updateTask = (id: string, updates: Partial<EvalTask>) => {
-    if (isFormalServerTaskId(id)) return
     updateStoredUser((prev) => ({
       ...prev,
       myTasks: prev.myTasks.map((task) => (task.id === id ? { ...task, ...updates } : task)),
@@ -469,15 +454,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }
 
   const deleteTask = (id: string) => {
-    if (isFormalServerTaskId(id)) return
     updateStoredUser((prev) => ({
       ...prev,
       myTasks: prev.myTasks.filter((task) => task.id !== id),
     }))
-  }
-
-  const addModel = (_model: MyModel) => {
-    // 正式模型已有 depth-model 后端接口；旧调用保留为 no-op，避免模型保存失败后仍出现本地“已保存”记录。
   }
 
   const ownNotifications = notifications.filter((item) => item.userId === user.id)
@@ -502,7 +482,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         addTask,
         updateTask,
         deleteTask,
-        addModel,
         notifications: ownNotifications,
         unreadCount,
         markNoticeRead,
