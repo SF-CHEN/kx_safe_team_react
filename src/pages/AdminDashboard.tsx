@@ -70,7 +70,7 @@ function AdminLogin() {
     setError('');
     setLoading(true);
     try {
-      const next = await login(account.trim(), password, true);
+      const next = await login(account.trim(), password);
       if (next.role !== 'admin') {
         clearSession();
         setError('该账号不是管理员，无法进入管理后台，请使用管理员账号登录');

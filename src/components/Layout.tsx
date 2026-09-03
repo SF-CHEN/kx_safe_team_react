@@ -19,7 +19,7 @@ import {
   ChevronDown, LogOut, Settings, BookOpen, LayoutDashboard,
   Database, BarChart2, Shield, FileText, ChevronRight,
   Sparkles, ExternalLink, Phone, MessageCircle, QrCode,
-  ArrowRight, Menu, Bell, UserRound, LockKeyhole, AtSign, Save
+  ArrowRight, Menu, Bell, UserRound, AtSign, Save
 } from 'lucide-react';
 
 // ── Type definitions for nested menu ────────────────────────────
@@ -720,7 +720,7 @@ function ChildRow({
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isGuest, logout, unreadCount, updateAccount, changePassword } = useUser();
+  const { user, isGuest, logout, unreadCount, updateAccount } = useUser();
   const maskedAccount = /^1\d{10}$/.test(user.email)
     ? `${user.email.slice(0, 3)}****${user.email.slice(-4)}`
     : user.email.includes('@')
@@ -734,9 +734,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [accountName, setAccountName] = useState(user.name);
   const [accountEmail, setAccountEmail] = useState(user.email);
   const [notificationPreference, setNotificationPreference] = useState<'site' | 'contact' | 'both'>(user.notificationPreference || 'both');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [accountSaving, setAccountSaving] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -797,9 +794,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setAccountName(user.name);
     setAccountEmail(user.email);
     setNotificationPreference(user.notificationPreference || 'both');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
     setAccountOpen(true);
   };
 
@@ -809,19 +803,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
     setAccountSaving(false);
     if (!result.ok) return toast.error(result.message || '账户信息保存失败');
     toast.success('账户信息已保存');
-  };
-
-  const saveNewPassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) return toast.error('请完整填写密码信息');
-    if (newPassword !== confirmPassword) return toast.error('两次输入的新密码不一致');
-    setAccountSaving(true);
-    const result = await changePassword(currentPassword, newPassword);
-    setAccountSaving(false);
-    if (!result.ok) return toast.error(result.message || '密码修改失败');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    toast.success('密码修改成功，下次登录请使用新密码');
   };
 
   return (
@@ -1122,11 +1103,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
               <label className="block space-y-2 text-sm font-semibold text-slate-700"><span>任务通知方式</span><select value={notificationPreference} onChange={event => setNotificationPreference(event.target.value as 'site' | 'contact' | 'both')} className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-normal outline-none focus:border-blue-500"><option value="site">仅站内消息</option><option value="contact">仅登录手机号／邮箱</option><option value="both">站内消息＋登录手机号／邮箱</option></select><span className="block text-xs font-normal leading-5 text-slate-400">外部短信或邮件通知将在后端通知服务接入后正式启用。</span></label>
               <div className="flex justify-end"><Button onClick={saveAccountProfile} disabled={accountSaving} className="bg-blue-600"><Save className="mr-2 h-4 w-4" />保存账户信息</Button></div>
-            </section>
-            <section className="space-y-4 border-t pt-6">
-              <div className="flex items-center gap-2 text-sm font-black text-slate-900"><LockKeyhole className="h-4 w-4 text-blue-600" />修改密码</div>
-              <div className="grid gap-3 sm:grid-cols-3"><input type="password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} placeholder="当前密码" autoComplete="current-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /><input type="password" value={newPassword} onChange={event => setNewPassword(event.target.value)} placeholder="新密码（至少6位）" autoComplete="new-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /><input type="password" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} placeholder="再次输入新密码" autoComplete="new-password" className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></div>
-              <div className="flex items-center justify-between gap-4"><p className="text-xs leading-5 text-slate-400">演示版使用浏览器本地加密摘要保存；正式环境需由后端完成身份校验、密码加密和安全审计。</p><Button variant="outline" onClick={saveNewPassword} disabled={accountSaving} className="shrink-0">修改密码</Button></div>
             </section>
           </div>
         </DialogContent>
