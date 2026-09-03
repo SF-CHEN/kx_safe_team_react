@@ -8,7 +8,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { PlatformFlow } from '../components/PlatformFlow';
 import { ScenarioSection } from '../components/ScenarioSection';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-import ucImg3 from '../../imports/image-9.png';
+import ucImg3 from '../imports/image-9.png';
 import {
   HOME_KNOWLEDGE_TABS,
   KNOWLEDGE_RESOURCES,

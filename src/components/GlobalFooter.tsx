@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { BarChart2, Mail, Phone, MapPin, BookOpen } from 'lucide-react';
-import rongShuLogo from '../../imports/____-_____3x.png';
-import yjyBjLogo from '../../imports/yjy.png';
-import qrCodeImg from '../../imports/image-8.png';
+import rongShuLogo from '../imports/____-_____3x.png';
+import yjyBjLogo from '../imports/yjy.png';
+import qrCodeImg from '../imports/image-8.png';
 
 const FOOTER_SERVICE_COLS = [
   {

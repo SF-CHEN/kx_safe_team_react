@@ -7,8 +7,8 @@ import {
   BarChart2, Database, Globe,
   Star, Trophy, Sparkles,
 } from 'lucide-react';
-import rongShuLogo from '../../imports/____-_.png';
-import yjyLogo from '../../imports/yjy.png';
+import rongShuLogo from '../imports/____-_.png';
+import yjyLogo from '../imports/yjy.png';
 
 // ── Awards / Milestones ───────────────────────────────────────────
 const AWARDS = [

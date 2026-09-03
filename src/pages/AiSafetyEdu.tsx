@@ -16,11 +16,11 @@ import { GuestGuard } from '../components/GuestGuard';
 import { useUser } from '../context/UserContext';
 
 import { StickySubNav } from '../components/StickySubNav';
-import IMG_LOGIN from '../../imports/image.png';
-import IMG_MOD1 from '../../imports/image-1.png';
-import IMG_MOD2 from '../../imports/image-2.png';
-import IMG_MOD3 from '../../imports/image-3.png';
-import IMG_MOD4 from '../../imports/image-4.png';
+import IMG_LOGIN from '../imports/image.png';
+import IMG_MOD1 from '../imports/image-1.png';
+import IMG_MOD2 from '../imports/image-2.png';
+import IMG_MOD3 from '../imports/image-3.png';
+import IMG_MOD4 from '../imports/image-4.png';
 
 // ─── MOD 1: Light-theme compact hero card ─────────────────────────
 function SplitHeroCard() {
