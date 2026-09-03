@@ -8,14 +8,12 @@ import {
   update1SysUser,
   updateUserStatusSysUser,
 } from '@/api/generated/sys-user'
-import type {
-  SysUser as GeneratedSysUser,
-  UserLoginVo as GeneratedUserLoginVo,
-} from '@/api/generated/types/sys-user'
+import type { SysUser, UserLoginVo } from '@/api/generated/types/sys-user'
 import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
-import type { SysUser, UserLoginVo, UserRoleCode } from '@/api/types'
 import { getToken } from '@/utils/auth'
 import { md5Password } from '@/utils/md5'
+
+export type UserRoleCode = NonNullable<SysUser['role']>
 
 export interface AuthUser {
   id: number | string
@@ -42,7 +40,7 @@ export interface AuthSession {
   user: AuthUser
 }
 
-function mapSysUser(user?: SysUser | GeneratedSysUser | null): AuthUser {
+function mapSysUser(user?: SysUser | null): AuthUser {
   if (user == null || user.id == null) throw new Error('登录返回缺少用户信息')
 
   const roleCode = String(user.role || 'USER').toUpperCase()
@@ -60,7 +58,7 @@ function mapSysUser(user?: SysUser | GeneratedSysUser | null): AuthUser {
   }
 }
 
-function toAuthSession(vo: UserLoginVo | GeneratedUserLoginVo): AuthSession {
+function toAuthSession(vo: UserLoginVo): AuthSession {
   const token = String(vo.token || '').trim()
   if (!token) throw new Error('登录返回缺少 token')
 
