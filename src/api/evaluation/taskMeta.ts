@@ -1,8 +1,8 @@
-import type {
-  EvaluationTaskMasterProductType,
-  EvaluationTaskMasterStatus,
-  EvaluationTaskMasterSubmitType,
-} from '@/api/types'
+import type { EvaluationTaskMaster } from '@/api/generated/types/evaluation-task-master'
+
+export type EvaluationTaskMasterProductType = NonNullable<EvaluationTaskMaster['productType']>
+export type EvaluationTaskMasterStatus = NonNullable<EvaluationTaskMaster['status']>
+export type EvaluationTaskMasterSubmitType = NonNullable<EvaluationTaskMaster['submitType']>
 
 export type ResourceEvalType =
   | '模型数据安全评测'
@@ -19,61 +19,31 @@ export function formatMasterDateTime(value?: string) {
 }
 
 /** 后端总表状态 → 门户统一工作流状态。 */
-export function mapMasterStatusToWorkflow(status?: string): string {
-  const value = status?.trim()
-  if (!value) return '处理中'
-
-  const upper = value.toUpperCase()
-  if (upper === 'AWAIT_SUPPLEMENT') return '待用户补充'
-  if (upper === 'DELIVERED' || upper === 'COMPLETED') return '已交付'
-  if (upper === 'TERMINATED' || upper === 'FAILED') return '已终止'
-  if (upper === 'PROCESSING' || upper === 'WAITING') return '处理中'
-
-  if (value === '待补充材料') return '待用户补充'
-  if (value === '已推送') return '已交付'
-  if (value === '处理异常') return '已终止'
-  if (value === '待受理' || value === '材料已接收' || value === '待交付') return '处理中'
-  return value
+export function mapMasterStatusToWorkflow(status?: EvaluationTaskMasterStatus): string {
+  if (status === 'AWAIT_SUPPLEMENT') return '待用户补充'
+  if (status === 'DELIVERED') return '已交付'
+  if (status === 'TERMINATED') return '已终止'
+  return '处理中'
 }
 
-/** 门户工作流状态/筛选文案 → 后端正式状态枚举。 */
+/** 门户筛选文案 → 后端正式状态枚举。 */
 export function mapWorkflowStatusToMaster(status: string): EvaluationTaskMasterStatus {
-  const value = status.trim()
-  const upper = value.toUpperCase()
-  if (
-    upper === 'AWAIT_SUPPLEMENT' ||
-    value === '待用户补充' ||
-    value === '待补充材料'
-  ) return 'AWAIT_SUPPLEMENT'
-
-  if (
-    upper === 'DELIVERED' ||
-    upper === 'COMPLETED' ||
-    value === '已交付' ||
-    value === '已推送'
-  ) return 'DELIVERED'
-
-  if (
-    upper === 'TERMINATED' ||
-    upper === 'FAILED' ||
-    value === '已终止' ||
-    value === '处理异常'
-  ) return 'TERMINATED'
-
+  if (status === '待用户补充' || status === '待补充材料') return 'AWAIT_SUPPLEMENT'
+  if (status === '已交付') return 'DELIVERED'
+  if (status === '已终止') return 'TERMINATED'
   return 'PROCESSING'
 }
 
-export function mapMasterProductLabel(productType?: string): string {
+export function mapMasterProductLabel(productType?: EvaluationTaskMasterProductType): string {
   if (productType === 'PERFORMANCE') return '大模型性能评测'
   if (productType === 'SAFETY') return '大模型安全评测'
   if (productType === 'DATA_SAFETY') return '模型数据安全评测'
   if (productType === 'TRUST') return '深度模型可信测评'
   if (productType === 'AGENT_SAFETY') return '智能体安全评测'
-  return productType?.trim() || '—'
+  return '—'
 }
 
-/** 资源中心内部 evalType，保持现有 EvalTask 兼容值。 */
-export function mapMasterEvalType(productType?: string): ResourceEvalType {
+export function mapMasterEvalType(productType?: EvaluationTaskMasterProductType): ResourceEvalType {
   if (productType === 'SAFETY') return '大模型安全评测'
   if (productType === 'DATA_SAFETY') return '模型数据安全评测'
   if (productType === 'TRUST') return '深度模型可信测评'
@@ -103,10 +73,10 @@ export function mapStatusFilterToMaster(status: string): EvaluationTaskMasterSta
   return undefined
 }
 
-export function mapMasterSubmitTypeLabel(submitType?: string) {
+export function mapMasterSubmitTypeLabel(submitType?: EvaluationTaskMasterSubmitType) {
   if (submitType === 'LOCAL_PROJECT_FILE') return '本地工程文件'
   if (submitType === 'USER_MODEL') return '用户模型'
-  return submitType?.trim() || '—'
+  return '—'
 }
 
 export function masterRowId(id: number) {
