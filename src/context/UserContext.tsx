@@ -39,7 +39,7 @@ export interface EvalTask {
     | '模型数据安全评测'
     | '数据集安全评测'
     | 'AIGC内容审核'
-    | '深度模型可信评测'
+    | '深度模型可信测评'
     | '大模型安全评测'
     | '多模态大模型安全评测'
     | '大模型评测'
@@ -92,7 +92,7 @@ interface UserContextType {
   isAdmin: boolean
   sessionReady: boolean
   login: (account: string, password: string) => Promise<User>
-  logout: () => Promise<void>
+  logout: () => void
   register: (
     username: string,
     email: string,
@@ -105,10 +105,6 @@ interface UserContextType {
     email: string
     notificationPreference: 'site' | 'contact' | 'both'
   }) => Promise<{ ok: boolean; message?: string }>
-  changePassword: (
-    currentPassword: string,
-    newPassword: string,
-  ) => Promise<{ ok: boolean; message?: string }>
   addTask: (task: EvalTask) => void
   updateTask: (id: string, updates: Partial<EvalTask>) => void
   deleteTask: (id: string) => void
@@ -374,7 +370,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return next
   }
 
-  const logout = async () => {
+  const logout = () => {
     clearSession()
   }
 
@@ -401,11 +397,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       role: user.role === 'admin' ? 'admin' : 'user',
     })
     return { ok: true }
-  }
-
-  const changePassword = async (_currentPassword: string, newPassword: string) => {
-    if (newPassword.length < 6) return { ok: false, message: '新密码至少需要 6 位' }
-    return { ok: false, message: '密码修改接口尚未开放，请联系管理员' }
   }
 
   const addTask = (task: EvalTask) => {
@@ -460,7 +451,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         register,
         clearSession,
         updateAccount,
-        changePassword,
         addTask,
         updateTask,
         deleteTask,
