@@ -115,7 +115,7 @@ export function Login() {
               <div className="flex items-center justify-between py-1 text-xs">
                 <label className="flex items-center gap-2 text-slate-500">
                   <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded border-slate-300" />
-                  15 天内免登录
+                  记住登录状态
                 </label>
                 <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>
               </div>
