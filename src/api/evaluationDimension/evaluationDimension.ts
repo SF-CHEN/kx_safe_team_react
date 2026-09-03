@@ -1,52 +1,46 @@
-import { createTempClient } from '@/api/client';
+import {
+  add7EvaluationDimension,
+  batchDel9EvaluationDimension,
+  deleteOne9EvaluationDimension,
+  dimensionDropdownEvaluationDimension,
+  findPage9EvaluationDimension,
+  getDetailById9EvaluationDimension,
+  update6EvaluationDimension,
+} from '@/api/generated/evaluation-dimension'
+import type { EvaluationDimension as GeneratedEvaluationDimension } from '@/api/generated/types/evaluation-dimension'
+import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
 import type {
   EvaluationDimension,
   EvaluationTaskKind,
   PageQuery,
   PageResult,
   TreeDropEvaluationDimension,
-} from '@/api/types';
-import { unwrapGatewayData } from '@/utils/gateway';
+} from '@/api/types'
 
-const pageInflight = new Map<string, Promise<PageResult<EvaluationDimension>>>();
-
-function pageCacheKey(query: PageQuery<EvaluationDimension>): string {
-  return JSON.stringify({
-    pageSize: query.pageSize ?? null,
-    pageCurrent: query.pageCurrent ?? null,
-    orderColumn: query.orderColumn ?? null,
-    orderType: query.orderType ?? null,
-    entity: query.entity ?? null,
-  });
-}
-
-/** 获取维度下拉树；须传 evaluationTaskType */
+/** 获取维度下拉树；须传 evaluationTaskType。 */
 export async function fetchDimensionDropdown(
   evaluationTaskType: EvaluationTaskKind,
 ): Promise<TreeDropEvaluationDimension[]> {
-  const client = createTempClient();
-  const { data } = await client.get('/temp/evaluation-dimension/dimensionDropdown', {
-    params: { evaluationTaskType },
-  });
-  return unwrapGatewayData<TreeDropEvaluationDimension[]>(data) || [];
+  const result = await dimensionDropdownEvaluationDimension({ evaluationTaskType })
+  return unwrapApiResultOr(result, [], '加载评测维度失败') as TreeDropEvaluationDimension[]
 }
 
-/** 将维度下拉树展平为列表（选项/多选场景用） */
+/** 将维度下拉树展平为列表（选项/多选场景用）。 */
 export function flattenTreeDropEvaluationDimension(
   nodes: TreeDropEvaluationDimension[],
 ): EvaluationDimension[] {
-  const result: EvaluationDimension[] = [];
+  const result: EvaluationDimension[] = []
   const walk = (list: TreeDropEvaluationDimension[]) => {
     for (const node of list) {
       const item: EvaluationDimension = node.data
         ? { ...node.data, id: node.data.id ?? node.id, name: node.data.name ?? node.name }
-        : { id: node.id, name: node.name };
-      if (item.id != null) result.push(item);
-      if (node.childs?.length) walk(node.childs);
+        : { id: node.id, name: node.name }
+      if (item.id != null) result.push(item)
+      if (node.childs?.length) walk(node.childs)
     }
-  };
-  walk(nodes);
-  return result;
+  }
+  walk(nodes)
+  return result
 }
 
 /**
@@ -56,103 +50,72 @@ export function flattenTreeDropEvaluationDimension(
 export async function fetchDimensionOptions(
   evaluationTaskType: EvaluationTaskKind,
 ): Promise<EvaluationDimension[]> {
-  const tree = await fetchDimensionDropdown(evaluationTaskType);
-  return flattenTreeDropEvaluationDimension(tree);
+  const tree = await fetchDimensionDropdown(evaluationTaskType)
+  return flattenTreeDropEvaluationDimension(tree)
 }
 
 export async function pageEvaluationDimensions(
   query: PageQuery<EvaluationDimension>,
 ): Promise<PageResult<EvaluationDimension>> {
-  const key = pageCacheKey(query);
-  const existing = pageInflight.get(key);
-  if (existing) return existing;
-
-  const request = (async () => {
-    const client = createTempClient();
-    const { data } = await client.post('/temp/evaluation-dimension/page', query, {
-      headers: { 'Content-Type': 'application/json' },
-    });
-    return (
-      unwrapGatewayData<PageResult<EvaluationDimension>>(data) || {
-        records: [],
-        total: 0,
-      }
-    );
-  })().finally(() => {
-    pageInflight.delete(key);
-  });
-
-  pageInflight.set(key, request);
-  return request;
+  // OpenAPI 未保留 PageQuery.entity 泛型，只在 generated 边界转换。
+  const result = await findPage9EvaluationDimension(
+    query as Parameters<typeof findPage9EvaluationDimension>[0],
+  )
+  return unwrapApiResultOr(result, { records: [], total: 0 }, '查询评测维度失败') as PageResult<EvaluationDimension>
 }
 
 export async function addEvaluationDimension(
   payload: EvaluationDimension,
 ): Promise<EvaluationDimension> {
-  const client = createTempClient();
-  const { data } = await client.post('/temp/evaluation-dimension/add', payload, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<EvaluationDimension>(data);
+  const result = await add7EvaluationDimension(payload as GeneratedEvaluationDimension)
+  return unwrapApiResult(result, '新增评测维度失败') as EvaluationDimension
 }
 
 export async function updateEvaluationDimension(
   payload: EvaluationDimension,
 ): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.put('/temp/evaluation-dimension/update', payload, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return unwrapGatewayData<boolean>(data);
+  const result = await update6EvaluationDimension(payload as GeneratedEvaluationDimension)
+  return unwrapApiResult(result, '修改评测维度失败')
 }
 
 export async function getEvaluationDimensionById(
   id: number,
 ): Promise<EvaluationDimension> {
-  const client = createTempClient();
-  const { data } = await client.get('/temp/evaluation-dimension/getDetailById', {
-    params: { id },
-  });
-  return unwrapGatewayData<EvaluationDimension>(data);
+  const result = await getDetailById9EvaluationDimension({ id })
+  return unwrapApiResult(result, '获取评测维度失败') as EvaluationDimension
 }
 
 export async function deleteEvaluationDimension(id: number): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.delete('/temp/evaluation-dimension/deleteOne', {
-    params: { id },
-  });
-  return unwrapGatewayData<boolean>(data);
+  const result = await deleteOne9EvaluationDimension({ id })
+  return unwrapApiResult(result, '删除评测维度失败')
 }
 
 export async function batchDeleteEvaluationDimensions(
   ids: number[],
 ): Promise<boolean> {
-  const client = createTempClient();
-  const { data } = await client.delete('/temp/evaluation-dimension/batchDel', {
-    params: { ids },
-    paramsSerializer: { indexes: null },
-  });
-  return unwrapGatewayData<boolean>(data);
+  const result = await batchDel9EvaluationDimension({ ids })
+  return unwrapApiResult(result, '批量删除评测维度失败')
 }
 
-/** 管理端列表：按任务类型分页 */
+/** 管理端列表：按任务类型分页。 */
 export async function fetchEvaluationDimensionPage(params: {
-  evaluationTaskType: EvaluationTaskKind;
-  pageCurrent?: number;
-  pageSize?: number;
-  name?: string;
+  evaluationTaskType: EvaluationTaskKind
+  pageCurrent?: number
+  pageSize?: number
+  name?: string
 }): Promise<{ items: EvaluationDimension[]; total: number }> {
   const entity: EvaluationDimension = {
     evaluationTaskType: params.evaluationTaskType,
-  };
-  if (params.name?.trim()) entity.name = params.name.trim();
+  }
+  if (params.name?.trim()) entity.name = params.name.trim()
+
   const page = await pageEvaluationDimensions({
     pageSize: params.pageSize ?? 10,
     pageCurrent: params.pageCurrent ?? 1,
     entity,
-  });
+  })
   return {
     items: page.records || [],
     total: page.total ?? 0,
-  };
+  }
 }
