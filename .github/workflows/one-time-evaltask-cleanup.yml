@@ -1,0 +1,38 @@
+name: One-time EvalTask Cleanup
+
+on:
+  push:
+    branches:
+      - refactor/template-alignment
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tighten EvalTask
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/context/UserContext.tsx')
+          text = path.read_text()
+          old = """  evalType:\n    | '个人敏感信息审查'\n    | '模型数据安全评测'\n    | '数据集安全评测'\n    | 'AIGC内容审核'\n    | '深度模型可信测评'\n    | '大模型安全评测'\n    | '多模态大模型安全评测'\n    | '大模型评测'\n    | '智能体安全评测'\n    | '训练集评测'\n  status: '评测中' | '评测完成' | '评测失败' | '已暂停' | '排队中' | WorkflowStatus\n"""
+          new = """  evalType:\n    | '个人敏感信息审查'\n    | '数据集安全评测'\n    | 'AIGC内容审核'\n    | '深度模型可信测评'\n    | '大模型性能评测'\n    | '大模型安全评测'\n    | '智能体安全评测'\n    | '训练集评测'\n  status: WorkflowStatus\n"""
+          if old not in text:
+              raise RuntimeError('EvalTask block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Remove workflow and commit
+        run: |
+          rm .github/workflows/one-time-evaltask-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: 收紧本地任务类型 [skip ci]"
+          git pull --rebase origin refactor/template-alignment
+          git push origin HEAD:refactor/template-alignment
