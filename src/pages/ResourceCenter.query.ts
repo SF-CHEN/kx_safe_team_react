@@ -29,7 +29,7 @@ export function resourceTasksQueryOptions(
 export function resourceOverviewQueryOptions(userId: number, enabled: boolean) {
   return queryOptions({
     queryKey: resourceCenterKeys.overview(userId),
-    queryFn: fetchMyTaskOverview,
+    queryFn: () => fetchMyTaskOverview(),
     enabled,
   })
 }
@@ -37,7 +37,8 @@ export function resourceOverviewQueryOptions(userId: number, enabled: boolean) {
 export function resourceModelsQueryOptions(userId: number, enabled: boolean) {
   return queryOptions({
     queryKey: resourceCenterKeys.models(userId),
-    queryFn: fetchDepthModelDropdown,
+    // fetchDepthModelDropdown 的可选参数是模型类型，不能让 Query context 被误当成该参数。
+    queryFn: () => fetchDepthModelDropdown(),
     enabled,
     staleTime: 60_000,
   })
