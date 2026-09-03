@@ -129,7 +129,7 @@ export function TrainingEvalModal({ open, onClose }: Props) {
       modelType: '平台',
       evalSet: datasetName,
       evalType: '训练集评测',
-      status: pricingPlan === 'free' ? '排队中' : '评测中',
+      status: '处理中',
       score: null,
       createdAt: new Date().toLocaleString('zh-CN'),
       plan: pricingPlan,

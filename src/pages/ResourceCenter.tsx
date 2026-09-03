@@ -13,9 +13,9 @@ import {
   type MyResourceTask,
 } from '@/api/evaluation';
 import { downloadSysFile, uploadSysFile } from '@/api/file';
-import type {
-  EvaluationTaskMasterProductType,
-  EvaluationTaskMasterStatus,
+import {
+  mapProductFilterToMaster,
+  mapStatusFilterToMaster,
 } from '@/api/evaluation/taskMeta';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { DataPagination } from '../components/DataPagination';
@@ -45,13 +45,6 @@ const STATUS_UI: Record<string, { label: string; style: string; icon: React.Elem
   已终止: { label: '已终止', style: 'bg-slate-100 text-slate-600', icon: XCircle },
 };
 
-function productLabel(type: EvalTask['evalType']) {
-  if (type === '大模型评测') return '大模型性能评测';
-  if (type === '多模态大模型安全评测') return '大模型安全评测';
-  if (type === '模型数据安全评测') return '数据集安全评测';
-  return type;
-}
-
 function submissionLabel(task: EvalTask) {
   if (task.modelType === '用户模型' || task.modelType === '自定义') return '模型 API 配置';
   if (task.modelType === '本地工程文件') return '本地文件上传';
@@ -68,23 +61,6 @@ function fileStub(id: number | undefined, category: StoredAttachment['category']
     category,
     uploadedAt: '',
   }];
-}
-
-function productTypeFromLabel(product: string): EvaluationTaskMasterProductType | undefined {
-  if (product === '数据集安全评测' || product === '模型数据安全评测') return 'DATA_SAFETY';
-  if (product === '深度模型可信测评') return 'TRUST';
-  if (product === '大模型性能评测') return 'PERFORMANCE';
-  if (product === '大模型安全评测') return 'SAFETY';
-  if (product === '智能体安全评测') return 'AGENT_SAFETY';
-  return undefined;
-}
-
-function statusFromLabel(status: string): EvaluationTaskMasterStatus | undefined {
-  if (status === '处理中') return 'PROCESSING';
-  if (status === '待用户补充') return 'AWAIT_SUPPLEMENT';
-  if (status === '已交付') return 'DELIVERED';
-  if (status === '已终止') return 'TERMINATED';
-  return undefined;
 }
 
 function parseSearchQuery(raw: string): { name?: string; id?: number } {
@@ -104,7 +80,7 @@ function toEvalTask(row: MyResourceTask): EvalTask {
     modelType: row.modelType,
     evalSet: row.evalSet,
     evalType: row.evalType,
-    status: row.status as EvalTask['status'],
+    status: row.status,
     score: null,
     createdAt: row.createdAt,
     plan: 'paid',
@@ -137,8 +113,8 @@ export function ResourceCenter() {
     userId,
     pageCurrent: page,
     pageSize,
-    productType: productTypeFromLabel(product),
-    status: statusFromLabel(status),
+    productType: mapProductFilterToMaster(product),
+    status: mapStatusFilterToMaster(status),
     ...parseSearchQuery(keyword),
   };
 
@@ -291,7 +267,7 @@ export function ResourceCenter() {
 
       <section className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-5"><div><h2 className="font-black text-slate-900">正式评测任务</h2><p className="mt-1 text-xs text-slate-400">仅展示当前支持任务创建的正式产品（可信 / 数据安全 / 大模型性能与安全）</p></div><div className="flex flex-wrap gap-2"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索任务名称或编号" className="h-9 w-56 pl-9 text-sm" /></div><select value={product} onChange={event => { setProduct(event.target.value); setPage(1); }} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{PRODUCT_OPTIONS.map(item => <option key={item}>{item}</option>)}</select><select value={status} onChange={event => { setStatus(event.target.value); setPage(1); }} className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600">{STATUS_OPTIONS.map(item => <option key={item}>{item}</option>)}</select></div></div>
-        {loading ? <div className="px-6 py-24 text-center text-sm text-slate-400">加载任务列表…</div> : formalTasks.length === 0 ? <div className="px-6 py-24 text-center"><FileArchive className="mx-auto h-11 w-11 text-slate-200" /><h3 className="mt-4 font-bold text-slate-600">{keyword || product !== '全部产品' || status !== '全部状态' ? '没有符合条件的任务' : '还没有正式评测任务'}</h3><p className="mt-2 text-sm text-slate-400">任务提交后将直接进入处理中，并在这里持续更新。</p><Button className="mt-5 bg-blue-600" onClick={() => { navigate('/'); window.setTimeout(() => document.getElementById('product-matrix')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120); }}>查看产品矩阵</Button></div> : <><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[1100px] text-left"><thead className="bg-slate-50 text-xs font-semibold text-slate-400"><tr><th className="px-6 py-3">任务名称</th><th className="px-5 py-3">产品</th><th className="px-5 py-3">被测对象</th><th className="px-5 py-3">提交方式</th><th className="px-5 py-3">当前状态</th><th className="px-5 py-3">提交时间</th><th className="px-5 py-3 text-right">操作</th></tr></thead><tbody>{formalTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['处理中']; const Icon = config.icon; return <tr key={task.id} className="border-t transition hover:bg-blue-50/30"><td className="px-6 py-4"><button onClick={() => setSelectedTask(task)} className="max-w-[240px] truncate text-sm font-bold text-slate-800 hover:text-blue-600">{task.name}</button><div className="mt-1 font-mono text-[10px] text-slate-400">{task.id}</div></td><td className="px-5 py-4 text-sm text-slate-600">{productLabel(task.evalType)}</td><td className="max-w-[180px] px-5 py-4 text-sm text-slate-600"><span className="block truncate">{task.model}</span></td><td className="px-5 py-4 text-sm text-slate-500">{submissionLabel(task)}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${config.style}`}><Icon className={Icon === LoaderCircle ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />{config.label}</span></td><td className="px-5 py-4 text-xs text-slate-400">{task.createdAt}</td><td className="px-5 py-4 text-right"><Button variant="ghost" size="sm" className="text-blue-600" onClick={() => setSelectedTask(task)}>查看详情<ChevronRight className="ml-1 h-4 w-4" /></Button></td></tr>; })}</tbody></table></div><div className="divide-y md:hidden">{formalTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['处理中']; const Icon = config.icon; return <button key={task.id} onClick={() => setSelectedTask(task)} className="block w-full px-4 py-4 text-left transition hover:bg-blue-50"><div className="flex items-start justify-between gap-3"><span className="min-w-0"><b className="block truncate text-sm text-slate-800">{task.name}</b><span className="mt-1 block truncate font-mono text-[10px] text-slate-400">{task.id}</span></span><span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${config.style}`}><Icon className="h-3 w-3" />{config.label}</span></div><div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs"><span className="truncate text-slate-600">{productLabel(task.evalType)}</span><span className="truncate text-right text-slate-500">{task.model}</span><span className="text-slate-400">{submissionLabel(task)}</span><span className="text-right text-slate-400">{task.createdAt}</span></div><span className="mt-3 inline-flex items-center text-xs font-bold text-blue-600">查看详情<ChevronRight className="ml-1 h-3.5 w-3.5" /></span></button>; })}</div></>}
+        {loading ? <div className="px-6 py-24 text-center text-sm text-slate-400">加载任务列表…</div> : formalTasks.length === 0 ? <div className="px-6 py-24 text-center"><FileArchive className="mx-auto h-11 w-11 text-slate-200" /><h3 className="mt-4 font-bold text-slate-600">{keyword || product !== '全部产品' || status !== '全部状态' ? '没有符合条件的任务' : '还没有正式评测任务'}</h3><p className="mt-2 text-sm text-slate-400">任务提交后将直接进入处理中，并在这里持续更新。</p><Button className="mt-5 bg-blue-600" onClick={() => { navigate('/'); window.setTimeout(() => document.getElementById('product-matrix')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120); }}>查看产品矩阵</Button></div> : <><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[1100px] text-left"><thead className="bg-slate-50 text-xs font-semibold text-slate-400"><tr><th className="px-6 py-3">任务名称</th><th className="px-5 py-3">产品</th><th className="px-5 py-3">被测对象</th><th className="px-5 py-3">提交方式</th><th className="px-5 py-3">当前状态</th><th className="px-5 py-3">提交时间</th><th className="px-5 py-3 text-right">操作</th></tr></thead><tbody>{formalTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['处理中']; const Icon = config.icon; return <tr key={task.id} className="border-t transition hover:bg-blue-50/30"><td className="px-6 py-4"><button onClick={() => setSelectedTask(task)} className="max-w-[240px] truncate text-sm font-bold text-slate-800 hover:text-blue-600">{task.name}</button><div className="mt-1 font-mono text-[10px] text-slate-400">{task.id}</div></td><td className="px-5 py-4 text-sm text-slate-600">{task.evalType}</td><td className="max-w-[180px] px-5 py-4 text-sm text-slate-600"><span className="block truncate">{task.model}</span></td><td className="px-5 py-4 text-sm text-slate-500">{submissionLabel(task)}</td><td className="px-5 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${config.style}`}><Icon className={Icon === LoaderCircle ? 'h-3.5 w-3.5 animate-spin' : 'h-3.5 w-3.5'} />{config.label}</span></td><td className="px-5 py-4 text-xs text-slate-400">{task.createdAt}</td><td className="px-5 py-4 text-right"><Button variant="ghost" size="sm" className="text-blue-600" onClick={() => setSelectedTask(task)}>查看详情<ChevronRight className="ml-1 h-4 w-4" /></Button></td></tr>; })}</tbody></table></div><div className="divide-y md:hidden">{formalTasks.map(task => { const config = STATUS_UI[task.status] || STATUS_UI['处理中']; const Icon = config.icon; return <button key={task.id} onClick={() => setSelectedTask(task)} className="block w-full px-4 py-4 text-left transition hover:bg-blue-50"><div className="flex items-start justify-between gap-3"><span className="min-w-0"><b className="block truncate text-sm text-slate-800">{task.name}</b><span className="mt-1 block truncate font-mono text-[10px] text-slate-400">{task.id}</span></span><span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${config.style}`}><Icon className="h-3 w-3" />{config.label}</span></div><div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs"><span className="truncate text-slate-600">{task.evalType}</span><span className="truncate text-right text-slate-500">{task.model}</span><span className="text-slate-400">{submissionLabel(task)}</span><span className="text-right text-slate-400">{task.createdAt}</span></div><span className="mt-3 inline-flex items-center text-xs font-bold text-blue-600">查看详情<ChevronRight className="ml-1 h-3.5 w-3.5" /></span></button>; })}</div></>}
         <div className="border-t">
           <DataPagination
             total={total}
@@ -317,7 +293,7 @@ export function ResourceCenter() {
 }
 
 function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () => void }) {
-  const rawStatus = String(task.status);
+  const rawStatus = task.status;
   const config = STATUS_UI[task.status] || STATUS_UI['处理中'];
   const Icon = config.icon;
   const downloadReport = async (report: NonNullable<EvalTask['reports']>[number]) => {
@@ -332,7 +308,7 @@ function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () =
       toast.error(err instanceof Error ? err.message : '下载失败');
     }
   };
-  const messageTone = rawStatus === '待用户补充' || rawStatus === '待补充材料'
+  const messageTone = rawStatus === '待用户补充'
     ? 'border-orange-200 bg-orange-50 text-orange-800'
     : rawStatus === '已终止'
       ? 'border-red-100 bg-red-50 text-red-700'
@@ -396,7 +372,7 @@ function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () =
         )}
       </div>
 
-      {(rawStatus === '待用户补充' || rawStatus === '待补充材料') && (
+      {rawStatus === '待用户补充' && (
         <Button className="bg-orange-600 hover:bg-orange-700" onClick={onSupplement}>
           <Upload className="mr-2 h-4 w-4" />按要求补充材料
         </Button>
@@ -404,7 +380,7 @@ function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () =
 
       <div>
         <div className="mb-2 text-sm font-bold text-slate-800">报告与结果文件</div>
-        {(rawStatus === '已交付' || rawStatus === '已推送') && task.reports?.length ? (
+        {rawStatus === '已交付' && task.reports?.length ? (
           <div className="space-y-2">
             {task.reports.map(report => (
               <button
@@ -445,12 +421,6 @@ function TaskDetail({ task, onSupplement }: { task: EvalTask; onSupplement: () =
         </div>
       )}
 
-      {rawStatus === '处理异常' && !task.publicMessage && (
-        <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
-          <MessageSquare className="mr-2 inline h-4 w-4" />
-          任务处理出现异常，请通过玄鉴智能助手联系技术顾问。
-        </div>
-      )}
     </div>
   );
 }

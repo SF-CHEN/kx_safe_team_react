@@ -83,7 +83,7 @@ export function AigcTaskModal({ open, onClose, defaultModality = 'text', default
       modelType: '专用模型',
       evalSet: fileMode === 'builtin' ? builtinFile : fileMode === 'path' ? filePath : '自定义文件',
       evalType: 'AIGC内容审核',
-      status: '排队中',
+      status: '处理中',
       score: null,
       createdAt: new Date().toISOString().split('T')[0],
       plan,

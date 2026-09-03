@@ -91,7 +91,7 @@ export function PrivacyAuditTaskModal({ open, onClose }: PrivacyAuditTaskModalPr
       modelType: `${cfg.label}扫描`,
       evalSet: fileMode === 'builtin' ? builtinFile : fileMode === 'path' ? filePath : '自定义文件',
       evalType: '个人敏感信息审查',
-      status: '排队中',
+      status: '处理中',
       score: null,
       createdAt: new Date().toISOString().split('T')[0],
       plan: 'free',

@@ -45,22 +45,7 @@ const statusBar: Record<string, string> = {
 const fallbackStatusStyle = 'bg-slate-100 text-slate-600';
 const fallbackStatusBar = 'bg-slate-400';
 
-export function normalizeAdminStatus(status: string): WorkflowStatus {
-  const upper = status.trim().toUpperCase();
-  if (status === '待用户补充' || upper === 'AWAIT_SUPPLEMENT') return '待用户补充';
-  if (status === '已交付' || upper === 'DELIVERED') return '已交付';
-  if (status === '已终止' || upper === 'TERMINATED') return '已终止';
-  return '处理中';
-}
-
 const ADMIN_PRODUCT_OPTIONS = ['全部产品', '数据集安全评测', '深度模型可信测评', '智能体安全评测', '大模型性能评测', '大模型安全评测'];
-
-function canonicalProduct(product: string) {
-  if (product === '大模型评测') return '大模型性能评测';
-  if (product === '多模态大模型安全评测') return '大模型安全评测';
-  if (product === '模型数据安全评测') return '数据集安全评测';
-  return product;
-}
 
 export function mapAuthUserToRecord(user: AuthUser): PlatformUserRecord {
   return {
@@ -87,7 +72,7 @@ export function mapEvalRowToWorkflow(row: AdminEvalTaskRow): WorkflowTask {
     model: row.model,
     requirement: row.requirement,
     configSummary: row.configSummary,
-    status: normalizeAdminStatus(row.status),
+    status: row.status,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     inputs: row.inputs.map((file) => ({
@@ -154,7 +139,7 @@ function mergeTaskWithDetail(
     requirement:
       detail && detail.requirement !== '—' ? detail.requirement : task.requirement,
     configSummary: detail?.configSummary || task.configSummary,
-    status: detail ? normalizeAdminStatus(detail.status) : task.status,
+    status: detail?.status || task.status,
     inputs,
     outputs,
     communications: detail?.communications ?? task.communications,
@@ -507,7 +492,7 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
     ? mergeTaskWithDetail(baseCurrent, selectedDetail, pendingDeliver)
     : undefined;
   const displayStatus = current?.status || currentRow?.status || '处理中';
-  const normalizedStatus = normalizeAdminStatus(displayStatus);
+  const normalizedStatus = displayStatus;
 
   useEffect(() => { setPage(1); }, [query, product, group, pageSize]);
   useEffect(() => { if (page > pages) setPage(pages); }, [page, pages]);
@@ -724,11 +709,11 @@ export function AdminWorkflowWorkbench({ initialTaskId, initialGroup }: { initia
         <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100 bg-white">{visible.map(task => {
               const detailStatus =
                 selectedDetail && task.id === current?.id
-                  ? normalizeAdminStatus(selectedDetail.status)
+                  ? selectedDetail.status
                   : undefined;
               const rawStatus = detailStatus || rowById.get(task.id)?.status || task.status;
               const active = current?.id === task.id;
-              return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden border-l-4 px-4 py-4 text-left transition ${active ? 'border-blue-600 bg-[#E6F7FF] shadow-[inset_0_0_0_1px_rgba(37,99,235,.16)]' : 'border-transparent hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${active ? 'bg-blue-600' : statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className={`line-clamp-2 pl-1 text-sm font-black ${active ? 'text-blue-950' : 'text-slate-800'}`}>{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className={`mt-2 pl-1 text-xs ${active ? 'font-semibold text-blue-700' : 'text-slate-500'}`}>{task.userName} · {canonicalProduct(task.product)}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className={`text-[11px] font-bold text-blue-600 transition ${active ? 'opacity-100' : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>{active ? '当前任务' : '处理 →'}</span></div></button>;
+              return <button key={task.id} onClick={() => setSelected(task.id)} className={`group relative block w-full overflow-hidden border-l-4 px-4 py-4 text-left transition ${active ? 'border-blue-600 bg-[#E6F7FF] shadow-[inset_0_0_0_1px_rgba(37,99,235,.16)]' : 'border-transparent hover:bg-slate-50'}`}><span className={`absolute inset-y-3 left-0 w-1 rounded-r-full ${active ? 'bg-blue-600' : statusBar[rawStatus] || fallbackStatusBar}`} /><div className="flex items-start justify-between gap-3"><span className={`line-clamp-2 pl-1 text-sm font-black ${active ? 'text-blue-950' : 'text-slate-800'}`}>{task.name}</span><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyle[rawStatus] || fallbackStatusStyle}`}>{rawStatus}</span></div><div className={`mt-2 pl-1 text-xs ${active ? 'font-semibold text-blue-700' : 'text-slate-500'}`}>{task.userName} · {task.product}</div><div className="mt-2 flex items-center justify-between pl-1"><span className="font-mono text-[10px] text-slate-400">{task.id}</span><span className={`text-[11px] font-bold text-blue-600 transition ${active ? 'opacity-100' : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'}`}>{active ? '当前任务' : '处理 →'}</span></div></button>;
             })}{!visible.length && <div className="px-6 py-16 text-center"><FileArchive className="mx-auto h-8 w-8 text-slate-300" /><div className="mt-3 text-sm font-bold text-slate-500">没有符合条件的任务</div><div className="mt-1 text-xs text-slate-400">请调整产品、状态或搜索条件</div></div>}</div>
         <div className="flex h-14 shrink-0 items-center justify-between border-t border-slate-200 bg-slate-50 px-4 text-xs text-slate-500"><select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5"><option value={5}>5 条/页</option><option value={10}>10 条/页</option><option value={20}>20 条/页</option></select><div className="flex items-center gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button><span>{page}/{pages}</span><button disabled={page === pages} onClick={() => setPage(p => p + 1)} className="rounded-md p-1 hover:bg-white disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button></div></div>
       </div>

@@ -22,7 +22,7 @@ import { fetchPresetScenes } from '@/api/presetScene';
 import type { EvaluationTaskKind } from '@/api/evaluation/evaluationTask';
 import type { BaseDropDepthModel } from '@/api/generated/types/depth-model';
 import type { PresetSceneVo } from '@/api/generated/types/preset-scene';
-import { useUser, EvalTask } from '../context/UserContext';
+import { useUser } from '../context/UserContext';
 import { toast } from 'sonner';
 
 type TaskType = 'llm' | 'multimodal';
@@ -146,11 +146,6 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
   /** OpenAPI：PERFORMANCE | SAFETY；多模态安全暂归 SAFETY，见对接纪要 */
   const resolveApiType = (): EvaluationTaskKind =>
     pageType === 'llm' ? 'PERFORMANCE' : 'SAFETY';
-
-  const resolveEvalType = (): EvalTask['evalType'] => {
-    if (pageType === 'llm') return '大模型评测';
-    return taskType === 'multimodal' ? '多模态大模型安全评测' : '大模型安全评测';
-  };
 
   const buildCustomModelConfig = (opts: {
     name: string;
