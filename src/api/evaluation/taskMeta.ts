@@ -38,22 +38,17 @@ export function mapWorkflowStatusToMaster(status: ResourceTaskStatus): Evaluatio
   return 'PROCESSING'
 }
 
-export function mapMasterProductLabel(productType?: EvaluationTaskMasterProductType): string {
+export function mapMasterProductLabel(
+  productType: EvaluationTaskMasterProductType,
+): ResourceEvalType {
   if (productType === 'PERFORMANCE') return '大模型性能评测'
   if (productType === 'SAFETY') return '大模型安全评测'
   if (productType === 'DATA_SAFETY') return '数据集安全评测'
   if (productType === 'TRUST') return '深度模型可信测评'
-  if (productType === 'AGENT_SAFETY') return '智能体安全评测'
-  return '—'
+  return '智能体安全评测'
 }
 
-export function mapMasterEvalType(productType?: EvaluationTaskMasterProductType): ResourceEvalType {
-  if (productType === 'SAFETY') return '大模型安全评测'
-  if (productType === 'DATA_SAFETY') return '数据集安全评测'
-  if (productType === 'TRUST') return '深度模型可信测评'
-  if (productType === 'AGENT_SAFETY') return '智能体安全评测'
-  return '大模型性能评测'
-}
+export const mapMasterEvalType = mapMasterProductLabel
 
 /** 资源中心产品筛选文案 → 后端产品枚举。 */
 export function mapProductFilterToMaster(
