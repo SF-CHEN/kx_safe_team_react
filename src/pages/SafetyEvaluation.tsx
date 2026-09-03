@@ -63,7 +63,7 @@ const CAPABILITY_MATRIX = [
     tagline: '抗干扰 · 稳输出',
     desc: '通过越狱、幻觉与后门测试，检查模型面对对抗指令、事实性错误和隐藏触发条件时是否暴露风险。',
     items: ['越狱测试', '幻觉测试', '后门测试'],
-    metrics: [],
+    metrics: [] as Array<{ label: string; val?: string; value?: string }>,
   },
   {
     key: 'privacy',
@@ -73,7 +73,7 @@ const CAPABILITY_MATRIX = [
     tagline: '护数据 · 防泄露',
     desc: '围绕训练数据、RAG知识库和系统提示词开展泄露测试，识别模型是否会返回不应暴露的信息。',
     items: ['训练数据泄露', 'RAG泄露测试', '提示词泄露测试'],
-    metrics: [],
+    metrics: [] as Array<{ label: string; val?: string; value?: string }>,
   },
   {
     key: 'safety',
@@ -83,7 +83,7 @@ const CAPABILITY_MATRIX = [
     tagline: '防风险 · 守边界',
     desc: '检查敏感、侵权、毒性、歧视及其他安全需求相关内容风险，帮助团队定位问题输出。',
     items: ['敏感性内容', '侵权内容', '毒性内容', '核心价值观', '歧视性内容', '商业违法违规', '合法权益', '特定服务安全需求'],
-    metrics: [],
+    metrics: [] as Array<{ label: string; val?: string; value?: string }>,
   },
   {
     key: 'bias',
@@ -93,7 +93,7 @@ const CAPABILITY_MATRIX = [
     tagline: '去倾向 · 看差异',
     desc: '使用基准测试检查模型在不同人群与身份属性上的输出差异，识别可能存在的偏见倾向。',
     items: ['性别偏见', '种族偏见', '身材偏见', '职业偏见', '年龄偏见', '宗教偏见', '身体能力偏见'],
-    metrics: [],
+    metrics: [] as Array<{ label: string; val?: string; value?: string }>,
   },
 ];
 
@@ -563,7 +563,7 @@ export function SafetyEvaluation() {
                 id: 'launch', icon: '📋', accentColor: '#6366f1', tag: '上线前检查',
                 title: '模型上线前安全风险检查', subtitle: '在正式开放服务前识别主要风险输出',
                 desc: '根据业务需要选择鲁棒性、隐私性、安全性或偏见性模块，配置对应测试项、数据集和方法，为上线评审提供问题样本与评测结果参考。',
-                metrics: [],
+                metrics: [] as Array<{ label: string; val?: string; value?: string }>,
                 tags: ['模块选择', '数据集配置', '风险检查', '结果参考'],
                 mock: <ComplianceMock />,
               },
@@ -571,7 +571,7 @@ export function SafetyEvaluation() {
                 id: 'iteration', icon: '🔁', accentColor: '#f59e0b', tag: '版本迭代',
                 title: '模型版本对比评估', subtitle: '在相同配置下复用评测维度与测试资源',
                 desc: '针对模型版本更新，可按相同评估模块、测试类型、数据集和测试方法重新提交任务，辅助团队对照不同版本的评测结果。',
-                metrics: [],
+                metrics: [] as Array<{ label: string; val?: string; value?: string }>,
                 tags: ['版本复测', '统一配置', '结果对照', '问题跟踪'],
                 mock: <RegressionMock />,
               },
@@ -579,7 +579,7 @@ export function SafetyEvaluation() {
                 id: 'special', icon: '🔎', accentColor: '#ef4444', tag: '专项排查',
                 title: '安全与隐私专项检测', subtitle: '聚焦越狱、幻觉、后门及信息泄露风险',
                 desc: '根据实际问题选择单项测试，检查训练数据、RAG知识库、提示词、内容安全或偏见风险，避免将未选择的能力包装为评测结论。',
-                metrics: [],
+                metrics: [] as Array<{ label: string; val?: string; value?: string }>,
                 tags: ['越狱测试', '幻觉测试', '泄露测试', '偏见测试'],
                 mock: <SpecialRiskMock />,
               },
