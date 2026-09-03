@@ -190,8 +190,14 @@ const PRODUCT_CONTACT_NAMES: Record<string, string> = {
 };
 
 // ── Floating Chat Panel ───────────────────────────────────────────
+interface ChatMessage {
+  from: 'agent' | 'user';
+  text: string;
+  ts: string;
+}
+
 function FloatingChatPanel({ onClose }: { onClose: () => void }) {
-  const [messages, setMessages] = React.useState([
+  const [messages, setMessages] = React.useState<ChatMessage[]>([
     { from: 'agent' as const, text: '您好！我是玄鉴智能助手，很高兴为您服务 😊', ts: '刚刚' },
     { from: 'agent' as const, text: '请问您想了解哪方面的内容？', ts: '刚刚' },
   ]);
@@ -1061,7 +1067,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       {/* Items */}
                       <div className="flex flex-col gap-0.5 flex-1">
                         {series.items.map((item, idx) =>
-                          item.isGroup ? (
+                          'children' in item ? (
                             <GroupItemBlock
                               key={idx}
                               item={item}

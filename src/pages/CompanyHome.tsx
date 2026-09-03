@@ -1000,12 +1000,12 @@ export function CompanyHome() {
                     }}
                     onClick={() => downloadKnowledgeResource(res.title, res.desc, res.date)}
                     onMouseEnter={(e) => {
-                      const el = e.currentTarget as HTMLDivElement;
+                      const el = e.currentTarget;
                       el.style.transform = 'translateY(-8px)';
                       el.style.boxShadow = `0 20px 40px ${res.color}18, 0 4px 16px rgba(0,0,0,0.08)`;
                     }}
                     onMouseLeave={(e) => {
-                      const el = e.currentTarget as HTMLDivElement;
+                      const el = e.currentTarget;
                       el.style.transform = 'none';
                       el.style.boxShadow = '0 2px 14px rgba(0,0,0,0.06)';
                     }}

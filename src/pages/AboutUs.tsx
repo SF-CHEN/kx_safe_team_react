@@ -126,7 +126,7 @@ export function AboutUs() {
               <img
                 src={rongShuLogo}
                 alt="杭州榕数科技有限公司"
-                style={{ height: 72, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.92, drop_shadow: '0 0 16px rgba(255,255,255,0.2)' }}
+                style={{ height: 72, width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1) drop-shadow(0 0 16px rgba(255,255,255,0.2))', opacity: 0.92 }}
               />
             </div>
             {/* Divider */}

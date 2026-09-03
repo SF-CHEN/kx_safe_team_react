@@ -525,7 +525,7 @@ export function AigcContent() {
                 覆盖文本、图像、音频、视频四大模态，融合内容审核与 AI 鉴伪双引擎，为平台内容安全与 AIGC 治理提供一站式解决方案。
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
-                {false && <button onClick={handleOnlineExperience}
+                {false && <button onClick={() => handleOnlineExperience()}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.45)' }}>
                   <Play size={16} /> 立即在线体验
                 </button>}

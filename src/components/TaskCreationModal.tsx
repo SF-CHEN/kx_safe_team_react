@@ -25,7 +25,7 @@ import type {
   EvaluationTaskKind,
   PresetSceneVo,
 } from '@/api/types';
-import { useUser, EvalTask, MyModel } from '../context/UserContext';
+import { useUser, EvalTask } from '../context/UserContext';
 import { toast } from 'sonner';
 
 type TaskType = 'llm' | 'multimodal';
@@ -66,7 +66,7 @@ interface Props {
 }
 
 export function TaskCreationModal({ open, onClose, pageType }: Props) {
-  const { user, addTask, addModel } = useUser();
+  const { user } = useUser();
   const [step, setStep] = useState<'type' | 'config' | 'preview'>(
     pageType === 'safety' ? 'type' : 'config'
   );
@@ -262,42 +262,9 @@ export function TaskCreationModal({ open, onClose, pageType }: Props) {
           // 保存到 depth-model 失败时仍用 CUSTOM 提交任务
         }
 
-        const newModel: MyModel = {
-          id: `m_${Date.now()}`,
-          name: customModelName,
-          type: '自定义',
-          apiBase: customApiBase,
-          modelId: customModelName,
-          createdAt: new Date().toISOString().split('T')[0],
-        };
-        addModel(newModel);
       }
 
-      const created = await addEvaluationTask(payload);
-
-      const newTask: EvalTask = {
-        id: created.id != null ? `evaluation:${created.id}` : `t_${Date.now()}`,
-        name: taskName.trim(),
-        model: modelName,
-        modelType:
-          payload.useModelType === 'BUILT_IN'
-            ? '内置'
-            : payload.useModelType === 'USER_MODEL'
-              ? '用户模型'
-              : '自定义',
-        evalSet: sceneName,
-        evalType: resolveEvalType(),
-        status: '待受理',
-        score: null,
-        createdAt:
-          created.createdAt ||
-          new Date().toLocaleString('zh-CN', { hour12: false }),
-        plan: pricingPlan,
-        requirement: scenarioDescription || selectedScene?.sceneName || sceneName,
-        configSummary: `测试类型：${taskType === 'multimodal' ? '多模态模型' : '文本模型'}；场景：${sceneName}`,
-      };
-
-      addTask(newTask);
+      await addEvaluationTask(payload);
       toast.success('任务已提交，等待平台受理', {
         description:
           '技术团队将根据您填写的场景和模型配置开展正式评测，完成后推送报告至资源中心。',
