@@ -60,6 +60,8 @@ export interface PlatformUserRecord {
   registeredAt: string;
   lastLoginAt: string;
   status: '正常' | '已停用';
+  /** 管理端展示所需的归一化角色；旧本地记录缺失时按普通用户处理。 */
+  role?: 'admin' | 'user';
 }
 
 export interface PlatformActivity {
@@ -135,7 +137,7 @@ function normalizeTask(task: WorkflowTask): WorkflowTask {
 
 export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY).filter(task => FORMAL_TASK_PRODUCTS.has(task.product)).map(normalizeTask);
 export const saveWorkflowTasks = (tasks: WorkflowTask[]) => write(TASK_KEY, tasks);
-export const getPlatformUsers = () => read<PlatformUserRecord>(USERS_KEY);
+export const getPlatformUsers = () => read<PlatformUserRecord>(USERS_KEY).map((user) => ({ ...user, role: user.role || 'user' }));
 export const getNotifications = () => read<UserNotification>(NOTICE_KEY);
 export const getAdminOperationLogs = () => read<AdminOperationLog>(OPERATION_LOG_KEY);
 export const getPlatformActivities = () => read<PlatformActivity>(ACTIVITY_KEY);
