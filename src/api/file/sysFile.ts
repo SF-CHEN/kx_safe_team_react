@@ -1,6 +1,13 @@
-import { createTempClient, tempRequest } from '@/api/request'
+import {
+  deleteOne2SysFile,
+  findPage2SysFile,
+  getDetailById2SysFile,
+  uploadSysFile as uploadSysFileApi,
+} from '@/api/generated/sys-file'
+import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
+import { createTempClient } from '@/api/request'
 import type { PageQuery, PageResult, SysFile } from '@/api/types'
-import { extractGatewayErrorMessage, unwrapGatewayData } from '@/utils/gateway'
+import { extractGatewayErrorMessage } from '@/utils/gateway'
 
 /** 上传/下载超时：OpenAPI 上限 50MB，需要比普通请求更长。 */
 const FILE_TRANSFER_TIMEOUT_MS = 180_000
@@ -18,31 +25,25 @@ export async function uploadSysFile(file: File): Promise<SysFile> {
   const form = new FormData()
   form.append('file', file)
 
-  const client = createTempClient(FILE_TRANSFER_TIMEOUT_MS)
-  // 不手动设置 Content-Type，让浏览器补齐 multipart boundary。
-  const { data } = await client.post('/temp/sys-file/upload', form)
-  return unwrapGatewayData<SysFile>(data)
+  // Swagger 将 multipart requestBody 泛化成 Record；运行时仍由 Axios 正确识别 FormData 并补 boundary。
+  const result = await uploadSysFileApi(form as unknown as Record<string, unknown>)
+  return unwrapApiResult(result, '上传文件失败') as SysFile
 }
 
 export async function getSysFileById(id: number): Promise<SysFile> {
-  const { data } = await tempRequest.get('/temp/sys-file/getDetailById', {
-    params: { id },
-  })
-  return unwrapGatewayData<SysFile>(data)
+  const result = await getDetailById2SysFile({ id })
+  return unwrapApiResult(result, '获取文件信息失败') as SysFile
 }
 
 export async function pageSysFiles(query: PageQuery<SysFile>): Promise<PageResult<SysFile>> {
-  const { data } = await tempRequest.post('/temp/sys-file/page', query, {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  return unwrapGatewayData<PageResult<SysFile>>(data)
+  // OpenAPI 未保留 PageQuery.entity 泛型，只在 generated 边界转换。
+  const result = await findPage2SysFile(query as Parameters<typeof findPage2SysFile>[0])
+  return unwrapApiResultOr(result, { records: [], total: 0 }, '查询文件列表失败') as PageResult<SysFile>
 }
 
 export async function deleteSysFile(id: number): Promise<boolean> {
-  const { data } = await tempRequest.delete('/temp/sys-file/deleteOne', {
-    params: { id },
-  })
-  return unwrapGatewayData<boolean>(data)
+  const result = await deleteOne2SysFile({ id })
+  return unwrapApiResult(result, '删除文件失败')
 }
 
 async function blobToErrorMessage(blob: Blob): Promise<string | null> {
@@ -71,7 +72,12 @@ function filenameFromContentDisposition(header?: string): string | undefined {
   return plain?.[1]?.trim()
 }
 
-/** 下载文件并触发浏览器保存；返回用于展示的文件名。 */
+/**
+ * 下载文件并触发浏览器保存；返回用于展示的文件名。
+ *
+ * WHY: 当前 Swagger 将下载响应描述为 void，模板生成函数不会附带 responseType:'blob'；
+ * 该二进制传输暂时保留手写请求，不能手改 generated 文件，否则下次生成会丢失。
+ */
 export async function downloadSysFile(id: number, fallbackName = `file-${id}`): Promise<string> {
   const client = createTempClient(FILE_TRANSFER_TIMEOUT_MS)
   const response = await client.get('/temp/sys-file/download', {
