@@ -13,7 +13,6 @@ export function Login() {
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -39,7 +38,7 @@ export function Login() {
     }
     setLoading(true);
     try {
-      await login(account.trim(), password, rememberMe);
+      await login(account.trim(), password);
       toast.success('登录成功');
       navigate(returnTo);
     } catch (err) {
@@ -112,11 +111,7 @@ export function Login() {
                 <button type="button" onClick={() => setShowPwd(current => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
 
-              <div className="flex items-center justify-between py-1 text-xs">
-                <label className="flex items-center gap-2 text-slate-500">
-                  <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded border-slate-300" />
-                  记住登录状态
-                </label>
+              <div className="flex justify-end py-1 text-xs">
                 <button type="button" onClick={() => setForgotOpen(true)} className="font-semibold text-blue-600">忘记密码？</button>
               </div>
 
