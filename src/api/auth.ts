@@ -1,8 +1,20 @@
-import { tempRequest } from '@/api/request'
+import {
+  add1SysUser,
+  deleteOne1SysUser,
+  findPage1SysUser,
+  getCurrentUserSysUser,
+  loginSysUser,
+  registerSysUser,
+  update1SysUser,
+  updateUserStatusSysUser,
+} from '@/api/generated/sys-user'
+import type {
+  SysUser as GeneratedSysUser,
+  UserLoginVo as GeneratedUserLoginVo,
+} from '@/api/generated/types/sys-user'
+import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
 import type { SysUser, UserLoginVo, UserRoleCode } from '@/api/types'
-import { updateSysUserStatus } from '@/api/user/sysUser'
 import { getToken } from '@/utils/auth'
-import { unwrapGatewayData } from '@/utils/gateway'
 import { md5Password } from '@/utils/md5'
 
 export interface AuthUser {
@@ -30,12 +42,12 @@ export interface AuthSession {
   user: AuthUser
 }
 
-function mapSysUser(user?: SysUser | null): AuthUser {
+function mapSysUser(user?: SysUser | GeneratedSysUser | null): AuthUser {
   if (user == null || user.id == null) throw new Error('登录返回缺少用户信息')
 
   const roleCode = String(user.role || 'USER').toUpperCase()
   return {
-    id: user.id as number | string,
+    id: user.id,
     username: user.username,
     nickname: user.username,
     email: '',
@@ -48,7 +60,7 @@ function mapSysUser(user?: SysUser | null): AuthUser {
   }
 }
 
-function toAuthSession(vo: UserLoginVo): AuthSession {
+function toAuthSession(vo: UserLoginVo | GeneratedUserLoginVo): AuthSession {
   const token = String(vo.token || '').trim()
   if (!token) throw new Error('登录返回缺少 token')
 
@@ -66,16 +78,12 @@ export async function registerAuth(payload: {
   nickname?: string
   remember_me?: boolean
 }): Promise<AuthSession> {
-  // 当前注册接口契约只有 username + password。邮箱账号也必须完整放进 username，不能在前端截断域名。
-  const { data } = await tempRequest.post(
-    '/temp/sys-user/register',
-    {
-      username: payload.username.trim(),
-      password: md5Password(payload.password),
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  )
-  return toAuthSession(unwrapGatewayData<UserLoginVo>(data))
+  // 当前注册契约只有 username + password；邮箱账号必须完整放进 username，不能在前端截断域名。
+  const result = await registerSysUser({
+    username: payload.username.trim(),
+    password: md5Password(payload.password),
+  })
+  return toAuthSession(unwrapApiResult(result, '注册失败'))
 }
 
 export async function loginAuth(payload: {
@@ -83,24 +91,20 @@ export async function loginAuth(payload: {
   password: string
   remember_me?: boolean
 }): Promise<AuthSession> {
-  const { data } = await tempRequest.post(
-    '/temp/sys-user/login',
-    {
-      username: payload.account.trim(),
-      password: md5Password(payload.password),
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  )
-  return toAuthSession(unwrapGatewayData<UserLoginVo>(data))
+  const result = await loginSysUser({
+    username: payload.account.trim(),
+    password: md5Password(payload.password),
+  })
+  return toAuthSession(unwrapApiResult(result, '登录失败'))
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
   if (!getToken()) throw new Error('未登录')
-  const { data } = await tempRequest.get('/temp/sys-user/getCurrentUser')
-  return mapSysUser(unwrapGatewayData<SysUser>(data))
+  const result = await getCurrentUserSysUser()
+  return mapSysUser(unwrapApiResult(result, '获取当前用户失败'))
 }
 
-/** 新后端暂无登出接口，仅清理本地会话。 */
+/** 后端 OpenAPI 暂无登出接口，仅清理本地会话。 */
 export async function logoutAuth(): Promise<unknown> {
   return null
 }
@@ -123,16 +127,14 @@ export async function fetchAuthUsers(params?: {
   if (params?.username) entity.username = params.username
   if (params?.role) entity.role = params.role
 
-  const { data } = await tempRequest.post(
-    '/temp/sys-user/page',
-    {
-      pageSize: params?.pageSize ?? 10,
-      pageCurrent: params?.pageCurrent ?? 1,
-      entity: Object.keys(entity).length ? entity : undefined,
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  )
-  const page = unwrapGatewayData<{ records?: SysUser[]; total?: number }>(data)
+  // OpenAPI 的 PageQuery.entity 泛型信息已丢失，只在 generated 边界转换。
+  const result = await findPage1SysUser({
+    pageSize: params?.pageSize ?? 10,
+    pageCurrent: params?.pageCurrent ?? 1,
+    entity: Object.keys(entity).length ? entity : undefined,
+  } as Parameters<typeof findPage1SysUser>[0])
+  const page = unwrapApiResultOr(result, { records: [], total: 0 }, '加载用户列表失败')
+
   const items: AuthUser[] = []
   for (const row of page.records || []) {
     try {
@@ -147,8 +149,9 @@ export async function fetchAuthUsers(params?: {
 export async function updateAuthUserStatus(
   userId: number | string,
   isActive: boolean,
-): Promise<unknown> {
-  return updateSysUserStatus({ userId: Number(userId), enabled: isActive })
+): Promise<boolean> {
+  const result = await updateUserStatusSysUser({ userId: Number(userId), enabled: isActive })
+  return unwrapApiResult(result, '更新用户状态失败')
 }
 
 export async function createAuthUser(payload: {
@@ -156,37 +159,24 @@ export async function createAuthUser(payload: {
   password: string
   role?: UserRoleCode
 }): Promise<AuthUser | null> {
-  const { data } = await tempRequest.post(
-    '/temp/sys-user/add',
-    {
-      username: payload.username.trim(),
-      password: md5Password(payload.password),
-      role: payload.role || 'USER',
-    },
-    { headers: { 'Content-Type': 'application/json' } },
-  )
-  const created = unwrapGatewayData<SysUser | boolean | null>(data)
-  if (created && typeof created === 'object' && 'id' in created && created.id != null) {
-    return mapSysUser(created)
-  }
-  return null
+  const result = await add1SysUser({
+    username: payload.username.trim(),
+    password: md5Password(payload.password),
+    role: payload.role || 'USER',
+  })
+  const created = unwrapApiResult(result, '创建用户失败')
+  return created.id == null ? null : mapSysUser(created)
 }
 
 export async function updateAuthUserRole(
   userId: number | string,
   role: UserRoleCode,
-): Promise<unknown> {
-  const { data } = await tempRequest.put(
-    '/temp/sys-user/update',
-    { id: Number(userId), role },
-    { headers: { 'Content-Type': 'application/json' } },
-  )
-  return unwrapGatewayData(data)
+): Promise<boolean> {
+  const result = await update1SysUser({ id: Number(userId), role })
+  return unwrapApiResult(result, '更新用户角色失败')
 }
 
-export async function deleteAuthUser(userId: number | string): Promise<unknown> {
-  const { data } = await tempRequest.delete('/temp/sys-user/deleteOne', {
-    params: { id: Number(userId) },
-  })
-  return unwrapGatewayData(data)
+export async function deleteAuthUser(userId: number | string): Promise<boolean> {
+  const result = await deleteOne1SysUser({ id: Number(userId) })
+  return unwrapApiResult(result, '删除用户失败')
 }
