@@ -1,3 +1,15 @@
 {
-  "liveServer.settings.port": 5501
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "pnpm-lock.yaml,package-lock.json,yarn.lock,bun.lockb",
+    "tsconfig.json": "tsconfig.*.json",
+    ".env": ".env.development,.env.production,.env.local,.env.development.local,.env.production.local",
+    "index.tsx": "*.query.ts,*.schema.ts,*.options.ts,*.test.tsx,*.spec.tsx",
+    "*.tsx": "${capture}.test.tsx,${capture}.spec.tsx,${capture}.stories.tsx,${capture}.module.css,${capture}.css",
+    "*.ts": "${capture}.test.ts,${capture}.spec.ts,${capture}.types.ts"
+  }
 }

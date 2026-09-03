@@ -1,11 +1,8 @@
 import {
-  add1SysUser,
-  deleteOne1SysUser,
   findPage1SysUser,
   getCurrentUserSysUser,
   loginSysUser,
   registerSysUser,
-  update1SysUser,
   updateUserStatusSysUser,
 } from '@/api/generated/sys-user'
 import type { SysUser, UserLoginVo } from '@/api/generated/types/sys-user'
@@ -124,31 +121,4 @@ export async function updateAuthUserStatus(
 ): Promise<boolean> {
   const result = await updateUserStatusSysUser({ userId: Number(userId), enabled: isActive })
   return unwrapApiResult(result, '更新用户状态失败')
-}
-
-export async function createAuthUser(payload: {
-  username: string
-  password: string
-  role?: UserRoleCode
-}): Promise<AuthUser | null> {
-  const result = await add1SysUser({
-    username: payload.username.trim(),
-    password: md5Password(payload.password),
-    role: payload.role || 'USER',
-  })
-  const created = unwrapApiResult(result, '创建用户失败')
-  return created.id == null ? null : mapSysUser(created)
-}
-
-export async function updateAuthUserRole(
-  userId: number | string,
-  role: UserRoleCode,
-): Promise<boolean> {
-  const result = await update1SysUser({ id: Number(userId), role })
-  return unwrapApiResult(result, '更新用户角色失败')
-}
-
-export async function deleteAuthUser(userId: number | string): Promise<boolean> {
-  const result = await deleteOne1SysUser({ id: Number(userId) })
-  return unwrapApiResult(result, '删除用户失败')
 }

@@ -1,6 +1,4 @@
 import {
-  batchDel8EvaluationTaskMaster,
-  deleteOne8EvaluationTaskMaster,
   deliverEvaluationTaskMaster as deliverEvaluationTaskMasterApi,
   findPage8EvaluationTaskMaster,
   getDetailById8EvaluationTaskMaster,
@@ -39,14 +37,6 @@ export async function getEvaluationTaskMasterById(
 /** 管理员交付：需先 uploadSysFile 得到 deliverFileId。 */
 export async function deliverEvaluationTaskMaster(payload: DeliverTaskSo): Promise<boolean> {
   return unwrapApiResult(await deliverEvaluationTaskMasterApi(payload), '交付评测任务失败')
-}
-
-export async function deleteEvaluationTaskMaster(id: number): Promise<boolean> {
-  return unwrapApiResult(await deleteOne8EvaluationTaskMaster({ id }), '删除评测任务失败')
-}
-
-export async function batchDeleteEvaluationTaskMasters(ids: number[]): Promise<boolean> {
-  return unwrapApiResult(await batchDel8EvaluationTaskMaster({ ids }), '批量删除评测任务失败')
 }
 
 /** 用户补充材料（资源中心）。 */

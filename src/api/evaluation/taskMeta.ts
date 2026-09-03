@@ -30,17 +30,7 @@ export function mapMasterStatusToWorkflow(
   return '处理中'
 }
 
-/** 门户工作流状态 → 后端状态。 */
-export function mapWorkflowStatusToMaster(status: ResourceTaskStatus): EvaluationTaskMasterStatus {
-  if (status === '待用户补充') return 'AWAIT_SUPPLEMENT'
-  if (status === '已交付') return 'DELIVERED'
-  if (status === '已终止') return 'TERMINATED'
-  return 'PROCESSING'
-}
-
-export function mapMasterProductLabel(
-  productType: EvaluationTaskMasterProductType,
-): ResourceEvalType {
+export function mapMasterProductLabel(productType?: EvaluationTaskMasterProductType): string {
   if (productType === 'PERFORMANCE') return '大模型性能评测'
   if (productType === 'SAFETY') return '大模型安全评测'
   if (productType === 'DATA_SAFETY') return '数据集安全评测'
@@ -49,28 +39,6 @@ export function mapMasterProductLabel(
 }
 
 export const mapMasterEvalType = mapMasterProductLabel
-
-/** 资源中心产品筛选文案 → 后端产品枚举。 */
-export function mapProductFilterToMaster(
-  product: string,
-): EvaluationTaskMasterProductType | undefined {
-  if (product === '数据集安全评测') return 'DATA_SAFETY'
-  if (product === '深度模型可信测评') return 'TRUST'
-  if (product === '大模型性能评测') return 'PERFORMANCE'
-  if (product === '大模型安全评测') return 'SAFETY'
-  if (product === '智能体安全评测') return 'AGENT_SAFETY'
-  return undefined
-}
-
-/** 资源中心状态筛选文案 → 后端状态枚举。 */
-export function mapStatusFilterToMaster(status: string): EvaluationTaskMasterStatus | undefined {
-  if (status === '全部状态') return undefined
-  if (status === '处理中') return 'PROCESSING'
-  if (status === '待用户补充') return 'AWAIT_SUPPLEMENT'
-  if (status === '已交付') return 'DELIVERED'
-  if (status === '已终止') return 'TERMINATED'
-  return undefined
-}
 
 export function mapMasterSubmitTypeLabel(submitType?: EvaluationTaskMasterSubmitType) {
   if (submitType === 'LOCAL_PROJECT_FILE') return '本地工程文件'

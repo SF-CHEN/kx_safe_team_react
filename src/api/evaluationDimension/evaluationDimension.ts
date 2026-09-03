@@ -1,10 +1,8 @@
 import {
   add7EvaluationDimension,
-  batchDel9EvaluationDimension,
   deleteOne9EvaluationDimension,
   dimensionDropdownEvaluationDimension,
   findPage9EvaluationDimension,
-  getDetailById9EvaluationDimension,
   update6EvaluationDimension,
 } from '@/api/generated/evaluation-dimension'
 import type {
@@ -76,18 +74,8 @@ export async function updateEvaluationDimension(
   return unwrapApiResult(await update6EvaluationDimension(payload), '修改评测维度失败')
 }
 
-export async function getEvaluationDimensionById(
-  id: number,
-): Promise<EvaluationDimension> {
-  return unwrapApiResult(await getDetailById9EvaluationDimension({ id }), '获取评测维度失败')
-}
-
 export async function deleteEvaluationDimension(id: number): Promise<boolean> {
   return unwrapApiResult(await deleteOne9EvaluationDimension({ id }), '删除评测维度失败')
-}
-
-export async function batchDeleteEvaluationDimensions(ids: number[]): Promise<boolean> {
-  return unwrapApiResult(await batchDel9EvaluationDimension({ ids }), '批量删除评测维度失败')
 }
 
 /** 管理端列表：按任务类型分页。 */

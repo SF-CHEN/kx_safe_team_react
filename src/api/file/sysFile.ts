@@ -1,12 +1,6 @@
-import {
-  deleteOne2SysFile,
-  findPage2SysFile,
-  getDetailById2SysFile,
-  uploadSysFile as uploadSysFileApi,
-} from '@/api/generated/sys-file'
+import { uploadSysFile as uploadSysFileApi } from '@/api/generated/sys-file'
 import type { SysFile } from '@/api/generated/types/sys-file'
-import type { PageQuery, PageResult } from '@/api/pagination'
-import { unwrapApiResult, unwrapApiResultOr } from '@/api/result'
+import { unwrapApiResult } from '@/api/result'
 import { createTempClient } from '@/api/request'
 import { extractGatewayErrorMessage } from '@/utils/gateway'
 
@@ -14,7 +8,7 @@ import { extractGatewayErrorMessage } from '@/utils/gateway'
 const FILE_TRANSFER_TIMEOUT_MS = 180_000
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
-export function assertSysFileSize(file: File, maxBytes = MAX_UPLOAD_BYTES): void {
+function assertSysFileSize(file: File, maxBytes = MAX_UPLOAD_BYTES): void {
   if (file.size > maxBytes) {
     throw new Error(`文件大小不能超过 ${Math.floor(maxBytes / 1024 / 1024)}MB`)
   }
@@ -31,22 +25,6 @@ export async function uploadSysFile(file: File): Promise<SysFile> {
     await uploadSysFileApi(form as unknown as Record<string, unknown>),
     '上传文件失败',
   )
-}
-
-export async function getSysFileById(id: number): Promise<SysFile> {
-  return unwrapApiResult(await getDetailById2SysFile({ id }), '获取文件信息失败')
-}
-
-export async function pageSysFiles(query: PageQuery<SysFile>): Promise<PageResult<SysFile>> {
-  return unwrapApiResultOr(
-    await findPage2SysFile(query as Parameters<typeof findPage2SysFile>[0]),
-    { records: [], total: 0 },
-    '查询文件列表失败',
-  )
-}
-
-export async function deleteSysFile(id: number): Promise<boolean> {
-  return unwrapApiResult(await deleteOne2SysFile({ id }), '删除文件失败')
 }
 
 async function blobToErrorMessage(blob: Blob): Promise<string | null> {
@@ -103,24 +81,6 @@ export async function downloadSysFile(id: number, fallbackName = `file-${id}`): 
     URL.revokeObjectURL(url)
   }
   return filename
-}
-
-/** 批量拉取文件详情；失败的 id 忽略，不阻塞列表。 */
-export async function fetchSysFilesByIds(ids: number[]): Promise<Map<number, SysFile>> {
-  const unique = [...new Set(ids.filter((id) => Number.isFinite(id) && id > 0))]
-  if (!unique.length) return new Map()
-
-  const results = await Promise.all(
-    unique.map(async (id) => {
-      try {
-        return [id, await getSysFileById(id)] as const
-      } catch {
-        return null
-      }
-    }),
-  )
-
-  return new Map(results.filter((row): row is readonly [number, SysFile] => row !== null))
 }
 
 export type { SysFile } from '@/api/generated/types/sys-file'

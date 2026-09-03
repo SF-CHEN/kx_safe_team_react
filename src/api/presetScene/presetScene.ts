@@ -1,9 +1,7 @@
 import {
   add3PresetScene,
-  batchDel4PresetScene,
   deleteOne4PresetScene,
   findPage4PresetScene,
-  getDetailById4PresetScene,
   presetScene,
   update3PresetScene,
 } from '@/api/generated/preset-scene'
@@ -38,16 +36,8 @@ export async function updatePresetScene(payload: PresetScene): Promise<boolean> 
   return unwrapApiResult(await update3PresetScene(payload), '修改预置场景失败')
 }
 
-export async function getPresetSceneById(id: number): Promise<PresetScene> {
-  return unwrapApiResult(await getDetailById4PresetScene({ id }), '获取预置场景失败')
-}
-
 export async function deletePresetScene(id: number): Promise<boolean> {
   return unwrapApiResult(await deleteOne4PresetScene({ id }), '删除预置场景失败')
-}
-
-export async function batchDeletePresetScenes(ids: number[]): Promise<boolean> {
-  return unwrapApiResult(await batchDel4PresetScene({ ids }), '批量删除预置场景失败')
 }
 
 /** 管理端列表：按任务类型分页。 */
