@@ -91,7 +91,14 @@ src/
 ### 真实 API
 
 - Axios 只允许在 `src/api` 使用。
-- 请求基础设施统一收口到 `src/api/request.ts`。
+- 请求基础设施统一收口到 `src/api/request.ts`；AIGC 独立网关基础设施放 `src/api/aigc/request.ts`。
+- **除明确例外外，普通业务 HTTP 不手写 URL / method / Axios 调用。** 后端 OpenAPI 先用模板脚本生成到 `src/api/generated/**`，业务代码直接引用 generated 函数。
+- `src/api/generated/**` 是生成产物，**禁止手工修改**。接口变化时运行 `npm run api:generate`，需要同时更新接口文档时运行 `npm run api:all`。
+- 生成脚本以 `script/generate-api.cjs`、`script/load-swagger.cjs`、`script/sync-options.cjs` 为准，与 `react-ai-template` 保持一致。
+- `src/api/<domain>/**` 只允许做真正的业务输入约束、`Result<T>` 解包、DTO → ViewModel 映射、跨接口组合；不得重复声明 generated 已有的 URL、method 和请求实现。
+- 页面如果不需要业务适配，可以直接 import `@/api/generated/*`；需要适配时 import `src/api/<domain>` 的业务封装。
+- AIGC 网关未进入当前 OpenAPI，因此 `src/api/aigc/**` 是明确的手写 API 例外，但必须复用 `aigc/request.ts`，不得在页面或 Hook 中直接 Axios。
+- 二进制下载等 Swagger 无法表达 `responseType: 'blob'` 的接口可保留最小手写传输例外，并必须写 Why 注释说明生成器限制；不要手改 generated 文件。
 - 页面不在 `useEffect` 中手写 TanStack Query 已提供的请求、缓存、竞态控制、去重和刷新。
 - 服务端任务、模型、报告、用户列表不得复制到 Zustand / localStorage 作为第二份正式数据。
 
@@ -161,6 +168,8 @@ src/
 不要生成：
 
 - 页面直接调用 Axios；
+- 普通业务模块重新手写 generated 已有的 URL / method / HTTP 请求；
+- 手工编辑 `src/api/generated/**`；
 - 服务端列表放进 Zustand；
 - 真实 API 失败后落 localStorage 并假装成功；
 - 没有接口的 mock 散落在页面 JSX；
