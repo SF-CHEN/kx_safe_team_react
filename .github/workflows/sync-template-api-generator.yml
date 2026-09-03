@@ -43,7 +43,10 @@ jobs:
 
       - name: Generate API from cached OpenAPI
         if: steps.guard.outputs.run == 'true'
-        run: npm run api:generate -- --file script/api.json
+        env:
+          SWAGGER_URL: ''
+          SWAGGER_FILE: script/api.json
+        run: npm run api:generate
 
       - name: Commit generated API
         if: steps.guard.outputs.run == 'true'
