@@ -47,4 +47,5 @@ jobs:
             exit 0
           fi
           git commit -m "chore: 生成 npm 锁文件 [skip ci]"
+          git pull --rebase origin refactor/template-alignment
           git push origin HEAD:refactor/template-alignment
