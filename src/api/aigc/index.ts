@@ -1,12 +1,9 @@
-import axios, { type AxiosInstance } from 'axios'
-import { getAuthHeader } from '@/utils/auth'
-import {
-  extractGatewayErrorMessage,
-  getGatewayBase,
-  notifyUnauthorized,
-  unwrapGatewayData,
-  type GatewayError,
-} from '@/utils/gateway'
+/**
+ * [INPUT]: AIGC 算法 key、文本/文件、样例与报告查询参数
+ * [OUTPUT]: 对外提供 AIGC 分析、报告、算法状态与内置样例 API
+ * [POS]: AIGC 手写业务 API；因网关未进入 OpenAPI，明确不放入 src/api/generated
+ */
+import { getAigcClient } from '@/api/aigc/request'
 import {
   ANALYZE_TIMEOUT_MS,
   assertAigcAnalyzeSuccess,
@@ -20,6 +17,7 @@ import {
   resolveSampleFileName,
   resolveSampleMimeType,
 } from '@/api/aigc/sampleUtils'
+import { getGatewayBase, unwrapGatewayData } from '@/utils/gateway'
 
 export {
   getSampleDisplayName,
@@ -28,39 +26,6 @@ export {
   resolveSampleFileName,
   resolveSampleMimeType,
 } from '@/api/aigc/sampleUtils'
-
-const aigcClients = new Map<number, AxiosInstance>()
-
-/** AIGC 使用独立网关；按 timeout 复用实例，避免每次调用重复注册拦截器。 */
-function createAigcClient(timeout = 120_000) {
-  const cached = aigcClients.get(timeout)
-  if (cached) return cached
-
-  const client = axios.create({
-    baseURL: getGatewayBase(),
-    timeout,
-  })
-
-  client.interceptors.request.use((config) => {
-    Object.assign(config.headers, getAuthHeader())
-    return config
-  })
-
-  client.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      const status = error.response?.status as number | undefined
-      if (status === 401 || status === 403) notifyUnauthorized()
-      const err = new Error(extractGatewayErrorMessage(error)) as GatewayError
-      err.status = status
-      err.response = error.response
-      return Promise.reject(err)
-    },
-  )
-
-  aigcClients.set(timeout, client)
-  return client
-}
 
 export function buildAnalyzeURL(algorithmKey: string): string {
   return `${getGatewayBase()}/api/aigc/${algorithmKey}/api/analyze`
@@ -71,7 +36,7 @@ export async function analyzeText(
   payload: { task_id?: string; text: string },
   timeout = ANALYZE_TIMEOUT_MS.text,
 ): Promise<Record<string, unknown>> {
-  const { data } = await createAigcClient(timeout).post(
+  const { data } = await getAigcClient(timeout).post(
     `/api/aigc/${algorithmKey}/api/analyze`,
     payload,
     { headers: { 'Content-Type': 'application/json' } },
@@ -91,7 +56,7 @@ export async function analyzeFile(
   if (taskId) formData.append('task_id', taskId)
   if (text) formData.append('text', text)
 
-  const { data } = await createAigcClient(timeout).post(
+  const { data } = await getAigcClient(timeout).post(
     `/api/aigc/${algorithmKey}/api/analyze`,
     formData,
   )
@@ -120,63 +85,63 @@ export async function submitAnalyze(
 }
 
 export async function fetchAigcReports(params?: Record<string, unknown>) {
-  const { data } = await createAigcClient(30_000).get('/api/aigc/reports', { params })
+  const { data } = await getAigcClient(30_000).get('/api/aigc/reports', { params })
   return unwrapGatewayData<{ items?: unknown[]; total?: number }>(data)
 }
 
 export async function fetchAigcReport(recordId: string | number) {
-  const { data } = await createAigcClient(30_000).get(`/api/aigc/reports/${recordId}`)
+  const { data } = await getAigcClient(30_000).get(`/api/aigc/reports/${recordId}`)
   return unwrapGatewayData(data)
 }
 
 export async function fetchAigcReportDisplay(recordId: string | number) {
-  const { data } = await createAigcClient(60_000).get(`/api/aigc/reports/${recordId}/display`)
+  const { data } = await getAigcClient(60_000).get(`/api/aigc/reports/${recordId}/display`)
   const payload = unwrapGatewayData<{ result?: unknown }>(data)
   return payload?.result ?? payload
 }
 
 export async function removeAigcReport(recordId: string | number) {
-  const { data } = await createAigcClient(30_000).delete(`/api/aigc/reports/${recordId}`)
+  const { data } = await getAigcClient(30_000).delete(`/api/aigc/reports/${recordId}`)
   return unwrapGatewayData(data)
 }
 
 export async function getAigcHealth() {
-  const { data } = await createAigcClient(10_000).get('/api/aigc/health')
+  const { data } = await getAigcClient(10_000).get('/api/aigc/health')
   return data
 }
 
 export async function fetchAigcAlgorithmList() {
-  const { data } = await createAigcClient(10_000).get('/api/aigc/algorithms')
+  const { data } = await getAigcClient(10_000).get('/api/aigc/algorithms')
   return unwrapGatewayData(data)
 }
 
 export async function fetchAigcAlgorithmStatus(algorithmKey: string) {
-  const { data } = await createAigcClient(10_000).get(`/api/aigc/${algorithmKey}/status`)
+  const { data } = await getAigcClient(10_000).get(`/api/aigc/${algorithmKey}/status`)
   return unwrapGatewayData(data)
 }
 
 export async function startAigcAlgorithm(algorithmKey: string) {
-  const { data } = await createAigcClient(60_000).post(`/api/aigc/${algorithmKey}/start`)
+  const { data } = await getAigcClient(60_000).post(`/api/aigc/${algorithmKey}/start`)
   return unwrapGatewayData(data)
 }
 
 export async function stopAigcAlgorithm(algorithmKey: string) {
-  const { data } = await createAigcClient(30_000).post(`/api/aigc/${algorithmKey}/stop`)
+  const { data } = await getAigcClient(30_000).post(`/api/aigc/${algorithmKey}/stop`)
   return unwrapGatewayData(data)
 }
 
 export async function getAlgorithmHealth(algorithmKey: string) {
-  const { data } = await createAigcClient(10_000).get(`/api/aigc/${algorithmKey}/health`)
+  const { data } = await getAigcClient(10_000).get(`/api/aigc/${algorithmKey}/health`)
   return data
 }
 
 export async function getAigcSamplesMeta() {
-  const { data } = await createAigcClient(10_000).get('/api/aigc/samples/meta')
+  const { data } = await getAigcClient(10_000).get('/api/aigc/samples/meta')
   return unwrapGatewayData(data)
 }
 
 export async function getAigcSamples(params?: Record<string, unknown>) {
-  const { data } = await createAigcClient(10_000).get('/api/aigc/samples', { params })
+  const { data } = await getAigcClient(10_000).get('/api/aigc/samples', { params })
   return unwrapGatewayData<{ items?: unknown[]; total?: number }>(data)
 }
 
@@ -213,17 +178,17 @@ export async function getRandomAigcSamples(params: {
   if (taskType) query.task_type = taskType
   if (seed != null) query.seed = seed
 
-  const { data } = await createAigcClient(30_000).get('/api/aigc/samples/random', { params: query })
+  const { data } = await getAigcClient(30_000).get('/api/aigc/samples/random', { params: query })
   return unwrapGatewayData<{ items?: Record<string, unknown>[] }>(data)
 }
 
 export async function getAigcSample(sampleId: string) {
-  const { data } = await createAigcClient(10_000).get(`/api/aigc/samples/${sampleId}`)
+  const { data } = await getAigcClient(10_000).get(`/api/aigc/samples/${sampleId}`)
   return unwrapGatewayData(data)
 }
 
 export async function downloadAigcSample(sampleId: string) {
-  const response = await createAigcClient(120_000).get(`/api/aigc/samples/${sampleId}/download`, {
+  const response = await getAigcClient(120_000).get(`/api/aigc/samples/${sampleId}/download`, {
     responseType: 'blob',
   })
   return {
@@ -253,7 +218,7 @@ export async function runBuiltinSampleAnalyze(
     blob = downloaded.blob
   } else if (sample.download_url) {
     const path = String(sample.download_url).replace(/^https?:\/\/[^/]+/, '')
-    const response = await createAigcClient(120_000).get(path, { responseType: 'blob' })
+    const response = await getAigcClient(120_000).get(path, { responseType: 'blob' })
     blob = response.data as Blob
   } else {
     throw new Error('文件样例缺少 sample_id 或 download_url')
