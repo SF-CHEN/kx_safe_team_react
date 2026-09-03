@@ -4,6 +4,16 @@ export type WorkflowStatus =
   | '已交付'
   | '已终止';
 
+export type WorkflowProduct =
+  | '个人敏感信息审查'
+  | '数据集安全评测'
+  | 'AIGC内容审核'
+  | '深度模型可信测评'
+  | '大模型性能评测'
+  | '大模型安全评测'
+  | '智能体安全评测'
+  | '训练集评测';
+
 export type PlatformActivityType = '登录' | '在线体验' | '提交任务' | '下载报告';
 
 export interface StoredAttachment {
@@ -30,7 +40,7 @@ export interface WorkflowTask {
   userName: string;
   contact: string;
   name: string;
-  product: string;
+  product: WorkflowProduct;
   model: string;
   requirement: string;
   configSummary?: string;
@@ -97,9 +107,16 @@ const OPERATION_LOG_KEY = 'xuanjian-admin-operation-logs-v1';
 const ACTIVITY_KEY = 'xuanjian-platform-activities-v1';
 export const WORKFLOW_EVENT = 'xuanjian-workflow-change';
 export const TERMINAL_WORKFLOW_STATUSES: WorkflowStatus[] = ['已交付', '已终止'];
-export const FORMAL_TASK_PRODUCTS = new Set([
-  '数据集安全评测', '模型数据安全评测', '深度模型可信测评', '智能体安全评测',
-  '大模型评测', '大模型性能评测', '大模型安全评测', '多模态大模型安全评测',
+
+const WORKFLOW_PRODUCTS = new Set<WorkflowProduct>([
+  '个人敏感信息审查',
+  '数据集安全评测',
+  'AIGC内容审核',
+  '深度模型可信测评',
+  '大模型性能评测',
+  '大模型安全评测',
+  '智能体安全评测',
+  '训练集评测',
 ]);
 
 const nowText = () => new Date().toLocaleString('zh-CN', { hour12: false });
@@ -117,7 +134,9 @@ function normalizeTask(task: WorkflowTask): WorkflowTask {
   return { ...task, communications: task.communications || [] };
 }
 
-export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY).filter(task => FORMAL_TASK_PRODUCTS.has(task.product)).map(normalizeTask);
+export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY)
+  .filter((task) => WORKFLOW_PRODUCTS.has(task.product))
+  .map(normalizeTask);
 export const saveWorkflowTasks = (tasks: WorkflowTask[]) => write(TASK_KEY, tasks);
 export const getPlatformUsers = (): PlatformUserRecord[] => read<PlatformUserRecord>(USERS_KEY);
 export const getNotifications = () => read<UserNotification>(NOTICE_KEY);
@@ -157,7 +176,6 @@ export function upsertPlatformUser(user: Omit<PlatformUserRecord, 'registeredAt'
 }
 
 export function createWorkflowTask(task: WorkflowTask) {
-  if (!FORMAL_TASK_PRODUCTS.has(task.product)) return;
   const tasks = getWorkflowTasks().filter(item => item.id !== task.id);
   const created = normalizeTask({ ...task, status: '处理中', communications: [{ id: `comm-${Date.now()}`, sender: 'system', type: '状态更新', content: '任务已提交，正在处理中。', createdAt: nowText() }] });
   write(TASK_KEY, [created, ...tasks]);
@@ -234,11 +252,6 @@ export function terminateWorkflowTask(taskId: string, reason: string, operator =
   });
   addAdminOperationLog({ operator, taskId, action: '终止任务并通知用户', detail: reason });
   addNotification({ userId: task.userId, taskId, type: 'task', title: '任务已终止', content: `“${task.name}”未能继续处理：${reason}` });
-}
-
-/** 保留旧调用名称，统一转入正式交付流程。 */
-export function pushTaskToUser(taskId: string, operator = 'admin') {
-  return deliverTaskToUser(taskId, '', operator);
 }
 
 export async function fileToStoredAttachment(file: File, category: StoredAttachment['category']): Promise<StoredAttachment> {
