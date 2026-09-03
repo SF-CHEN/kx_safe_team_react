@@ -31,7 +31,6 @@ jobs:
           replace(user, """  /** @deprecated 正式模型不再写入 UserContext。 */\n  myModels: MyModel[]\n""", '')
           replace(user, """  /** @deprecated 正式模型保存请调用 src/api/model。 */\n  addModel: (model: MyModel) => void\n""", '')
           replace(user, """  myModels: [],\n""", '')
-          replace(user, """    myModels: [],\n""", '')
           replace(user, """      // 正式模型已经有后端数据源，不再把 myModels 写入浏览器形成第二份数据库。\n""", '')
           replace(user, """function isFormalServerTaskId(id: string) {\n  return id.startsWith('evaluation:') || id.startsWith('master:')\n}\n\n""", '')
           replace(user, """/** 主站登录走后端鉴权，本地凭证重置仅用于原型联调占位。 */\nexport async function adminResetLocalPassword(_userId: string, _password: string): Promise<boolean> {\n  return false\n}\n\n""", '')
