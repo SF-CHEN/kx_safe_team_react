@@ -1,9 +1,9 @@
 /**
- * [INPUT]: Axios、鉴权 token 与统一网关错误处理
- * [OUTPUT]: temp-maven 业务请求实例与按 timeout 复用的客户端工厂
- * [POS]: 真实业务 API 的 HTTP 基础设施；页面与 UI 不直接依赖 Axios
+ * [INPUT]: Axios、鉴权 token、temp-maven 业务网关与统一错误处理
+ * [OUTPUT]: 对外提供 tempRequest、createTempClient 和自动生成 API 使用的 requestData<T>
+ * [POS]: 业务 API HTTP 基础设施；生成 API 与手写业务 API 统一经过这里，页面不直接依赖 Axios
  */
-import axios, { type AxiosInstance } from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 
 import { getXTokenHeader } from '@/utils/auth'
 import {
@@ -43,7 +43,7 @@ function createConfiguredTempClient(timeout: number): AxiosInstance {
   return client
 }
 
-/** 相同 timeout 共用 Axios 实例；长任务可以传入独立 timeout。 */
+/** 相同 timeout 共用 Axios 实例；少量长任务手写 API 可以按需传入独立 timeout。 */
 export function createTempClient(timeout = 30_000): AxiosInstance {
   const cached = tempClients.get(timeout)
   if (cached) return cached
@@ -54,3 +54,14 @@ export function createTempClient(timeout = 30_000): AxiosInstance {
 }
 
 export const tempRequest = createTempClient()
+
+/**
+ * OpenAPI 自动生成代码的唯一请求入口。
+ *
+ * WHY: 生成器只关心 url/method/data/params，不重复鉴权、baseURL 和错误处理；
+ * 页面和 Query 因此可以直接获得后端响应 data，而不是 AxiosResponse。
+ */
+export async function requestData<T>(config: AxiosRequestConfig): Promise<T> {
+  const response = await tempRequest.request<T>(config)
+  return response.data
+}
