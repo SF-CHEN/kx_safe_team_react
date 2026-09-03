@@ -1,0 +1,40 @@
+name: Fix Safety Strict Types
+
+on:
+  push:
+    branches:
+      - refactor/template-alignment
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guard marker
+        id: guard
+        run: |
+          if [ "$(git log -1 --pretty=%s)" = "chore: fix safety strict types" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply strict fix
+        if: steps.guard.outputs.run == 'true'
+        run: node script/fix-safety-strict.cjs
+
+      - name: Commit fix
+        if: steps.guard.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/SafetyEvaluation.tsx
+          git commit -m "fix: 补齐安全评测展示数据类型 [skip ci]"
+          git push origin HEAD:refactor/template-alignment
