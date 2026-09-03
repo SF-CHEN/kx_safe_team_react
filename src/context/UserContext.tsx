@@ -22,6 +22,7 @@ import {
   type StoredAttachment,
   type UserNotification,
   type WorkflowCommunication,
+  type WorkflowProduct,
   type WorkflowStatus,
 } from '../data/workflowStore'
 
@@ -34,15 +35,7 @@ export interface EvalTask {
   model: string
   modelType: string
   evalSet: string
-  evalType:
-    | '个人敏感信息审查'
-    | '数据集安全评测'
-    | 'AIGC内容审核'
-    | '深度模型可信测评'
-    | '大模型性能评测'
-    | '大模型安全评测'
-    | '智能体安全评测'
-    | '训练集评测'
+  evalType: WorkflowProduct
   status: WorkflowStatus
   score: number | null
   createdAt: string
@@ -266,7 +259,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           model: item.model,
           modelType: '自定义',
           evalSet: item.requirement,
-          evalType: item.product as EvalTask['evalType'],
+          evalType: item.product,
           status: item.status,
           score: null,
           createdAt: item.createdAt,
