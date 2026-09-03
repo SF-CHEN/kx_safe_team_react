@@ -212,7 +212,7 @@ function mapApiUser(apiUser: AuthUser): User {
     email: workspace.email || apiUser.email || apiUser.username || '',
     role,
     isActive: apiUser.is_active !== false,
-      myTasks: workspace.myTasks,
+    myTasks: workspace.myTasks,
     myEvalSets: workspace.myEvalSets,
     notificationPreference: workspace.notificationPreference || 'both',
   }
