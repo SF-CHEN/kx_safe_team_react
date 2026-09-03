@@ -10,6 +10,8 @@ import type { EvaluationTaskMaster } from '@/api/generated/types/evaluation-task
 import type {
   EvaluationTaskMasterProductType,
   EvaluationTaskMasterStatus,
+  ResourceEvalType,
+  ResourceTaskStatus,
 } from './taskMeta'
 
 /** 资源中心列表行（对齐门户展示字段，不含附件二进制）。 */
@@ -20,14 +22,8 @@ export interface MyResourceTask {
   model: string
   modelType: string
   evalSet: string
-  evalType:
-    | '模型数据安全评测'
-    | '深度模型可信测评'
-    | '大模型评测'
-    | '大模型安全评测'
-    | '多模态大模型安全评测'
-    | '智能体安全评测'
-  status: string
+  evalType: ResourceEvalType
+  status: ResourceTaskStatus
   createdAt: string
   requirement?: string
   configSummary?: string
