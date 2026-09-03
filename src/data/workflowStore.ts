@@ -49,11 +49,11 @@ export interface WorkflowTask {
   updatedAt: string;
   inputs: StoredAttachment[];
   outputs: StoredAttachment[];
+  communications: WorkflowCommunication[];
   adminNote?: string;
   publicMessage?: string;
   supplementCategory?: string;
   supplementDueAt?: string;
-  communications?: WorkflowCommunication[];
   pushedAt?: string;
   pushedBy?: string;
   outputVersion?: number;
@@ -100,24 +100,13 @@ export interface AdminOperationLog {
   createdAt: string;
 }
 
-const TASK_KEY = 'xuanjian-workflow-tasks-v1';
+const TASK_KEY = 'xuanjian-workflow-tasks-v2';
 const USERS_KEY = 'xuanjian-platform-users-v1';
 const NOTICE_KEY = 'xuanjian-notifications-v1';
 const OPERATION_LOG_KEY = 'xuanjian-admin-operation-logs-v1';
 const ACTIVITY_KEY = 'xuanjian-platform-activities-v1';
 export const WORKFLOW_EVENT = 'xuanjian-workflow-change';
 export const TERMINAL_WORKFLOW_STATUSES: WorkflowStatus[] = ['已交付', '已终止'];
-
-const WORKFLOW_PRODUCTS = new Set<WorkflowProduct>([
-  '个人敏感信息审查',
-  '数据集安全评测',
-  'AIGC内容审核',
-  '深度模型可信测评',
-  '大模型性能评测',
-  '大模型安全评测',
-  '智能体安全评测',
-  '训练集评测',
-]);
 
 const nowText = () => new Date().toLocaleString('zh-CN', { hour12: false });
 
@@ -130,13 +119,7 @@ function write<T>(key: string, value: T[]) {
   window.dispatchEvent(new CustomEvent(WORKFLOW_EVENT));
 }
 
-function normalizeTask(task: WorkflowTask): WorkflowTask {
-  return { ...task, communications: task.communications || [] };
-}
-
-export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY)
-  .filter((task) => WORKFLOW_PRODUCTS.has(task.product))
-  .map(normalizeTask);
+export const getWorkflowTasks = () => read<WorkflowTask>(TASK_KEY);
 export const saveWorkflowTasks = (tasks: WorkflowTask[]) => write(TASK_KEY, tasks);
 export const getPlatformUsers = (): PlatformUserRecord[] => read<PlatformUserRecord>(USERS_KEY);
 export const getNotifications = () => read<UserNotification>(NOTICE_KEY);
@@ -177,7 +160,17 @@ export function upsertPlatformUser(user: Omit<PlatformUserRecord, 'registeredAt'
 
 export function createWorkflowTask(task: WorkflowTask) {
   const tasks = getWorkflowTasks().filter(item => item.id !== task.id);
-  const created = normalizeTask({ ...task, status: '处理中', communications: [{ id: `comm-${Date.now()}`, sender: 'system', type: '状态更新', content: '任务已提交，正在处理中。', createdAt: nowText() }] });
+  const created: WorkflowTask = {
+    ...task,
+    status: '处理中',
+    communications: [{
+      id: `comm-${Date.now()}`,
+      sender: 'system',
+      type: '状态更新',
+      content: '任务已提交，正在处理中。',
+      createdAt: nowText(),
+    }],
+  };
   write(TASK_KEY, [created, ...tasks]);
   recordPlatformActivity(task.userId, '提交任务');
   addNotification({ userId: task.userId, taskId: task.id, type: 'task', title: '任务提交成功', content: `“${task.name}”已提交并进入处理流程。` });
@@ -203,7 +196,7 @@ export function markAllNotificationsRead(userId: string) {
 }
 
 function appendCommunication(task: WorkflowTask, communication: Omit<WorkflowCommunication, 'id' | 'createdAt'>) {
-  return [...(task.communications || []), { ...communication, id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, createdAt: nowText() }];
+  return [...task.communications, { ...communication, id: `comm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, createdAt: nowText() }];
 }
 
 export function requestTaskSupplement(taskId: string, content: string, category: string, dueAt?: string, operator = 'admin') {
