@@ -13,7 +13,10 @@ import {
   type MyResourceTask,
 } from '@/api/evaluation';
 import { downloadSysFile, uploadSysFile } from '@/api/file';
-import type { EvaluationTaskMasterProductType } from '@/api/types';
+import type {
+  EvaluationTaskMasterProductType,
+  EvaluationTaskMasterStatus,
+} from '@/api/evaluation/taskMeta';
 import { useUser, type EvalTask } from '../context/UserContext';
 import { DataPagination } from '../components/DataPagination';
 import { Button } from '../components/ui/button';
@@ -40,12 +43,6 @@ const STATUS_UI: Record<string, { label: string; style: string; icon: React.Elem
   待用户补充: { label: '待用户补充', style: 'bg-orange-50 text-orange-700', icon: AlertTriangle },
   已交付: { label: '已交付', style: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
   已终止: { label: '已终止', style: 'bg-slate-100 text-slate-600', icon: XCircle },
-  待受理: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
-  材料已接收: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
-  待补充材料: { label: '待用户补充', style: 'bg-orange-50 text-orange-700', icon: AlertTriangle },
-  待交付: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
-  已推送: { label: '已交付', style: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
-  处理异常: { label: '处理中', style: 'bg-blue-50 text-blue-700', icon: LoaderCircle },
 };
 
 function productLabel(type: EvalTask['evalType']) {
@@ -82,7 +79,7 @@ function productTypeFromLabel(product: string): EvaluationTaskMasterProductType 
   return undefined;
 }
 
-function statusFromLabel(status: string): string | undefined {
+function statusFromLabel(status: string): EvaluationTaskMasterStatus | undefined {
   if (status === '处理中') return 'PROCESSING';
   if (status === '待用户补充') return 'AWAIT_SUPPLEMENT';
   if (status === '已交付') return 'DELIVERED';

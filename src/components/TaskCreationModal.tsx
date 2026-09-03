@@ -19,11 +19,9 @@ import {
 import { addEvaluationTask, type CreateEvaluationTaskInput } from '@/api/evaluation';
 import { addDepthModel, fetchDepthModelDropdown } from '@/api/model';
 import { fetchPresetScenes } from '@/api/presetScene';
-import type {
-  BaseDropDepthModel,
-  EvaluationTaskKind,
-  PresetSceneVo,
-} from '@/api/types';
+import type { EvaluationTaskKind } from '@/api/evaluation/evaluationTask';
+import type { BaseDropDepthModel } from '@/api/generated/types/depth-model';
+import type { PresetSceneVo } from '@/api/generated/types/preset-scene';
 import { useUser, EvalTask } from '../context/UserContext';
 import { toast } from 'sonner';
 

@@ -6,7 +6,7 @@ import {
   Activity, Bell, ChartNoAxesCombined, ChevronRight, ClipboardCheck, ClipboardList,
   FileCheck2, History, KeyRound, Layers, LogOut, Mail, Search, User, Users, X,
 } from 'lucide-react';
-import type { OverviewVo } from '@/api/types';
+import type { OverviewVo } from '@/api/generated/types/overview';
 import {
   ADMIN_REMOTE_EVENT,
   AdminOperationLogPanel, AdminWorkflowWorkbench, RegisteredUserPanel,

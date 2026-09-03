@@ -14,11 +14,9 @@ import {
   fetchPresetScenePage,
   updatePresetScene,
 } from '@/api/presetScene';
-import type {
-  EvaluationDimension,
-  EvaluationTaskKind,
-  PresetScene,
-} from '@/api/types';
+import type { EvaluationTaskKind } from '@/api/evaluationDimension';
+import type { EvaluationDimension } from '@/api/generated/types/evaluation-dimension';
+import type { PresetScene } from '@/api/generated/types/preset-scene';
 import { DataPagination } from './DataPagination';
 import {
   Dialog,

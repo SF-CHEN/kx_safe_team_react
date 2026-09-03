@@ -19,7 +19,7 @@ import {
 } from '@/api/evaluation';
 import { downloadSysFile } from '@/api/file';
 import { fetchUserOverview } from '@/api/overview';
-import type { UserOverviewVo } from '@/api/types';
+import type { UserOverviewVo } from '@/api/generated/types/overview';
 import { DataPagination } from './DataPagination';
 import {
   WORKFLOW_EVENT, addAdminOperationLog,
@@ -37,45 +37,19 @@ const TERMINAL = new Set<WorkflowStatus>(['已交付', '已终止']);
 const statusStyle: Record<string, string> = {
   处理中: 'bg-blue-50 text-blue-700', 待用户补充: 'bg-orange-50 text-orange-700',
   已交付: 'bg-emerald-50 text-emerald-700', 已终止: 'bg-slate-100 text-slate-500',
-  待受理: 'bg-amber-50 text-amber-700', 材料已接收: 'bg-cyan-50 text-cyan-700',
-  待补充材料: 'bg-orange-50 text-orange-700', 待交付: 'bg-violet-50 text-violet-700',
-  已推送: 'bg-emerald-50 text-emerald-700', 处理异常: 'bg-red-50 text-red-700',
 };
 const statusBar: Record<string, string> = {
   处理中: 'bg-blue-600', 待用户补充: 'bg-orange-500',
   已交付: 'bg-emerald-500', 已终止: 'bg-slate-400',
-  待受理: 'bg-amber-500', 材料已接收: 'bg-cyan-500',
-  待补充材料: 'bg-orange-500', 待交付: 'bg-violet-500',
-  已推送: 'bg-emerald-500', 处理异常: 'bg-red-500',
 };
 const fallbackStatusStyle = 'bg-slate-100 text-slate-600';
 const fallbackStatusBar = 'bg-slate-400';
 
 export function normalizeAdminStatus(status: string): WorkflowStatus {
   const upper = status.trim().toUpperCase();
-  if (
-    status === '待补充材料' ||
-    status === '待用户补充' ||
-    upper === 'AWAIT_SUPPLEMENT'
-  ) {
-    return '待用户补充';
-  }
-  if (
-    status === '已推送' ||
-    status === '已交付' ||
-    upper === 'COMPLETED' ||
-    upper === 'DELIVERED'
-  ) {
-    return '已交付';
-  }
-  if (
-    status === '已终止' ||
-    status === '处理异常' ||
-    upper === 'FAILED' ||
-    upper === 'TERMINATED'
-  ) {
-    return '已终止';
-  }
+  if (status === '待用户补充' || upper === 'AWAIT_SUPPLEMENT') return '待用户补充';
+  if (status === '已交付' || upper === 'DELIVERED') return '已交付';
+  if (status === '已终止' || upper === 'TERMINATED') return '已终止';
   return '处理中';
 }
 
